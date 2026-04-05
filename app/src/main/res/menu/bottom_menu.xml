@@ -1,0 +1,18 @@
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+    <item
+        android:id="@+id/nav_ozet"
+        android:icon="@drawable/home_24px"
+        android:title="Anasayfa" />
+        <item
+        android:id="@+id/nav_gunluk"
+        android:icon="@drawable/today_24px"
+        android:title="Günlük" />
+    <item
+        android:id="@+id/nav_aylik"
+        android:icon="@drawable/calendar_month_24px"
+        android:title="Aylık" />
+    <item
+        android:id="@+id/nav_yaklasan"
+        android:icon="@drawable/notifications_active_24px"
+        android:title="Yaklaşan" />
+</menu>

@@ -1,0 +1,30 @@
+<resources>
+    <string name="app_name">Hesap Yönetimi</string>
+    <string name="baslik_gunluk">Günlük Harcama Takibi</string>
+    <string name="hint_tutar">Tutar Girin (TL)</string>
+    <string name="hint_aciklama">Açıklama (Örn: Market)</string>
+    <string name="btn_kaydet">KAYDET</string>
+    
+    <!-- Dashboard -->
+    <string name="greeting_morning">Günaydın,</string>
+    <string name="greeting_afternoon">İyi günler,</string>
+    <string name="greeting_evening">İyi akşamlar,</string>
+    <string name="net_balance">Net bakiye</string>
+    <string name="income">Gelir</string>
+    <string name="expense">Gider</string>
+    <string name="saved">Tasarruf</string>
+    <string name="this_month">Bu ay</string>
+    <string name="recent_transactions">Son işlemler</string>
+    <string name="upcoming_payments">Yaklaşan ödemeler</string>
+    <string name="no_transactions_today">Bugün henüz işlem yok.</string>
+    <string name="add_transaction">İşlem Ekle</string>
+    
+    <string-array name="kategoriler">
+        <item>Market</item>
+        <item>Kira/Fatura</item>
+        <item>Hobi/Eğlence</item>
+        <item>Ulaşım</item>
+        <item>Diğer</item>
+    </string-array>
+    <string name="hello_blank_fragment">Hello blank fragment</string>
+</resources>

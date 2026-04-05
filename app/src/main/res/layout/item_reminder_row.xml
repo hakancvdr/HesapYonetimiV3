@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:paddingTop="4dp"
+    android:paddingBottom="4dp"
+    android:paddingStart="12dp"
+    android:paddingEnd="12dp"
+    android:layout_marginBottom="4dp"
+    android:background="@color/acik_gri">
+
+    <View
+        android:id="@+id/view_indicator"
+        android:layout_width="3dp"
+        android:layout_height="18dp"
+        android:background="@color/gider_kirmizi"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
+
+    <TextView
+        android:id="@+id/tv_reminder_title"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="12dp"
+        android:text="Netflix"
+        android:textColor="@color/yazi_ana"
+        android:textSize="13sp"
+        android:textStyle="bold"
+        app:layout_constraintBottom_toTopOf="@+id/tv_reminder_date"
+        app:layout_constraintEnd_toStartOf="@+id/tv_reminder_amount"
+        app:layout_constraintStart_toEndOf="@id/view_indicator"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintVertical_chainStyle="packed" />
+
+    <TextView
+        android:id="@+id/tv_reminder_date"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Bugün"
+        android:textColor="@color/yazi_gri"
+        android:textSize="10sp"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintStart_toStartOf="@id/tv_reminder_title"
+        app:layout_constraintTop_toBottomOf="@id/tv_reminder_title" />
+
+    <ImageView
+        android:id="@+id/iv_go_detail"
+        android:layout_width="16dp"
+        android:layout_height="16dp"
+        android:src="@android:drawable/ic_media_play"
+        app:tint="@color/yazi_gri"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintBottom_toBottomOf="parent" />
+
+    <TextView
+        android:id="@+id/tv_reminder_amount"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="₺ 159.90"
+        android:textColor="@color/ana_lacivert"
+        android:textSize="14sp"
+        android:textStyle="bold"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        android:layout_marginEnd="8dp"
+        app:layout_constraintEnd_toStartOf="@id/iv_go_detail" />
+</androidx.constraintlayout.widget.ConstraintLayout>

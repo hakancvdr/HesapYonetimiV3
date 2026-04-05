@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.cardview.widget.CardView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="160dp"
+    android:layout_height="wrap_content"
+    android:layout_margin="8dp"
+    app:cardCornerRadius="20dp"
+    app:cardElevation="2dp">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="16dp"
+        android:background="@color/beyaz">
+
+        <ImageView
+            android:id="@+id/iv_reminder_icon"
+            android:layout_width="32dp"
+            android:layout_height="32dp"
+            android:src="@android:drawable/ic_menu_recent_history"
+            app:tint="@color/ana_lacivert"
+            android:layout_marginBottom="12dp"/>
+
+        <TextView
+            android:id="@+id/tv_reminder_title"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Netflix"
+            android:textStyle="bold"
+            android:textColor="@color/yazi_ana"
+            android:textSize="14sp" />
+
+        <TextView
+            android:id="@+id/tv_reminder_amount"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="₺ 159.90"
+            android:textColor="@color/gider_kirmizi"
+            android:textSize="13sp"
+            android:layout_marginTop="4dp"/>
+
+        <TextView
+            android:id="@+id/tv_reminder_date"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Son 3 Gün"
+            android:textColor="@color/yazi_gri"
+            android:textSize="11sp"
+            android:layout_marginTop="8dp"/>
+    </LinearLayout>
+</androidx.cardview.widget.CardView>

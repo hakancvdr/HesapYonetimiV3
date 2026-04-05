@@ -1,0 +1,59 @@
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="56dp"
+    android:layout_height="72dp"
+    android:layout_margin="4dp">
+
+    <!-- Content Container -->
+    <LinearLayout
+        android:id="@+id/container_day"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:gravity="center_horizontal"
+        android:orientation="vertical"
+        android:padding="4dp">
+
+        <TextView
+            android:id="@+id/tv_day_name"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Pzt"
+            android:textColor="@color/text_secondary"
+            android:textSize="10sp"
+            android:layout_marginBottom="4dp" />
+
+        <!-- Number Container with Background/Border -->
+        <FrameLayout
+            android:layout_width="40dp"
+            android:layout_height="40dp">
+
+            <!-- Background Circle for Today/Selected -->
+            <View
+                android:id="@+id/bg_circle"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:background="@drawable/calendar_bg_circle"
+                android:visibility="gone" />
+
+            <!-- Border Circle for Days with Data -->
+            <View
+                android:id="@+id/border_circle"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:background="@drawable/calendar_border_circle"
+                android:visibility="gone" />
+
+            <!-- Day Number (Centered) -->
+            <TextView
+                android:id="@+id/tv_day_number"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center"
+                android:text="15"
+                android:textColor="@color/text_primary"
+                android:textStyle="bold"
+                android:textSize="15sp" />
+        </FrameLayout>
+
+    </LinearLayout>
+</FrameLayout>
