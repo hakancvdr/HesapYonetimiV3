@@ -7,6 +7,7 @@ import com.example.hesapyonetimi.domain.model.Transaction
 import com.example.hesapyonetimi.domain.repository.ReminderRepository
 import com.example.hesapyonetimi.domain.repository.TransactionRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import java.util.Calendar
@@ -29,145 +30,108 @@ class DashboardViewModel @Inject constructor(
     private val transactionRepository: TransactionRepository,
     private val reminderRepository: ReminderRepository
 ) : ViewModel() {
-    
+
     private val _uiState = MutableStateFlow(DashboardUiState(isLoading = true))
     val uiState: StateFlow<DashboardUiState> = _uiState.asStateFlow()
-    
+
+    // Seçili tarih — başlangıçta bugün
+    private val _selectedDate = MutableStateFlow(System.currentTimeMillis())
+
+    private var statsJob: Job? = null
+    private var dateJob: Job? = null
+
     init {
-        loadDashboardData()
+        loadMonthlyStats()
+        observeSelectedDate()
     }
-    
-    private fun loadDashboardData() {
-        viewModelScope.launch {
+
+    // Aylık istatistikler — recentTransactions'a hiç dokunmuyor
+    private fun loadMonthlyStats() {
+        statsJob?.cancel()
+        statsJob = viewModelScope.launch {
             try {
-                // Bugünün başlangıç ve bitiş zamanı
-                val (startOfDay, endOfDay) = getTodayDateRange()
-                
-                // Bu ayın başlangıç ve bitiş zamanı
                 val (startOfMonth, endOfMonth) = getCurrentMonthDateRange()
-                
                 combine(
-                    transactionRepository.getTransactionsByDateRange(startOfDay, endOfDay),
                     reminderRepository.getUnpaidReminders(),
                     transactionRepository.getTransactionsByDateRange(startOfMonth, endOfMonth)
-                ) { todayTransactions, reminders, monthTransactions ->
-                    
-                    // Bu ay toplam gelir/gider hesapla
-                    val monthIncome = transactionRepository.getTotalIncome(startOfMonth, endOfMonth)
-                    val monthExpense = transactionRepository.getTotalExpense(startOfMonth, endOfMonth)
-                    
-                    // Hangi günlerde işlem var bul
-                    val daysWithData = monthTransactions.map { transaction ->
-                        val cal = Calendar.getInstance().apply {
-                            timeInMillis = transaction.date
-                        }
-                        cal.get(Calendar.DAY_OF_MONTH)
+                ) { reminders, monthTransactions ->
+                    val income = transactionRepository.getTotalIncome(startOfMonth, endOfMonth)
+                    val expense = transactionRepository.getTotalExpense(startOfMonth, endOfMonth)
+                    val daysWithData = monthTransactions.map {
+                        Calendar.getInstance().apply { timeInMillis = it.date }
+                            .get(Calendar.DAY_OF_MONTH)
                     }.toSet()
-                    
-                    // En çok harcama yapılan kategori
                     val highestCat = monthTransactions
                         .filter { !it.isIncome }
                         .groupBy { it.categoryName }
                         .mapValues { (_, txs) -> txs.sumOf { it.amount } }
                         .maxByOrNull { it.value }
-                    val highestCategoryText = highestCat?.let {
-                        "${it.key}: ${String.format("%,.0f", it.value)} ₺"
-                    } ?: ""
+                        ?.let { "${it.key}: ${String.format("%,.0f", it.value)} ₺" } ?: ""
 
-                    DashboardUiState(
-                        totalBalance = monthIncome - monthExpense,
-                        totalIncome = monthIncome,
-                        totalExpense = monthExpense,
-                        recentTransactions = todayTransactions.take(5),
-                        upcomingReminders = reminders.take(3),
-                        daysWithTransactions = daysWithData,
-                        highestCategory = highestCategoryText,
-                        isLoading = false
-                    )
-                }.collect { state ->
-                    _uiState.value = state
+                    listOf(income, expense) to Triple(reminders, daysWithData, highestCat)
+                }.collect { (balances, rest) ->
+                    val (reminders, daysWithData, highestCat) = rest
+                    _uiState.update { current ->
+                        current.copy(
+                            totalBalance = balances[0] - balances[1],
+                            totalIncome = balances[0],
+                            totalExpense = balances[1],
+                            upcomingReminders = reminders.take(3),
+                            daysWithTransactions = daysWithData,
+                            highestCategory = highestCat,
+                            isLoading = false
+                        )
+                    }
                 }
-                
             } catch (e: Exception) {
-                _uiState.value = DashboardUiState(
-                    isLoading = false,
-                    error = e.message ?: "Bilinmeyen hata"
-                )
+                _uiState.update { it.copy(isLoading = false, error = e.message) }
             }
         }
     }
-    
-    fun refreshData() {
-        _uiState.value = _uiState.value.copy(isLoading = true)
-        loadDashboardData()
-    }
-    
-    fun getTransactionsByDate(date: Long) {
+
+    // Seçili tarihin işlemlerini dinle — sadece recentTransactions günceller
+    private fun observeSelectedDate() {
         viewModelScope.launch {
-            val (startOfDay, endOfDay) = getDateRange(date)
-            
-            transactionRepository.getTransactionsByDateRange(startOfDay, endOfDay)
-                .collect { transactions ->
-                    _uiState.value = _uiState.value.copy(
-                        recentTransactions = transactions,
-                        isLoading = false
-                    )
-                }
+            _selectedDate.collectLatest { date ->
+                val (start, end) = getDateRange(date)
+                transactionRepository.getTransactionsByDateRange(start, end)
+                    .collect { transactions ->
+                        _uiState.update { it.copy(recentTransactions = transactions) }
+                    }
+            }
         }
     }
-    
-    private fun getTodayDateRange(): Pair<Long, Long> {
-        val calendar = Calendar.getInstance()
-        calendar.set(Calendar.HOUR_OF_DAY, 0)
-        calendar.set(Calendar.MINUTE, 0)
-        calendar.set(Calendar.SECOND, 0)
-        calendar.set(Calendar.MILLISECOND, 0)
-        val startOfDay = calendar.timeInMillis
-        
-        calendar.set(Calendar.HOUR_OF_DAY, 23)
-        calendar.set(Calendar.MINUTE, 59)
-        calendar.set(Calendar.SECOND, 59)
-        calendar.set(Calendar.MILLISECOND, 999)
-        val endOfDay = calendar.timeInMillis
-        
-        return startOfDay to endOfDay
+
+    fun getTransactionsByDate(date: Long) {
+        _selectedDate.value = date
     }
-    
+
+    fun refreshData() {
+        loadMonthlyStats()
+        _selectedDate.value = _selectedDate.value // trigger yenileme
+    }
+
     private fun getDateRange(timestamp: Long): Pair<Long, Long> {
-        val calendar = Calendar.getInstance().apply {
+        val cal = Calendar.getInstance().apply {
             timeInMillis = timestamp
-            set(Calendar.HOUR_OF_DAY, 0)
-            set(Calendar.MINUTE, 0)
-            set(Calendar.SECOND, 0)
-            set(Calendar.MILLISECOND, 0)
+            set(Calendar.HOUR_OF_DAY, 0); set(Calendar.MINUTE, 0)
+            set(Calendar.SECOND, 0); set(Calendar.MILLISECOND, 0)
         }
-        val startOfDay = calendar.timeInMillis
-        
-        calendar.set(Calendar.HOUR_OF_DAY, 23)
-        calendar.set(Calendar.MINUTE, 59)
-        calendar.set(Calendar.SECOND, 59)
-        calendar.set(Calendar.MILLISECOND, 999)
-        val endOfDay = calendar.timeInMillis
-        
-        return startOfDay to endOfDay
+        val start = cal.timeInMillis
+        cal.set(Calendar.HOUR_OF_DAY, 23); cal.set(Calendar.MINUTE, 59)
+        cal.set(Calendar.SECOND, 59); cal.set(Calendar.MILLISECOND, 999)
+        return start to cal.timeInMillis
     }
-    
+
     private fun getCurrentMonthDateRange(): Pair<Long, Long> {
-        val calendar = Calendar.getInstance()
-        calendar.set(Calendar.DAY_OF_MONTH, 1)
-        calendar.set(Calendar.HOUR_OF_DAY, 0)
-        calendar.set(Calendar.MINUTE, 0)
-        calendar.set(Calendar.SECOND, 0)
-        calendar.set(Calendar.MILLISECOND, 0)
-        val startOfMonth = calendar.timeInMillis
-        
-        calendar.set(Calendar.DAY_OF_MONTH, calendar.getActualMaximum(Calendar.DAY_OF_MONTH))
-        calendar.set(Calendar.HOUR_OF_DAY, 23)
-        calendar.set(Calendar.MINUTE, 59)
-        calendar.set(Calendar.SECOND, 59)
-        calendar.set(Calendar.MILLISECOND, 999)
-        val endOfMonth = calendar.timeInMillis
-        
-        return startOfMonth to endOfMonth
+        val cal = Calendar.getInstance()
+        cal.set(Calendar.DAY_OF_MONTH, 1)
+        cal.set(Calendar.HOUR_OF_DAY, 0); cal.set(Calendar.MINUTE, 0)
+        cal.set(Calendar.SECOND, 0); cal.set(Calendar.MILLISECOND, 0)
+        val start = cal.timeInMillis
+        cal.set(Calendar.DAY_OF_MONTH, cal.getActualMaximum(Calendar.DAY_OF_MONTH))
+        cal.set(Calendar.HOUR_OF_DAY, 23); cal.set(Calendar.MINUTE, 59)
+        cal.set(Calendar.SECOND, 59); cal.set(Calendar.MILLISECOND, 999)
+        return start to cal.timeInMillis
     }
 }

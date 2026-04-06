@@ -9,6 +9,9 @@ import androidx.fragment.app.viewModels
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.launch
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
@@ -24,7 +27,6 @@ import com.example.hesapyonetimi.presentation.common.CurrencyFormatter
 import com.example.hesapyonetimi.presentation.dashboard.DashboardViewModel
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout
 import dagger.hilt.android.AndroidEntryPoint
-import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.*
 
@@ -104,9 +106,25 @@ class DashboardFragment : Fragment() {
     private fun observeViewModel() {
         viewLifecycleOwner.lifecycleScope.launch {
             viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
-                viewModel.uiState.collect { state ->
-                    updateUI(state)
-                    if (state.daysWithTransactions.isNotEmpty()) refreshCalendar(state.daysWithTransactions)
+                // recentTransactions ve daysWithTransactions ayrı ayrı dinle
+                launch {
+                    viewModel.uiState
+                        .map { it.copy(recentTransactions = emptyList()) } // recentTransactions hariç
+                        .distinctUntilChanged()
+                        .collect { state ->
+                            updateUI(state)
+                            if (state.daysWithTransactions.isNotEmpty()) {
+                                refreshCalendar(state.daysWithTransactions)
+                            }
+                        }
+                }
+                launch {
+                    viewModel.uiState
+                        .map { it.recentTransactions }
+                        .distinctUntilChanged()
+                        .collect { transactions ->
+                            updateTransactionList(transactions)
+                        }
                 }
             }
         }
@@ -121,44 +139,20 @@ class DashboardFragment : Fragment() {
         val monthName = SimpleDateFormat("MMMM yyyy", Locale("tr")).format(Date())
         binding.tvMonthTitle.text = "Bu ay — $monthName"
 
-        // Dinamik öneri
-        binding.tvSuggestion.text = when {
-            state.totalIncome == 0.0 && state.totalExpense == 0.0 ->
-                "Henüz veri yok. İşlem ekleyerek başla 🚀"
-            state.totalExpense > state.totalIncome ->
-                "Bu ay giderleriniz gelirinizi aştı ⚠️"
-            state.totalIncome > 0 && state.totalExpense > state.totalIncome * 0.8 ->
-                "Harcamalarınız gelirinizin %${((state.totalExpense / state.totalIncome) * 100).toInt()}'ine ulaştı"
-            else -> "Harika! Bu ay bütçeni dengeli tutuyorsun 👍"
-        }
-
-        // En çok harcama
-        binding.tvHighestCategory.text = state.highestCategory.ifEmpty { "—" }
-
-        // Son işlemler — max 3
-        if (state.recentTransactions.isEmpty()) {
-            binding.tvEmptyState.visibility = View.VISIBLE
-            binding.rvRecentTransactions.visibility = View.GONE
+        // Dinamik öneri — veri yoksa gizle
+        val suggestionContainer = binding.root.findViewById<android.view.View>(R.id.suggestion_container)
+        if (state.totalIncome == 0.0 && state.totalExpense == 0.0) {
+            suggestionContainer?.visibility = View.GONE
         } else {
-            binding.tvEmptyState.visibility = View.GONE
-            binding.rvRecentTransactions.visibility = View.VISIBLE
-            val timeFormat = SimpleDateFormat("HH:mm", Locale.getDefault())
-            val transactionModels = state.recentTransactions.take(3).map { t ->
-                TransactionModel(
-                    id = t.id,
-                    title = t.description,
-                    category = t.categoryName,
-                    amount = CurrencyFormatter.formatWithSign(t.amount, t.isIncome),
-                    isIncome = t.isIncome,
-                    time = timeFormat.format(Date(t.date)),
-                    transaction = t
-                )
+            suggestionContainer?.visibility = View.VISIBLE
+            binding.tvSuggestion.text = when {
+                state.totalExpense > state.totalIncome ->
+                    "Bu ay giderleriniz gelirinizi aştı ⚠️"
+                state.totalIncome > 0 && state.totalExpense > state.totalIncome * 0.8 ->
+                    "Harcamalarınız gelirinizin %${((state.totalExpense / state.totalIncome) * 100).toInt()}'ine ulaştı"
+                else -> "Harika! Bu ay bütçeni dengeli tutuyorsun 👍"
             }
-            binding.rvRecentTransactions.adapter = TransactionAdapter(transactionModels) { transaction ->
-                com.example.hesapyonetimi.presentation.common.EditTransactionSheet
-                    .newInstance(transaction)
-                    .show(childFragmentManager, "EditTransaction")
-            }
+            binding.tvHighestCategory.text = state.highestCategory.ifEmpty { "—" }
         }
 
         // Yaklaşan ödemeler
@@ -184,6 +178,33 @@ class DashboardFragment : Fragment() {
         }
     }
 
+    private fun updateTransactionList(transactions: List<com.example.hesapyonetimi.domain.model.Transaction>) {
+        if (transactions.isEmpty()) {
+            binding.tvEmptyState.visibility = View.VISIBLE
+            binding.rvRecentTransactions.visibility = View.GONE
+        } else {
+            binding.tvEmptyState.visibility = View.GONE
+            binding.rvRecentTransactions.visibility = View.VISIBLE
+            val timeFormat = SimpleDateFormat("HH:mm", Locale.getDefault())
+            val transactionModels = transactions.take(3).map { t ->
+                TransactionModel(
+                    id = t.id,
+                    title = t.description,
+                    category = t.categoryName,
+                    amount = CurrencyFormatter.formatWithSign(t.amount, t.isIncome),
+                    isIncome = t.isIncome,
+                    time = timeFormat.format(Date(t.date)),
+                    transaction = t
+                )
+            }
+            binding.rvRecentTransactions.adapter = TransactionAdapter(transactionModels) { transaction ->
+                com.example.hesapyonetimi.presentation.common.EditTransactionSheet
+                    .newInstance(transaction)
+                    .show(childFragmentManager, "EditTransaction")
+            }
+        }
+    }
+
     private fun refreshCalendar(daysWithData: Set<Int>) {
         val calendar = Calendar.getInstance()
         val daysInMonth = calendar.getActualMaximum(Calendar.DAY_OF_MONTH)
@@ -199,6 +220,10 @@ class DashboardFragment : Fragment() {
             viewModel.getTransactionsByDate(c.timeInMillis)
             binding.rvDashboardCalendar.adapter?.notifyDataSetChanged()
         }
+        binding.rvDashboardCalendar.postDelayed({
+            val lm = binding.rvDashboardCalendar.layoutManager as? LinearLayoutManager
+            lm?.scrollToPositionWithOffset(selectedDayPosition, 0)
+        }, 50)
     }
 
     private fun setupMonthlyCalendar() {
@@ -219,7 +244,10 @@ class DashboardFragment : Fragment() {
             viewModel.getTransactionsByDate(c.timeInMillis)
             binding.rvDashboardCalendar.adapter?.notifyDataSetChanged()
         }
-        binding.rvDashboardCalendar.scrollToPosition(currentDay - 1)
+        binding.rvDashboardCalendar.postDelayed({
+            val lm = binding.rvDashboardCalendar.layoutManager as? LinearLayoutManager
+            lm?.scrollToPositionWithOffset(selectedDayPosition, 0)
+        }, 50)
     }
 
     override fun onDestroyView() {

@@ -181,6 +181,7 @@
             style="@style/Widget.Material3.Button"
             android:layout_width="match_parent"
             android:layout_height="50dp"
+            android:layout_marginBottom="32dp"
             android:text="Kaydet"
             android:textSize="14sp"
             app:backgroundTint="@color/green_primary"

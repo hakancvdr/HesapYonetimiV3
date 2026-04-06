@@ -6,24 +6,27 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.view.inputmethod.InputMethodManager
-import android.widget.*
-import androidx.fragment.app.DialogFragment
-import androidx.fragment.app.viewModels
-import androidx.lifecycle.Lifecycle
-import androidx.lifecycle.lifecycleScope
-import androidx.lifecycle.repeatOnLifecycle
+import android.widget.Toast
+import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.example.hesapyonetimi.R
 import com.example.hesapyonetimi.adapter.CategoryChipAdapter
 import com.example.hesapyonetimi.domain.model.Category
 import com.example.hesapyonetimi.presentation.transactions.TransactionViewModel
+import com.google.android.material.bottomsheet.BottomSheetDialogFragment
+import com.google.android.material.button.MaterialButton
+import com.google.android.material.button.MaterialButtonToggleGroup
 import com.google.android.material.textfield.TextInputEditText
+import androidx.fragment.app.viewModels
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.repeatOnLifecycle
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.launch
 
 @AndroidEntryPoint
-class AddTransactionDialog : DialogFragment() {
+class AddTransactionDialog : BottomSheetDialogFragment() {
 
     private val viewModel: TransactionViewModel by viewModels()
     private var selectedCategory: Category? = null
@@ -55,12 +58,11 @@ class AddTransactionDialog : DialogFragment() {
         val etAmount      = view.findViewById<TextInputEditText>(R.id.etAmount)
         val etDescription = view.findViewById<TextInputEditText>(R.id.etDescription)
         val rvCategories  = view.findViewById<RecyclerView>(R.id.rvDialogCategories)
-        val toggleGroup   = view.findViewById<com.google.android.material.button.MaterialButtonToggleGroup>(R.id.toggleGroupType)
-        val btnExpense    = view.findViewById<com.google.android.material.button.MaterialButton>(R.id.btnExpense)
-        val btnIncome     = view.findViewById<com.google.android.material.button.MaterialButton>(R.id.btnIncome)
-        val btnSave       = view.findViewById<com.google.android.material.button.MaterialButton>(R.id.btnSave)
-        val btnCancel     = view.findViewById<com.google.android.material.button.MaterialButton>(R.id.btnCancel)
-        val ivClose       = view.findViewById<ImageView>(R.id.ivClose)
+        // toggle LinearLayout — btnExpense ve btnIncome direkt kullanılıyor
+        val btnExpense    = view.findViewById<MaterialButton>(R.id.btnExpense)
+        val btnIncome     = view.findViewById<MaterialButton>(R.id.btnIncome)
+        val btnSave       = view.findViewById<MaterialButton>(R.id.btnSave)
+        val btnCancel     = view.findViewById<MaterialButton>(R.id.btnCancel)
 
         val colorGreen       = androidx.core.content.ContextCompat.getColor(requireContext(), R.color.green_primary)
         val colorWhite       = androidx.core.content.ContextCompat.getColor(requireContext(), R.color.text_white)
@@ -68,7 +70,7 @@ class AddTransactionDialog : DialogFragment() {
 
         // Kategori chip adapter
         categoryAdapter = CategoryChipAdapter(emptyList()) { cat -> selectedCategory = cat }
-        rvCategories.layoutManager = LinearLayoutManager(requireContext(), LinearLayoutManager.HORIZONTAL, false)
+        rvCategories.layoutManager = GridLayoutManager(requireContext(), 2)
         rvCategories.adapter = categoryAdapter
 
         fun hideKeyboard() {
@@ -76,14 +78,22 @@ class AddTransactionDialog : DialogFragment() {
             imm.hideSoftInputFromWindow(view.windowToken, 0)
         }
 
-        fun updateToggleVisuals(checkedId: Int) {
-            val expenseSelected = checkedId == R.id.btnExpense
-            btnExpense.backgroundTintList = androidx.core.content.res.ResourcesCompat.getColorStateList(
-                resources, if (expenseSelected) R.color.green_primary else android.R.color.transparent, null)
-            btnExpense.setTextColor(if (expenseSelected) colorWhite else colorTextPrimary)
-            btnIncome.backgroundTintList = androidx.core.content.res.ResourcesCompat.getColorStateList(
-                resources, if (!expenseSelected) R.color.green_primary else android.R.color.transparent, null)
-            btnIncome.setTextColor(if (!expenseSelected) colorWhite else colorTextPrimary)
+        fun updateToggleVisuals(expenseSelected: Boolean) {
+            if (expenseSelected) {
+                btnExpense.backgroundTintList = androidx.core.content.res.ResourcesCompat.getColorStateList(
+                    resources, R.color.green_primary, null)
+                btnExpense.setTextColor(colorWhite)
+                btnIncome.backgroundTintList = androidx.core.content.res.ResourcesCompat.getColorStateList(
+                    resources, android.R.color.transparent, null)
+                btnIncome.setTextColor(colorTextPrimary)
+            } else {
+                btnIncome.backgroundTintList = androidx.core.content.res.ResourcesCompat.getColorStateList(
+                    resources, R.color.green_primary, null)
+                btnIncome.setTextColor(colorWhite)
+                btnExpense.backgroundTintList = androidx.core.content.res.ResourcesCompat.getColorStateList(
+                    resources, android.R.color.transparent, null)
+                btnExpense.setTextColor(colorTextPrimary)
+            }
         }
 
         fun loadCategories() {
@@ -92,76 +102,58 @@ class AddTransactionDialog : DialogFragment() {
             categoryAdapter.setCategories(cats, defaultName)
         }
 
-        // Toggle başlangıç
-        preSelectedType?.let { income ->
-            val id = if (income) R.id.btnIncome else R.id.btnExpense
-            toggleGroup.check(id)
-            updateToggleVisuals(id)
-            isIncome = income
-        } ?: run {
-            toggleGroup.check(R.id.btnExpense)
-            updateToggleVisuals(R.id.btnExpense)
+        // Başlangıç
+        preSelectedType?.let {
+            isIncome = it
+        } ?: run { isIncome = false }
+        updateToggleVisuals(!isIncome)
+
+        btnExpense.setOnClickListener {
             isIncome = false
+            updateToggleVisuals(true)
+            loadCategories()
+        }
+        btnIncome.setOnClickListener {
+            isIncome = true
+            updateToggleVisuals(false)
+            loadCategories()
         }
 
         // Kategorileri yükle
         viewLifecycleOwner.lifecycleScope.launch {
             viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
                 viewModel.uiState.collect { state ->
-                    if (state.categories.isNotEmpty() && categoryAdapter.itemCount == 0) {
+                    if (state.categories.isNotEmpty()) {
                         loadCategories()
                     }
                 }
             }
         }
 
-        toggleGroup.addOnButtonCheckedListener { _, checkedId, isChecked ->
-            if (isChecked) {
-                isIncome = checkedId == R.id.btnIncome
-                updateToggleVisuals(checkedId)
-                loadCategories()
-            }
-        }
-
         etAmount.setOnEditorActionListener { _, _, _ -> hideKeyboard(); true }
-        ivClose.setOnClickListener { dismiss() }
         btnCancel.setOnClickListener { dismiss() }
 
         btnSave.setOnClickListener {
             hideKeyboard()
             val amountStr = etAmount.text.toString()
-            if (amountStr.isEmpty()) {
-                Toast.makeText(requireContext(), "Lütfen tutar girin", Toast.LENGTH_SHORT).show()
-                return@setOnClickListener
-            }
-            val cat = selectedCategory ?: run {
-                Toast.makeText(requireContext(), "Lütfen kategori seçin", Toast.LENGTH_SHORT).show()
-                return@setOnClickListener
-            }
+            if (amountStr.isEmpty()) { toast("Lütfen tutar girin"); return@setOnClickListener }
+            val cat = selectedCategory ?: run { toast("Lütfen kategori seçin"); return@setOnClickListener }
             val description = etDescription.text.toString()
             if (cat.name.equals("Diğer", ignoreCase = true) && description.isEmpty()) {
-                Toast.makeText(requireContext(), "Diğer kategorisinde açıklama zorunlu", Toast.LENGTH_SHORT).show()
-                return@setOnClickListener
+                toast("Diğer kategorisinde açıklama zorunlu"); return@setOnClickListener
             }
             val amount = amountStr.toDoubleOrNull() ?: 0.0
-            val finalDescription = if (description.isEmpty()) cat.name else description
             viewModel.addTransaction(
                 amount = amount,
                 categoryId = cat.id,
-                description = finalDescription,
+                description = if (description.isEmpty()) cat.name else description,
                 date = System.currentTimeMillis(),
                 isIncome = isIncome
             )
-            Toast.makeText(requireContext(), "✅ İşlem eklendi!", Toast.LENGTH_SHORT).show()
+            toast("✅ İşlem eklendi!")
             dismiss()
         }
     }
 
-    override fun onStart() {
-        super.onStart()
-        dialog?.window?.apply {
-            setLayout(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT)
-            setBackgroundDrawableResource(android.R.color.transparent)
-        }
-    }
+    private fun toast(msg: String) = Toast.makeText(requireContext(), msg, Toast.LENGTH_SHORT).show()
 }

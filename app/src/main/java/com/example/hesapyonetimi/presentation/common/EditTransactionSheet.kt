@@ -48,6 +48,15 @@ class EditTransactionSheet : BottomSheetDialogFragment() {
         }
     }
 
+    override fun onStart() {
+        super.onStart()
+        val behavior = com.google.android.material.bottomsheet.BottomSheetBehavior.from(
+            requireView().parent as android.view.View
+        )
+        behavior.state = com.google.android.material.bottomsheet.BottomSheetBehavior.STATE_EXPANDED
+        behavior.skipCollapsed = true
+    }
+
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
         return inflater.inflate(R.layout.bottom_sheet_edit_transaction, container, false)
     }
