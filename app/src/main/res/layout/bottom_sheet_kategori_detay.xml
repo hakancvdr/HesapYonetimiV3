@@ -1,0 +1,169 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.core.widget.NestedScrollView
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:background="@drawable/bottom_sheet_bg">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical">
+
+        <!-- Sürükleme çubuğu -->
+        <View
+            android:layout_width="40dp" android:layout_height="4dp"
+            android:background="#DDDDDD"
+            android:layout_gravity="center_horizontal"
+            android:layout_marginTop="12dp" android:layout_marginBottom="16dp"/>
+
+        <!-- Header -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:paddingStart="20dp" android:paddingEnd="20dp"
+            android:layout_marginBottom="8dp">
+
+            <TextView
+                android:id="@+id/tv_detay_icon"
+                android:layout_width="44dp" android:layout_height="44dp"
+                android:gravity="center" android:textSize="24sp"
+                android:background="@drawable/kategori_item_selected_bg"
+                android:layout_marginEnd="14dp"/>
+
+            <LinearLayout
+                android:layout_width="0dp" android:layout_height="wrap_content"
+                android:layout_weight="1" android:orientation="vertical">
+
+                <TextView android:id="@+id/tv_detay_baslik"
+                    android:layout_width="wrap_content" android:layout_height="wrap_content"
+                    android:textSize="16sp" android:textStyle="bold"
+                    android:textColor="@color/text_primary"/>
+
+                <TextView android:id="@+id/tv_detay_ozet"
+                    android:layout_width="wrap_content" android:layout_height="wrap_content"
+                    android:textSize="12sp" android:textColor="@color/text_secondary"
+                    android:layout_marginTop="2dp"/>
+            </LinearLayout>
+
+            <LinearLayout
+                android:layout_width="wrap_content" android:layout_height="wrap_content"
+                android:orientation="vertical" android:gravity="end">
+
+                <TextView android:id="@+id/tv_detay_toplam"
+                    android:layout_width="wrap_content" android:layout_height="wrap_content"
+                    android:textSize="16sp" android:textStyle="bold"
+                    android:textColor="#D32F2F"/>
+
+                <TextView android:id="@+id/tv_detay_yuzde"
+                    android:layout_width="wrap_content" android:layout_height="wrap_content"
+                    android:textSize="12sp" android:textColor="@color/text_secondary"
+                    android:layout_marginTop="2dp"/>
+            </LinearLayout>
+        </LinearLayout>
+
+        <!-- Analiz metni -->
+        <LinearLayout
+            android:id="@+id/analiz_container"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:paddingStart="20dp" android:paddingEnd="20dp"
+            android:paddingTop="10dp" android:paddingBottom="10dp"
+            android:background="#F0F7F5"
+            android:layout_marginBottom="16dp">
+
+            <TextView android:id="@+id/tv_analiz_emoji"
+                android:layout_width="wrap_content" android:layout_height="wrap_content"
+                android:textSize="18sp" android:layout_marginEnd="10dp"/>
+
+            <TextView android:id="@+id/tv_analiz_metin"
+                android:layout_width="0dp" android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:textSize="13sp" android:textColor="@color/text_primary"
+                android:lineSpacingExtra="2dp"/>
+        </LinearLayout>
+
+        <!-- Takvim başlığı + ay nav -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:paddingStart="20dp" android:paddingEnd="20dp"
+            android:layout_marginBottom="8dp">
+
+            <TextView android:id="@+id/btn_prev_month"
+                android:layout_width="32dp" android:layout_height="32dp"
+                android:gravity="center" android:text="‹"
+                android:textSize="20sp" android:textColor="@color/green_primary"
+                android:clickable="true" android:focusable="true"/>
+
+            <TextView android:id="@+id/tv_cal_ay"
+                android:layout_width="0dp" android:layout_height="wrap_content"
+                android:layout_weight="1" android:gravity="center"
+                android:textSize="14sp" android:textStyle="bold"
+                android:textColor="@color/text_primary"/>
+
+            <TextView android:id="@+id/btn_next_month"
+                android:layout_width="32dp" android:layout_height="32dp"
+                android:gravity="center" android:text="›"
+                android:textSize="20sp" android:textColor="@color/green_primary"
+                android:clickable="true" android:focusable="true"/>
+        </LinearLayout>
+
+        <!-- Gün başlıkları -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:paddingStart="16dp" android:paddingEnd="16dp"
+            android:layout_marginBottom="4dp">
+
+            <TextView android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1"
+                android:gravity="center" android:text="Pt" android:textSize="12sp" android:textColor="@color/text_secondary"/>
+            <TextView android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1"
+                android:gravity="center" android:text="Sa" android:textSize="12sp" android:textColor="@color/text_secondary"/>
+            <TextView android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1"
+                android:gravity="center" android:text="Ça" android:textSize="12sp" android:textColor="@color/text_secondary"/>
+            <TextView android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1"
+                android:gravity="center" android:text="Pe" android:textSize="12sp" android:textColor="@color/text_secondary"/>
+            <TextView android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1"
+                android:gravity="center" android:text="Cu" android:textSize="12sp" android:textColor="@color/text_secondary"/>
+            <TextView android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1"
+                android:gravity="center" android:text="Ct" android:textSize="12sp" android:textColor="@color/text_secondary"/>
+            <TextView android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1"
+                android:gravity="center" android:text="Pz" android:textSize="12sp" android:textColor="@color/text_secondary"/>
+        </LinearLayout>
+
+        <!-- Takvim grid -->
+        <androidx.gridlayout.widget.GridLayout
+            android:id="@+id/grid_takvim"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:paddingStart="16dp" android:paddingEnd="16dp"
+            android:layout_marginBottom="16dp"
+            android:columnCount="7"
+            android:useDefaultMargins="false"/>
+
+        <!-- İşlemler başlığı -->
+        <TextView
+            android:layout_width="wrap_content" android:layout_height="wrap_content"
+            android:text="İşlemler"
+            android:textSize="15sp" android:textStyle="bold"
+            android:textColor="@color/text_primary"
+            android:paddingStart="20dp" android:layout_marginBottom="8dp"/>
+
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/rv_detay_islemler"
+            android:layout_width="match_parent" android:layout_height="wrap_content"
+            android:paddingStart="16dp" android:paddingEnd="16dp"
+            android:nestedScrollingEnabled="false"
+            android:paddingBottom="32dp"/>
+
+    </LinearLayout>
+</androidx.core.widget.NestedScrollView>

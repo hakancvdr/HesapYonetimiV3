@@ -1,0 +1,177 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:background="@drawable/bottom_sheet_bg"
+    android:paddingBottom="32dp">
+
+
+
+        <View android:layout_width="40dp" android:layout_height="4dp"
+            android:background="#DDDDDD" android:layout_gravity="center_horizontal"
+            android:layout_marginTop="12dp" android:layout_marginBottom="16dp"/>
+
+        <TextView
+            android:id="@+id/tv_sheet_baslik"
+            android:layout_width="wrap_content" android:layout_height="wrap_content"
+            android:text="Hatırlatıcı Ekle"
+            android:textSize="18sp" android:textStyle="bold"
+            android:textColor="@color/text_primary"
+            android:paddingStart="20dp" android:paddingEnd="20dp"
+            android:layout_marginBottom="16dp"/>
+
+        <!-- Kategori -->
+        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+            android:text="Kategori" android:textSize="12sp" android:textColor="@color/text_secondary"
+            android:paddingStart="20dp" android:layout_marginBottom="8dp"/>
+
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/rv_kategori_secim"
+            android:layout_width="match_parent" android:layout_height="wrap_content"
+            android:paddingStart="16dp" android:paddingEnd="16dp"
+            android:nestedScrollingEnabled="false"
+            android:layout_marginBottom="12dp"/>
+
+        <!-- Açıklama -->
+        <com.google.android.material.textfield.TextInputLayout
+            android:id="@+id/til_aciklama"
+            style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
+            android:layout_width="match_parent" android:layout_height="wrap_content"
+            android:layout_marginStart="20dp" android:layout_marginEnd="20dp"
+            android:layout_marginBottom="12dp"
+            android:hint="Açıklama (ör: Netflix, Kira)"
+            app:boxCornerRadiusTopStart="14dp" app:boxCornerRadiusTopEnd="14dp"
+            app:boxCornerRadiusBottomStart="14dp" app:boxCornerRadiusBottomEnd="14dp"
+            app:boxStrokeColor="@color/green_primary"
+            app:hintTextColor="@color/green_primary">
+            <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/et_aciklama"
+                android:layout_width="match_parent" android:layout_height="wrap_content"
+                android:textSize="14sp" android:inputType="textCapSentences"/>
+        </com.google.android.material.textfield.TextInputLayout>
+
+        <!-- Tutar -->
+        <com.google.android.material.textfield.TextInputLayout
+            android:id="@+id/til_tutar"
+            style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
+            android:layout_width="match_parent" android:layout_height="wrap_content"
+            android:layout_marginStart="20dp" android:layout_marginEnd="20dp"
+            android:layout_marginBottom="12dp"
+            android:hint="Tutar"
+            app:suffixText="₺"
+            app:boxCornerRadiusTopStart="14dp" app:boxCornerRadiusTopEnd="14dp"
+            app:boxCornerRadiusBottomStart="14dp" app:boxCornerRadiusBottomEnd="14dp"
+            app:boxStrokeColor="@color/green_primary"
+            app:hintTextColor="@color/green_primary">
+            <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/et_tutar"
+                android:layout_width="match_parent" android:layout_height="wrap_content"
+                android:textSize="14sp" android:inputType="numberDecimal"/>
+        </com.google.android.material.textfield.TextInputLayout>
+
+        <!-- Tarih -->
+        <com.google.android.material.textfield.TextInputLayout
+            android:id="@+id/til_tarih"
+            style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
+            android:layout_width="match_parent" android:layout_height="wrap_content"
+            android:layout_marginStart="20dp" android:layout_marginEnd="20dp"
+            android:layout_marginBottom="12dp"
+            android:hint="Vade tarihi"
+            app:endIconMode="custom"
+            app:endIconDrawable="@android:drawable/ic_menu_my_calendar"
+            app:boxCornerRadiusTopStart="14dp" app:boxCornerRadiusTopEnd="14dp"
+            app:boxCornerRadiusBottomStart="14dp" app:boxCornerRadiusBottomEnd="14dp"
+            app:boxStrokeColor="@color/green_primary"
+            app:hintTextColor="@color/green_primary">
+            <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/et_tarih"
+                android:layout_width="match_parent" android:layout_height="wrap_content"
+                android:textSize="14sp" android:focusable="false" android:clickable="true"/>
+        </com.google.android.material.textfield.TextInputLayout>
+
+        <!-- Tekrar -->
+        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+            android:text="Tekrar" android:textSize="12sp" android:textColor="@color/text_secondary"
+            android:paddingStart="20dp" android:layout_marginBottom="8dp"/>
+
+        <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:paddingStart="20dp" android:paddingEnd="20dp"
+            android:layout_marginBottom="12dp">
+
+            <TextView android:id="@+id/btn_tek_sefer"
+                android:layout_width="0dp" android:layout_height="32dp" android:layout_weight="1"
+                android:gravity="center" android:text="Tek"
+                android:textSize="12sp" android:textColor="@color/green_primary"
+                android:background="@drawable/kategori_item_selected_bg"
+                android:layout_marginEnd="4dp" android:clickable="true" android:focusable="true"/>
+            <TextView android:id="@+id/btn_aylik"
+                android:layout_width="0dp" android:layout_height="32dp" android:layout_weight="1"
+                android:gravity="center" android:text="Aylık"
+                android:textSize="12sp" android:textColor="@color/text_secondary"
+                android:background="@drawable/kategori_item_bg"
+                android:layout_marginEnd="4dp" android:clickable="true" android:focusable="true"/>
+            <TextView android:id="@+id/btn_yillik"
+                android:layout_width="0dp" android:layout_height="32dp" android:layout_weight="1"
+                android:gravity="center" android:text="Yıllık"
+                android:textSize="12sp" android:textColor="@color/text_secondary"
+                android:background="@drawable/kategori_item_bg"
+                android:clickable="true" android:focusable="true"/>
+        </LinearLayout>
+
+        <!-- Dönem sayısı (tekrarlayan seçilince görünür) -->
+        <LinearLayout android:id="@+id/donem_container"
+            android:layout_width="match_parent" android:layout_height="wrap_content"
+            android:orientation="vertical" android:visibility="gone">
+
+            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                android:text="Kaç dönem eklensin?" android:textSize="12sp"
+                android:textColor="@color/text_secondary"
+                android:paddingStart="20dp" android:layout_marginBottom="8dp"/>
+
+            <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:paddingStart="20dp" android:paddingEnd="20dp"
+                android:layout_marginBottom="12dp">
+
+                <TextView android:id="@+id/btn_donem_1"
+                    android:layout_width="0dp" android:layout_height="32dp" android:layout_weight="1"
+                    android:gravity="center" android:text="1"
+                    android:textSize="12sp" android:textColor="@color/green_primary"
+                    android:background="@drawable/kategori_item_selected_bg"
+                    android:layout_marginEnd="4dp" android:clickable="true" android:focusable="true"/>
+                <TextView android:id="@+id/btn_donem_3"
+                    android:layout_width="0dp" android:layout_height="32dp" android:layout_weight="1"
+                    android:gravity="center" android:text="3"
+                    android:textSize="12sp" android:textColor="@color/text_secondary"
+                    android:background="@drawable/kategori_item_bg"
+                    android:layout_marginEnd="4dp" android:clickable="true" android:focusable="true"/>
+                <TextView android:id="@+id/btn_donem_6"
+                    android:layout_width="0dp" android:layout_height="32dp" android:layout_weight="1"
+                    android:gravity="center" android:text="6"
+                    android:textSize="12sp" android:textColor="@color/text_secondary"
+                    android:background="@drawable/kategori_item_bg"
+                    android:layout_marginEnd="4dp" android:clickable="true" android:focusable="true"/>
+                <TextView android:id="@+id/btn_donem_12"
+                    android:layout_width="0dp" android:layout_height="32dp" android:layout_weight="1"
+                    android:gravity="center" android:text="12"
+                    android:textSize="12sp" android:textColor="@color/text_secondary"
+                    android:background="@drawable/kategori_item_bg"
+                    android:clickable="true" android:focusable="true"/>
+            </LinearLayout>
+        </LinearLayout>
+
+        <!-- Ekle -->
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btn_kaydet"
+            style="@style/Widget.Material3.Button"
+            android:layout_width="match_parent" android:layout_height="52dp"
+            android:layout_marginStart="20dp" android:layout_marginEnd="20dp"
+            android:text="Ekle"
+            android:textSize="15sp"
+            app:backgroundTint="@color/green_primary"
+            app:cornerRadius="14dp"/>
+</LinearLayout>
