@@ -7,27 +7,17 @@ import androidx.room.PrimaryKey
 data class ReminderEntity(
     @PrimaryKey(autoGenerate = true)
     val id: Long = 0,
-    
     val title: String,
-    
     val amount: Double,
-    
-    val dueDate: Long, // Timestamp (hatırlatıcı tarihi)
-    
+    val dueDate: Long,
+    val categoryId: Long = 0,
     val isPaid: Boolean = false,
-    
-    val isRecurring: Boolean = false, // Tekrarlayan mı?
-    
-    val recurringType: RecurringType? = null, // MONTHLY, WEEKLY, YEARLY
-    
+    val isRecurring: Boolean = false,
+    val recurringType: RecurringType? = null,
     val createdAt: Long = System.currentTimeMillis(),
-    
     val updatedAt: Long = System.currentTimeMillis()
 )
 
 enum class RecurringType {
-    DAILY,
-    WEEKLY,
-    MONTHLY,
-    YEARLY
+    DAILY, WEEKLY, MONTHLY, YEARLY
 }

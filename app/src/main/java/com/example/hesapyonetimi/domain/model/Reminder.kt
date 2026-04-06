@@ -4,9 +4,12 @@ import com.example.hesapyonetimi.data.local.entity.RecurringType
 
 data class Reminder(
     val id: Long = 0,
-    val title: String,
+    val title: String,           // açıklama (Netflix, Kira...)
     val amount: Double,
     val dueDate: Long,
+    val categoryId: Long = 0,
+    val categoryName: String = "",
+    val categoryIcon: String = "",
     val isPaid: Boolean = false,
     val isRecurring: Boolean = false,
     val recurringType: RecurringType? = null,

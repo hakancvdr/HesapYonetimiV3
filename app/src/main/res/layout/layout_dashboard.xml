@@ -1,396 +1,474 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.core.widget.NestedScrollView
+<!--
+  Yapı:
+  ┌─────────────────────────────┐  ← sticky_header (scroll etmez)
+  │  greeting + profil ikonu    │    yeşil, status bar aware
+  ├─────────────────────────────┤
+  │  NestedScrollView           │  ← scroll eden kısım
+  │   ├ bakiye + Gider/FAB/Gelir│    yeşil devamı
+  │   ├ takvim                  │
+  │   ├ son işlemler            │
+  │   ├ öneri kartları          │
+  │   └ yaklaşan ödemeler       │
+  └─────────────────────────────┘
+-->
+<LinearLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@color/background"
-    android:fillViewport="true">
+    android:orientation="vertical"
+    android:background="@color/background">
 
-    <LinearLayout
+    <!-- ══════════════════════════════════════════ -->
+    <!-- STICKY HEADER — scroll etmez              -->
+    <!-- ══════════════════════════════════════════ -->
+    <androidx.constraintlayout.widget.ConstraintLayout
+        android:id="@+id/header_container"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="vertical">
+        android:background="@color/green_primary"
+        android:paddingStart="20dp"
+        android:paddingEnd="20dp"
+        android:paddingTop="52dp"
+        android:paddingBottom="16dp">
 
-        <!-- GREEN HEADER -->
-        <androidx.constraintlayout.widget.ConstraintLayout
-            android:id="@+id/header_container"
-            android:layout_width="match_parent"
+        <TextView
+            android:id="@+id/tv_greeting"
+            android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:background="@color/green_primary"
-            android:paddingStart="20dp"
-            android:paddingEnd="20dp"
-            android:paddingTop="52dp"
-            android:paddingBottom="24dp">
+            android:text="@string/greeting_morning"
+            android:textColor="#CCFFFFFF"
+            android:textSize="13sp"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintEnd_toStartOf="@id/iv_profile"
+            app:layout_constraintTop_toTopOf="parent" />
 
-            <TextView
-                android:id="@+id/tv_greeting"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="@string/greeting_morning"
-                android:textColor="@color/text_white"
-                android:textSize="14sp"
-                android:alpha="0.8"
-                app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toTopOf="parent" />
+        <TextView
+            android:id="@+id/tv_dashboard_username"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:text="Hakan 👋"
+            android:textColor="#FFFFFF"
+            android:textSize="20sp"
+            android:textStyle="bold"
+            android:layout_marginTop="2dp"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintEnd_toStartOf="@id/iv_profile"
+            app:layout_constraintTop_toBottomOf="@id/tv_greeting" />
 
-            <TextView
-                android:id="@+id/tv_dashboard_username"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="Hakan 👋"
-                android:textColor="@color/text_white"
-                android:textSize="24sp"
-                android:textStyle="bold"
-                android:layout_marginTop="4dp"
-                app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toBottomOf="@id/tv_greeting" />
+        <ImageView
+            android:id="@+id/iv_profile"
+            android:layout_width="44dp"
+            android:layout_height="44dp"
+            android:src="@android:drawable/ic_menu_myplaces"
+            android:padding="10dp"
+            android:background="@drawable/shape_circle_blue"
+            android:backgroundTint="#40FFFFFF"
+            app:tint="#FFFFFF"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintTop_toTopOf="parent"
+            android:contentDescription="Profil" />
 
-            <ImageView
-                android:id="@+id/iv_profile"
-                android:layout_width="48dp"
-                android:layout_height="48dp"
-                android:src="@android:drawable/ic_menu_myplaces"
-                android:padding="10dp"
-                android:background="@drawable/shape_circle_blue"
-                android:backgroundTint="#40FFFFFF"
-                app:tint="@color/text_white"
-                app:layout_constraintEnd_toEndOf="parent"
-                app:layout_constraintTop_toTopOf="parent"
-                android:contentDescription="Profil" />
+    </androidx.constraintlayout.widget.ConstraintLayout>
 
-            <TextView
-                android:id="@+id/tv_net_balance_label"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="@string/net_balance"
-                android:textColor="@color/text_white"
-                android:textSize="14sp"
-                android:alpha="0.7"
-                android:layout_marginTop="20dp"
-                app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toBottomOf="@id/tv_dashboard_username" />
+    <!-- ══════════════════════════════════════════ -->
+    <!-- SCROLL ALANI                              -->
+    <!-- ══════════════════════════════════════════ -->
+    <androidx.swiperefreshlayout.widget.SwipeRefreshLayout
+        android:id="@+id/swipe_refresh"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1">
 
-            <TextView
-                android:id="@+id/tv_main_balance"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="0 ₺"
-                android:textColor="@color/text_white"
-                android:textSize="40sp"
-                android:textStyle="bold"
-                android:layout_marginTop="4dp"
-                app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toBottomOf="@id/tv_net_balance_label" />
+    <androidx.core.widget.NestedScrollView
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:fillViewport="true">
 
-
-            <!-- Gider | + | Gelir row — header içinde alt kısım -->
-            <LinearLayout
-                android:id="@+id/row_cards"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:orientation="horizontal"
-                android:gravity="center"
-                android:layout_marginTop="24dp"
-                app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintEnd_toEndOf="parent"
-                app:layout_constraintTop_toBottomOf="@id/tv_main_balance">
-
-                <!-- Gider butonu -->
-                <LinearLayout
-                    android:id="@+id/card_expense"
-                    android:layout_width="0dp"
-                    android:layout_height="72dp"
-                    android:layout_weight="1"
-                    android:orientation="vertical"
-                    android:gravity="center"
-                    android:background="@drawable/btn_header_card"
-                    android:layout_marginEnd="12dp"
-                    android:clickable="true"
-                    android:focusable="true">
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="@string/expense"
-                        android:textSize="12sp"
-                        android:textColor="#CCFFFFFF" />
-
-                    <TextView
-                        android:id="@+id/tv_dashboard_expense_val"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="0 ₺"
-                        android:textSize="16sp"
-                        android:textStyle="bold"
-                        android:textColor="#FFFFFF"
-                        android:layout_marginTop="4dp"
-                        android:maxLines="1"
-                        android:ellipsize="end" />
-                </LinearLayout>
-
-                <!-- FAB ortada -->
-                <com.google.android.material.floatingactionbutton.FloatingActionButton
-                    android:id="@+id/fabAddTransaction"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:src="@drawable/ic_add_modern"
-                    app:tint="@color/green_primary"
-                    app:backgroundTint="#FFFFFF"
-                    app:fabSize="mini"
-                    app:elevation="4dp"
-                    app:borderWidth="0dp"
-                    android:contentDescription="@string/add_transaction" />
-
-                <!-- Gelir butonu -->
-                <LinearLayout
-                    android:id="@+id/card_income"
-                    android:layout_width="0dp"
-                    android:layout_height="72dp"
-                    android:layout_weight="1"
-                    android:orientation="vertical"
-                    android:gravity="center"
-                    android:background="@drawable/btn_header_card"
-                    android:layout_marginStart="12dp"
-                    android:clickable="true"
-                    android:focusable="true">
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="@string/income"
-                        android:textSize="12sp"
-                        android:textColor="#CCFFFFFF" />
-
-                    <TextView
-                        android:id="@+id/tv_dashboard_income_val"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="0 ₺"
-                        android:textSize="16sp"
-                        android:textStyle="bold"
-                        android:textColor="#FFFFFF"
-                        android:layout_marginTop="4dp"
-                        android:maxLines="1"
-                        android:ellipsize="end" />
-                </LinearLayout>
-
-            </LinearLayout>
-
-        </androidx.constraintlayout.widget.ConstraintLayout>
-
-        <!-- GELIR / FAB / GIDER — header içinde, ortalı -->
-
-        <!-- İÇERİK -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:orientation="vertical"
-            android:paddingStart="16dp"
-            android:paddingEnd="16dp"
-            android:paddingTop="20dp">
+            android:orientation="vertical">
 
-            <!-- Takvim -->
-            <TextView
-                android:id="@+id/tv_month_title"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="@string/this_month"
-                android:textSize="16sp"
-                android:textStyle="bold"
-                android:textColor="@color/text_primary"
-                android:layout_marginBottom="12dp" />
-
-            <androidx.recyclerview.widget.RecyclerView
-                android:id="@+id/rv_dashboard_calendar"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="horizontal"
-                android:clipToPadding="false" />
-
-            <!-- Son işlemler -->
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="@string/recent_transactions"
-                android:textSize="16sp"
-                android:textStyle="bold"
-                android:textColor="@color/text_primary"
-                android:layout_marginTop="24dp"
-                android:layout_marginBottom="12dp" />
-
-            <!-- Empty state — daha davetkar -->
+            <!-- Yeşil devam: bakiye + butonlar -->
             <LinearLayout
-                android:id="@+id/tv_empty_state"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="vertical"
-                android:gravity="center"
-                android:padding="24dp"
-                android:visibility="gone">
+                android:background="@color/green_primary"
+                android:paddingStart="20dp"
+                android:paddingEnd="20dp"
+                android:paddingBottom="24dp">
 
                 <TextView
+                    android:id="@+id/tv_net_balance_label"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="📭"
-                    android:textSize="36sp" />
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="Bugün henüz işlem yok"
-                    android:textSize="15sp"
-                    android:textStyle="bold"
-                    android:textColor="@color/text_primary"
-                    android:layout_marginTop="8dp" />
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="Gelir veya gider eklemek için + butonuna bas"
+                    android:text="@string/net_balance"
+                    android:textColor="#AAFFFFFF"
                     android:textSize="13sp"
-                    android:textColor="@color/text_secondary"
-                    android:gravity="center"
-                    android:layout_marginTop="4dp" />
+                    android:layout_marginTop="12dp" />
+
+                <TextView
+                    android:id="@+id/tv_main_balance"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="0 ₺"
+                    android:textColor="#FFFFFF"
+                    android:textSize="38sp"
+                    android:textStyle="bold"
+                    android:layout_marginTop="2dp"
+                    android:layout_marginBottom="20dp" />
+
+                <!-- Gider | FAB | Gelir -->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical">
+
+                    <LinearLayout
+                        android:id="@+id/card_expense"
+                        android:layout_width="0dp"
+                        android:layout_height="68dp"
+                        android:layout_weight="1"
+                        android:orientation="vertical"
+                        android:gravity="center"
+                        android:background="@drawable/btn_header_card"
+                        android:layout_marginEnd="10dp"
+                        android:clickable="true"
+                        android:focusable="true">
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="@string/expense"
+                            android:textSize="13sp"
+                            android:textColor="#CCFFFFFF" />
+
+                        <TextView
+                            android:id="@+id/tv_dashboard_expense_val"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="0 ₺"
+                            android:textSize="15sp"
+                            android:textStyle="bold"
+                            android:textColor="#FFFFFF"
+                            android:layout_marginTop="4dp"
+                            android:maxLines="1"
+                            android:ellipsize="end" />
+                    </LinearLayout>
+
+                    <com.google.android.material.floatingactionbutton.FloatingActionButton
+                        android:id="@+id/fabAddTransaction"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:src="@drawable/ic_add_modern"
+                        app:tint="@color/green_primary"
+                        app:backgroundTint="#FFFFFF"
+                        app:fabSize="mini"
+                        app:elevation="4dp"
+                        app:borderWidth="0dp"
+                        android:contentDescription="@string/add_transaction" />
+
+                    <LinearLayout
+                        android:id="@+id/card_income"
+                        android:layout_width="0dp"
+                        android:layout_height="68dp"
+                        android:layout_weight="1"
+                        android:orientation="vertical"
+                        android:gravity="center"
+                        android:background="@drawable/btn_header_card"
+                        android:layout_marginStart="10dp"
+                        android:clickable="true"
+                        android:focusable="true">
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="@string/income"
+                            android:textSize="13sp"
+                            android:textColor="#CCFFFFFF" />
+
+                        <TextView
+                            android:id="@+id/tv_dashboard_income_val"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="0 ₺"
+                            android:textSize="15sp"
+                            android:textStyle="bold"
+                            android:textColor="#FFFFFF"
+                            android:layout_marginTop="4dp"
+                            android:maxLines="1"
+                            android:ellipsize="end" />
+                    </LinearLayout>
+
+                </LinearLayout>
             </LinearLayout>
 
-            <androidx.recyclerview.widget.RecyclerView
-                android:id="@+id/rv_recent_transactions"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:nestedScrollingEnabled="false" />
-
-            <!-- INFO KARTLARI — eşit yükseklik için android:layout_height="match_parent" her iki kartta -->
+            <!-- İçerik -->
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:orientation="horizontal"
-                android:layout_marginTop="16dp"
-                android:layout_marginBottom="8dp"
-                android:baselineAligned="false">
+                android:orientation="vertical"
+                android:paddingStart="16dp"
+                android:paddingEnd="16dp"
+                android:paddingTop="20dp">
 
+                <!-- Takvim + İşlemler — birleşik kart -->
                 <androidx.cardview.widget.CardView
-                app:cardBackgroundColor="#FFFFFF"
-                    android:layout_width="0dp"
-                    android:layout_height="match_parent"
-                    android:layout_weight="1"
-                    android:layout_marginEnd="6dp"
-                    app:cardCornerRadius="14dp"
+                    app:cardBackgroundColor="#FFFFFF"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    app:cardCornerRadius="16dp"
                     app:cardElevation="0dp">
 
                     <LinearLayout
                         android:layout_width="match_parent"
-                        android:layout_height="match_parent"
+                        android:layout_height="wrap_content"
                         android:orientation="vertical"
-                        android:padding="14dp">
+                        android:padding="16dp">
 
-                        <LinearLayout
+                        <!-- Ay başlığı -->
+                        <TextView
+                            android:id="@+id/tv_month_title"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Bu ay"
+                            android:textSize="15sp"
+                            android:textStyle="bold"
+                            android:textColor="@color/text_primary"
+                            android:layout_marginBottom="12dp" />
+
+                        <!-- Takvim -->
+                        <androidx.recyclerview.widget.RecyclerView
+                            android:id="@+id/rv_dashboard_calendar"
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
                             android:orientation="horizontal"
-                            android:gravity="center_vertical"
-                            android:layout_marginBottom="8dp">
+                            android:clipToPadding="false" />
 
-                            <TextView
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:text="💡"
-                                android:textSize="16sp"
-                                android:layout_marginEnd="6dp" />
+                        <!-- Ayraç -->
+                        <View
+                            android:layout_width="match_parent"
+                            android:layout_height="1dp"
+                            android:background="#F0F0F0"
+                            android:layout_marginTop="12dp"
+                            android:layout_marginBottom="4dp" />
 
-                            <TextView
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:text="Öneri"
-                                android:textSize="12sp"
-                                android:textStyle="bold"
-                                android:textColor="@color/text_primary" />
-                        </LinearLayout>
-
-                        <TextView
-                            android:id="@+id/tv_suggestion"
+                        <!-- Empty state -->
+                        <LinearLayout
+                            android:id="@+id/tv_empty_state"
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
-                            android:text="Bu ay market harcamalarınız geçen aya göre artış gösterdi"
-                            android:textSize="11sp"
-                            android:lineSpacingExtra="2dp"
-                            android:textColor="@color/text_secondary"
-                            android:maxLines="4"
-                            android:ellipsize="end" />
+                            android:orientation="vertical"
+                            android:gravity="center"
+                            android:paddingTop="16dp"
+                            android:paddingBottom="8dp"
+                            android:visibility="gone">
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="📭"
+                                android:textSize="28sp" />
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="Henüz işlem yok"
+                                android:textSize="13sp"
+                                android:textStyle="bold"
+                                android:textColor="@color/text_primary"
+                                android:layout_marginTop="6dp" />
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="+ butonuna basarak ekleyebilirsin"
+                                android:textSize="13sp"
+                                android:textColor="@color/text_secondary"
+                                android:gravity="center"
+                                android:layout_marginTop="2dp" />
+                        </LinearLayout>
+
+                        <!-- İşlem listesi -->
+                        <androidx.recyclerview.widget.RecyclerView
+                            android:id="@+id/rv_recent_transactions"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:nestedScrollingEnabled="false" />
+
                     </LinearLayout>
                 </androidx.cardview.widget.CardView>
 
-                <androidx.cardview.widget.CardView
-                app:cardBackgroundColor="#FFFFFF"
-                    android:layout_width="0dp"
-                    android:layout_height="match_parent"
-                    android:layout_weight="1"
-                    android:layout_marginStart="6dp"
-                    app:cardCornerRadius="14dp"
-                    app:cardElevation="0dp">
+                <!-- Öneri + En çok harcama -->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:layout_marginTop="16dp"
+                    android:layout_marginBottom="8dp"
+                    android:baselineAligned="false">
 
-                    <LinearLayout
-                        android:layout_width="match_parent"
+                    <androidx.cardview.widget.CardView
+                        app:cardBackgroundColor="#FFFFFF"
+                        android:layout_width="0dp"
                         android:layout_height="match_parent"
-                        android:orientation="vertical"
-                        android:padding="14dp">
+                        android:layout_weight="1"
+                        android:layout_marginEnd="6dp"
+                        app:cardCornerRadius="14dp"
+                        app:cardElevation="0dp">
 
                         <LinearLayout
                             android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:orientation="horizontal"
-                            android:gravity="center_vertical"
-                            android:layout_marginBottom="8dp">
+                            android:layout_height="match_parent"
+                            android:orientation="vertical"
+                            android:padding="14dp">
+
+                            <LinearLayout
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:orientation="horizontal"
+                                android:gravity="center_vertical"
+                                android:layout_marginBottom="8dp">
+
+                                <TextView
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:text="💡"
+                                    android:textSize="16sp"
+                                    android:layout_marginEnd="6dp" />
+
+                                <TextView
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:text="Öneri"
+                                    android:textSize="13sp"
+                                    android:textStyle="bold"
+                                    android:textColor="@color/text_primary" />
+                            </LinearLayout>
 
                             <TextView
-                                android:layout_width="wrap_content"
+                                android:id="@+id/tv_suggestion"
+                                android:layout_width="match_parent"
                                 android:layout_height="wrap_content"
-                                android:text="🏠"
-                                android:textSize="16sp"
-                                android:layout_marginEnd="6dp" />
-
-                            <TextView
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:text="En çok harcama"
-                                android:textSize="12sp"
-                                android:textStyle="bold"
-                                android:textColor="@color/text_primary" />
+                                android:text="—"
+                                android:textSize="13sp"
+                                android:lineSpacingExtra="2dp"
+                                android:textColor="@color/text_secondary"
+                                android:maxLines="4"
+                                android:ellipsize="end" />
                         </LinearLayout>
+                    </androidx.cardview.widget.CardView>
 
-                        <TextView
-                            android:id="@+id/tv_highest_category"
+                    <androidx.cardview.widget.CardView
+                        app:cardBackgroundColor="#FFFFFF"
+                        android:layout_width="0dp"
+                        android:layout_height="match_parent"
+                        android:layout_weight="1"
+                        android:layout_marginStart="6dp"
+                        app:cardCornerRadius="14dp"
+                        app:cardElevation="0dp">
+
+                        <LinearLayout
                             android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:text="—"
-                            android:textSize="13sp"
-                            android:textColor="@color/expense_red"
-                            android:textStyle="bold" />
-                    </LinearLayout>
-                </androidx.cardview.widget.CardView>
+                            android:layout_height="match_parent"
+                            android:orientation="vertical"
+                            android:padding="14dp">
+
+                            <LinearLayout
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:orientation="horizontal"
+                                android:gravity="center_vertical"
+                                android:layout_marginBottom="8dp">
+
+                                <TextView
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:text="🏠"
+                                    android:textSize="16sp"
+                                    android:layout_marginEnd="6dp" />
+
+                                <TextView
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:text="En çok harcama"
+                                    android:textSize="13sp"
+                                    android:textStyle="bold"
+                                    android:textColor="@color/text_primary" />
+                            </LinearLayout>
+
+                            <TextView
+                                android:id="@+id/tv_highest_category"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:text="—"
+                                android:textSize="13sp"
+                                android:textColor="@color/expense_red"
+                                android:textStyle="bold" />
+                        </LinearLayout>
+                    </androidx.cardview.widget.CardView>
+
+                </LinearLayout>
+
+                <!-- Yaklaşan ödemeler -->
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="@string/upcoming_payments"
+                    android:textSize="16sp"
+                    android:textStyle="bold"
+                    android:textColor="@color/text_primary"
+                    android:layout_marginTop="24dp"
+                    android:layout_marginBottom="12dp" />
+
+                <androidx.recyclerview.widget.RecyclerView
+                    android:id="@+id/rv_dashboard_reminders"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:nestedScrollingEnabled="false" />
+
+                <!-- Yaklaşan ödeme yok — placeholder -->
+                <LinearLayout
+                    android:id="@+id/empty_reminders"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:gravity="center"
+                    android:paddingTop="8dp"
+                    android:paddingBottom="8dp"
+                    android:visibility="gone">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Yaklaşan ödemeniz yok"
+                        android:textSize="13sp"
+                        android:textColor="@color/text_secondary"
+                        android:layout_marginBottom="12dp" />
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btn_add_reminder"
+                        style="@style/Widget.Material3.Button.OutlinedButton"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Ödeme ekle"
+                        app:strokeColor="@color/green_primary"
+                        android:textColor="@color/green_primary"
+                        app:cornerRadius="12dp" />
+                </LinearLayout>
+
+                <View
+                    android:layout_width="match_parent"
+                    android:layout_height="80dp" />
 
             </LinearLayout>
-
-            <!-- Yaklaşan ödemeler -->
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="@string/upcoming_payments"
-                android:textSize="16sp"
-                android:textStyle="bold"
-                android:textColor="@color/text_primary"
-                android:layout_marginTop="24dp"
-                android:layout_marginBottom="12dp" />
-
-            <androidx.recyclerview.widget.RecyclerView
-                android:id="@+id/rv_dashboard_reminders"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:nestedScrollingEnabled="false"
-                android:layout_marginBottom="80dp" />
-
         </LinearLayout>
+    </androidx.core.widget.NestedScrollView>
 
-    </LinearLayout>
+    </androidx.swiperefreshlayout.widget.SwipeRefreshLayout>
 
-</androidx.core.widget.NestedScrollView>
+</LinearLayout>

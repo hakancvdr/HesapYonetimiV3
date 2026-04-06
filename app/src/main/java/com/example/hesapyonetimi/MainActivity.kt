@@ -79,10 +79,48 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    private fun goster(hedef: Fragment) {
-        if (hedef == activeFragment) return
+    fun gosterYaklasan() {
+        goster(yaklasanFragment)
+        findViewById<com.google.android.material.bottomnavigation.BottomNavigationView>(R.id.bottom_navigation)
+            .selectedItemId = R.id.nav_yaklasan
+    }
+
+    fun showKategoriDetay(detay: Fragment) {
         supportFragmentManager.beginTransaction()
-            .setCustomAnimations(android.R.anim.fade_in, android.R.anim.fade_out)
+            .hide(activeFragment)
+            .add(R.id.fragment_container, detay, "detay")
+            .addToBackStack("detay")
+            .commit()
+    }
+
+    @Deprecated("Deprecated in Java")
+    override fun onBackPressed() {
+        if (supportFragmentManager.backStackEntryCount > 0) {
+            supportFragmentManager.popBackStack()
+            // popBackStack async, listener ile show yapalım
+            supportFragmentManager.addOnBackStackChangedListener(object : androidx.fragment.app.FragmentManager.OnBackStackChangedListener {
+                override fun onBackStackChanged() {
+                    if (supportFragmentManager.backStackEntryCount == 0) {
+                        supportFragmentManager.beginTransaction().show(activeFragment).commit()
+                        supportFragmentManager.removeOnBackStackChangedListener(this)
+                    }
+                }
+            })
+        } else {
+            super.onBackPressed()
+        }
+    }
+
+    private fun goster(hedef: Fragment) {
+        // Detay fragment varsa temizle
+        if (supportFragmentManager.backStackEntryCount > 0) {
+            supportFragmentManager.popBackStack(null, androidx.fragment.app.FragmentManager.POP_BACK_STACK_INCLUSIVE)
+        }
+        if (hedef == activeFragment) {
+            supportFragmentManager.beginTransaction().show(hedef).commit()
+            return
+        }
+        supportFragmentManager.beginTransaction()
             .hide(activeFragment)
             .show(hedef)
             .commit()

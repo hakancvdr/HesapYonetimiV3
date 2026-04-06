@@ -10,7 +10,7 @@ import com.example.hesapyonetimi.databinding.ItemCalendarDayBinding
 import com.example.hesapyonetimi.model.CalendarModel
 
 class CalendarAdapter(
-    private val days: List<CalendarModel>,
+    private var days: List<CalendarModel>,
     private var selectedPosition: Int = -1,
     private val onItemClick: (Int) -> Unit
 ) : RecyclerView.Adapter<CalendarAdapter.CalendarViewHolder>() {
@@ -80,6 +80,13 @@ class CalendarAdapter(
             notifyItemChanged(selectedPosition)
             onItemClick(position)
         }
+    }
+    fun updateDaysAndSelection(newDays: List<CalendarModel>, newPosition: Int) {
+        days = newDays
+        val old = selectedPosition
+        selectedPosition = newPosition
+        if (old >= 0) notifyItemChanged(old)
+        notifyItemChanged(newPosition)
     }
 
     override fun getItemCount(): Int = days.size

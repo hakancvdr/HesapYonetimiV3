@@ -87,6 +87,17 @@ class TransactionViewModel @Inject constructor(
         }
     }
     
+    fun updateTransaction(transaction: Transaction) {
+        viewModelScope.launch {
+            try {
+                transactionRepository.updateTransaction(transaction)
+                _uiState.value = _uiState.value.copy(successMessage = "İşlem güncellendi!")
+            } catch (e: Exception) {
+                _uiState.value = _uiState.value.copy(error = e.message ?: "Güncelleme hatası")
+            }
+        }
+    }
+
     fun deleteTransaction(transaction: Transaction) {
         viewModelScope.launch {
             try {

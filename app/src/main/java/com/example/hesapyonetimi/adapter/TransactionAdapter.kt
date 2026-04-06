@@ -5,10 +5,13 @@ import android.view.LayoutInflater
 import android.view.ViewGroup
 import androidx.recyclerview.widget.RecyclerView
 import com.example.hesapyonetimi.databinding.ItemIslemBinding
+import com.example.hesapyonetimi.domain.model.Transaction
 import com.example.hesapyonetimi.model.TransactionModel
 
-class TransactionAdapter(private val transactionList: List<TransactionModel>) :
-    RecyclerView.Adapter<TransactionAdapter.TransactionViewHolder>() {
+class TransactionAdapter(
+    private val transactionList: List<TransactionModel>,
+    private val onItemClick: ((Transaction) -> Unit)? = null
+) : RecyclerView.Adapter<TransactionAdapter.TransactionViewHolder>() {
 
     class TransactionViewHolder(val binding: ItemIslemBinding) :
         RecyclerView.ViewHolder(binding.root)
@@ -21,36 +24,34 @@ class TransactionAdapter(private val transactionList: List<TransactionModel>) :
     override fun onBindViewHolder(holder: TransactionViewHolder, position: Int) {
         val islem = transactionList[position]
 
-        // View Binding uses camelCase for IDs (e.g., tv_islem_aciklama -> tvIslemAciklama)
         holder.binding.tvIslemAciklama.text = islem.title
-        holder.binding.tvIslemKategori.text = islem.category
+        holder.binding.tvIslemKategori.text = if (islem.time.isNotEmpty())
+            "${islem.category} · ${islem.time}"
+        else
+            islem.category
 
-        // --- RENK VE TUTAR AYARI ---
-        // islem.amount zaten formatlanmış geliyor ("+5.000 ₺" veya "-1.200 ₺")
         holder.binding.tvIslemTutar.text = islem.amount
-        
-        if (islem.isIncome) {
-            holder.binding.tvIslemTutar.setTextColor(Color.parseColor("#388E3C")) // Yeşil
-        } else {
-            holder.binding.tvIslemTutar.setTextColor(Color.parseColor("#D32F2F")) // Kırmızı
-        }
+        holder.binding.tvIslemTutar.setTextColor(
+            if (islem.isIncome) Color.parseColor("#388E3C") else Color.parseColor("#D32F2F")
+        )
 
-        // --- İKON SEÇİMİ (Kategoriye Göre) ---
-        // Android sistem ikonlarını kullanıyoruz
         val ikonResId = when (islem.category) {
-            "Market" -> android.R.drawable.ic_menu_add
-            "Kira" -> android.R.drawable.ic_menu_directions
-            "Fatura" -> android.R.drawable.ic_menu_agenda
-            "Maaş" -> android.R.drawable.ic_menu_save
-            "Eğlence" -> android.R.drawable.ic_menu_slideshow
-            else -> android.R.drawable.ic_menu_help // Varsayılan ikon
+            "Market"   -> android.R.drawable.ic_menu_add
+            "Kira"     -> android.R.drawable.ic_menu_directions
+            "Faturalar"-> android.R.drawable.ic_menu_agenda
+            "Maaş"     -> android.R.drawable.ic_menu_save
+            "Eğlence"  -> android.R.drawable.ic_menu_slideshow
+            else       -> android.R.drawable.ic_menu_help
         }
         holder.binding.ivIslemIkon.setImageResource(ikonResId)
-
-        // İkonun rengini de harcama tipine göre ayarlıyoruz
         holder.binding.ivIslemIkon.setColorFilter(
             if (islem.isIncome) Color.parseColor("#388E3C") else Color.parseColor("#D32F2F")
         )
+
+        // Tıklama — edit sheet aç
+        if (onItemClick != null && islem.transaction != null) {
+            holder.itemView.setOnClickListener { onItemClick.invoke(islem.transaction) }
+        }
     }
 
     override fun getItemCount(): Int = transactionList.size

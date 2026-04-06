@@ -19,7 +19,7 @@
             android:layout_height="wrap_content"
             android:text="Pzt"
             android:textColor="@color/text_secondary"
-            android:textSize="10sp"
+            android:textSize="12sp"
             android:layout_marginBottom="4dp" />
 
         <!-- Number Container with Background/Border -->

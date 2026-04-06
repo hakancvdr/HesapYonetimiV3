@@ -20,21 +20,21 @@ import kotlinx.coroutines.launch
         BudgetEntity::class,
         ReminderEntity::class
     ],
-    version = 1,
+    version = 3,
     exportSchema = false
 )
 @TypeConverters(Converters::class)
 abstract class AppDatabase : RoomDatabase() {
-    
+
     abstract fun transactionDao(): TransactionDao
     abstract fun categoryDao(): CategoryDao
     abstract fun budgetDao(): BudgetDao
     abstract fun reminderDao(): ReminderDao
-    
+
     companion object {
         @Volatile
         private var INSTANCE: AppDatabase? = null
-        
+
         fun getDatabase(context: Context): AppDatabase {
             return INSTANCE ?: synchronized(this) {
                 val instance = Room.databaseBuilder(
@@ -42,6 +42,7 @@ abstract class AppDatabase : RoomDatabase() {
                     AppDatabase::class.java,
                     "hesap_yonetimi_database"
                 )
+                    .fallbackToDestructiveMigration()
                     .addCallback(DatabaseCallback())
                     .build()
                 INSTANCE = instance
@@ -49,18 +50,17 @@ abstract class AppDatabase : RoomDatabase() {
             }
         }
     }
-    
+
     private class DatabaseCallback : RoomDatabase.Callback() {
         override fun onCreate(db: SupportSQLiteDatabase) {
             super.onCreate(db)
-            // Varsayılan kategorileri ekle
             INSTANCE?.let { database ->
                 CoroutineScope(Dispatchers.IO).launch {
                     populateDefaultCategories(database.categoryDao())
                 }
             }
         }
-        
+
         private suspend fun populateDefaultCategories(categoryDao: CategoryDao) {
             val defaultExpenseCategories = listOf(
                 CategoryEntity(name = "Market", icon = "🛒", color = "#4CAF50", isIncome = false, isDefault = true),
@@ -72,7 +72,7 @@ abstract class AppDatabase : RoomDatabase() {
                 CategoryEntity(name = "Giyim", icon = "👕", color = "#E91E63", isIncome = false, isDefault = true),
                 CategoryEntity(name = "Diğer", icon = "📦", color = "#607D8B", isIncome = false, isDefault = true)
             )
-            
+
             val defaultIncomeCategories = listOf(
                 CategoryEntity(name = "Maaş", icon = "💰", color = "#4CAF50", isIncome = true, isDefault = true),
                 CategoryEntity(name = "Freelance", icon = "💻", color = "#00BCD4", isIncome = true, isDefault = true),
@@ -80,7 +80,7 @@ abstract class AppDatabase : RoomDatabase() {
                 CategoryEntity(name = "Hediye", icon = "🎁", color = "#E91E63", isIncome = true, isDefault = true),
                 CategoryEntity(name = "Diğer", icon = "💵", color = "#607D8B", isIncome = true, isDefault = true)
             )
-            
+
             categoryDao.insertAll(defaultExpenseCategories + defaultIncomeCategories)
         }
     }

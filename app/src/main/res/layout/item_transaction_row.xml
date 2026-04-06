@@ -34,7 +34,7 @@
         android:layout_height="wrap_content"
         android:text="Mutfak"
         android:textColor="@color/yazi_gri"
-        android:textSize="10sp"
+        android:textSize="13sp"
         app:layout_constraintStart_toStartOf="@id/tv_transaction_title"
         app:layout_constraintTop_toBottomOf="@id/tv_transaction_title" />
 

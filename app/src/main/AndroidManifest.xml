@@ -37,6 +37,14 @@
             android:name=".OdemeIslemReceiver"
             android:exported="false" />
 
+        <receiver
+            android:name=".worker.OdendiReceiver"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="com.example.hesapyonetimi.ACTION_ODENDI"/>
+            </intent-filter>
+        </receiver>
+
     </application>
 
 </manifest>

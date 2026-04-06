@@ -1,12 +1,24 @@
 package com.example.hesapyonetimi.presentation.reminders
 
+import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.hesapyonetimi.data.local.entity.RecurringType
 import com.example.hesapyonetimi.domain.model.Reminder
+import com.example.hesapyonetimi.domain.model.Transaction
 import com.example.hesapyonetimi.domain.repository.ReminderRepository
+import com.example.hesapyonetimi.domain.model.Category
+import com.example.hesapyonetimi.domain.repository.CategoryRepository
+import com.example.hesapyonetimi.domain.repository.TransactionRepository
+import com.example.hesapyonetimi.presentation.common.AkilliOneriService
+import com.example.hesapyonetimi.presentation.common.HizliOneri
+import com.example.hesapyonetimi.worker.ReminderScheduler
 import dagger.hilt.android.lifecycle.HiltViewModel
+import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.*
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
+import java.util.*
 import javax.inject.Inject
 
 data class ReminderUiState(
@@ -17,61 +29,162 @@ data class ReminderUiState(
 
 @HiltViewModel
 class ReminderViewModel @Inject constructor(
-    private val reminderRepository: ReminderRepository
+    private val reminderRepository: ReminderRepository,
+    private val transactionRepository: TransactionRepository,
+    private val categoryRepository: CategoryRepository,
+    private val akilliOneriService: AkilliOneriService,
+    @ApplicationContext private val context: Context
 ) : ViewModel() {
-    
+
     private val _uiState = MutableStateFlow(ReminderUiState(isLoading = true))
     val uiState: StateFlow<ReminderUiState> = _uiState.asStateFlow()
-    
+
+    private val _oneriler = MutableStateFlow<List<HizliOneri>>(emptyList())
+    val oneriler: StateFlow<List<HizliOneri>> = _oneriler.asStateFlow()
+
     init {
         loadReminders()
+        loadOneriler()
     }
-    
+
     private fun loadReminders() {
         viewModelScope.launch {
-            try {
-                reminderRepository.getUnpaidReminders()
-                    .collect { reminders ->
-                        _uiState.value = ReminderUiState(
-                            reminders = reminders,
-                            isLoading = false
-                        )
-                    }
-            } catch (e: Exception) {
-                _uiState.value = ReminderUiState(
-                    isLoading = false,
-                    error = e.message ?: "Bilinmeyen hata"
-                )
+            reminderRepository.getAllReminders()
+                .collect { reminders ->
+                    _uiState.value = ReminderUiState(reminders = reminders)
+                }
+        }
+    }
+
+    fun loadCategories(onResult: (List<Category>) -> Unit) {
+        viewModelScope.launch(kotlinx.coroutines.Dispatchers.IO) {
+            val cats = categoryRepository.getAllCategories().first()
+            kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Main) {
+                onResult(cats)
             }
         }
     }
-    
+
+    private fun loadOneriler() {
+        viewModelScope.launch {
+            try {
+                _oneriler.value = akilliOneriService.bugunOneri()
+            } catch (e: Exception) { /* sessizce geç */ }
+        }
+    }
+
+    fun addReminder(
+        title: String,
+        amount: Double,
+        dueDate: Long,
+        categoryId: Long,
+        recurringType: RecurringType? = null,
+        donemSayisi: Int = 1
+    ) {
+        viewModelScope.launch {
+            try {
+                repeat(donemSayisi) { i ->
+                    val adjustedDate = when (recurringType) {
+                        RecurringType.MONTHLY -> addMonths(dueDate, i)
+                        RecurringType.YEARLY -> addYears(dueDate, i)
+                        else -> if (i == 0) dueDate else return@repeat
+                    }
+                    val reminder = Reminder(
+                        title = title,
+                        amount = amount,
+                        dueDate = adjustedDate,
+                        categoryId = categoryId,
+                        isRecurring = recurringType != null,
+                        recurringType = recurringType
+                    )
+                    val id = reminderRepository.insertReminder(reminder)
+                    ReminderScheduler.schedule(context, reminder.copy(id = id))
+                }
+            } catch (e: Exception) {
+                _uiState.value = _uiState.value.copy(error = e.message)
+            }
+        }
+    }
+
+    fun updateReminder(reminder: Reminder) {
+        viewModelScope.launch {
+            try {
+                reminderRepository.updateReminder(reminder)
+                ReminderScheduler.cancel(context, reminder.id)
+                ReminderScheduler.schedule(context, reminder)
+            } catch (e: Exception) {
+                _uiState.value = _uiState.value.copy(error = e.message)
+            }
+        }
+    }
+
+    fun deleteReminder(id: Long) {
+        viewModelScope.launch {
+            try {
+                val reminder = _uiState.value.reminders.firstOrNull { it.id == id } ?: return@launch
+                reminderRepository.deleteReminder(reminder)
+                ReminderScheduler.cancel(context, id)
+            } catch (e: Exception) {
+                _uiState.value = _uiState.value.copy(error = e.message)
+            }
+        }
+    }
+
     fun markAsPaid(id: Long) {
         viewModelScope.launch {
             try {
                 reminderRepository.markAsPaid(id)
-            } catch (e: Exception) {
-                _uiState.value = _uiState.value.copy(
-                    error = e.message ?: "İşlem başarısız"
+                ReminderScheduler.cancel(context, id)
+
+                val reminder = _uiState.value.reminders.firstOrNull { it.id == id } ?: return@launch
+
+                // Günlük takibe ekle
+                transactionRepository.insertTransaction(
+                    Transaction(
+                        amount = reminder.amount,
+                        categoryId = reminder.categoryId,
+                        description = reminder.title,
+                        date = System.currentTimeMillis(),
+                        isIncome = false
+                    )
                 )
+
+                // Tekrarlayansa bir sonraki dönemi oluştur
+                if (reminder.isRecurring && reminder.recurringType != null) {
+                    val nextDate = when (reminder.recurringType) {
+                        RecurringType.MONTHLY -> addMonths(reminder.dueDate, 1)
+                        RecurringType.YEARLY -> addYears(reminder.dueDate, 1)
+                        RecurringType.WEEKLY -> reminder.dueDate + 7 * 24 * 60 * 60 * 1000L
+                        else -> return@launch
+                    }
+                    val next = Reminder(
+                        title = reminder.title,
+                        amount = reminder.amount,
+                        dueDate = nextDate,
+                        categoryId = reminder.categoryId,
+                        isRecurring = true,
+                        recurringType = reminder.recurringType
+                    )
+                    val nextId = reminderRepository.insertReminder(next)
+                    ReminderScheduler.schedule(context, next.copy(id = nextId))
+                }
+            } catch (e: Exception) {
+                _uiState.value = _uiState.value.copy(error = e.message)
             }
         }
     }
-    
-    fun addReminder(title: String, amount: Double, dueDate: Long) {
-        viewModelScope.launch {
-            try {
-                val reminder = Reminder(
-                    title = title,
-                    amount = amount,
-                    dueDate = dueDate
-                )
-                reminderRepository.insertReminder(reminder)
-            } catch (e: Exception) {
-                _uiState.value = _uiState.value.copy(
-                    error = e.message ?: "Hatırlatıcı eklenirken hata oluştu"
-                )
-            }
-        }
+
+    private fun addMonths(date: Long, months: Int): Long {
+        return Calendar.getInstance().apply {
+            timeInMillis = date
+            add(Calendar.MONTH, months)
+        }.timeInMillis
+    }
+
+    private fun addYears(date: Long, years: Int): Long {
+        return Calendar.getInstance().apply {
+            timeInMillis = date
+            add(Calendar.YEAR, years)
+        }.timeInMillis
     }
 }

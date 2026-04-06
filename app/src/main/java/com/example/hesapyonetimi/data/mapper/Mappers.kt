@@ -80,16 +80,17 @@ fun Budget.toEntity(): BudgetEntity {
 }
 
 // Reminder Mappers
-fun ReminderEntity.toDomain(): Reminder {
+fun ReminderEntity.toDomain(category: CategoryEntity? = null): Reminder {
     val now = System.currentTimeMillis()
-    val diffInMillis = dueDate - now
-    val daysUntil = (diffInMillis / (1000 * 60 * 60 * 24)).toInt()
-    
+    val daysUntil = ((dueDate - now) / (1000 * 60 * 60 * 24)).toInt()
     return Reminder(
         id = id,
         title = title,
         amount = amount,
         dueDate = dueDate,
+        categoryId = categoryId,
+        categoryName = category?.name ?: "",
+        categoryIcon = category?.icon ?: "",
         isPaid = isPaid,
         isRecurring = isRecurring,
         recurringType = recurringType,
@@ -103,6 +104,7 @@ fun Reminder.toEntity(): ReminderEntity {
         title = title,
         amount = amount,
         dueDate = dueDate,
+        categoryId = categoryId,
         isPaid = isPaid,
         isRecurring = isRecurring,
         recurringType = recurringType,

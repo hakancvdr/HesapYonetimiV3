@@ -1,109 +1,297 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
-    android:fitsSystemWindows="true"
-    android:padding="20dp"
-    android:background="#F4F7FA">
+    android:background="@color/background">
 
-    <TextView
-        android:layout_width="wrap_content"
+    <!-- STICKY HEADER -->
+    <LinearLayout
+        android:id="@+id/gunluk_header"
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="GÜNLÜK TAKİP"
-        android:textSize="20sp"
-        android:textStyle="bold"
-        android:textColor="#2E7D32"
-        android:layout_gravity="center_horizontal"
-        android:layout_marginBottom="16dp"/>
+        android:orientation="vertical"
+        android:background="@color/green_primary"
+        android:paddingStart="20dp"
+        android:paddingEnd="20dp"
+        android:paddingTop="52dp"
+        android:paddingBottom="12dp">
 
-    <RadioGroup
-        android:id="@+id/rg_islem_tipi"
-        android:layout_width="match_parent"
-        android:layout_height="48dp"
-        android:background="@drawable/segmented_control_bg"
-        android:orientation="horizontal"
-        android:layout_marginBottom="12dp">
-        <RadioButton
-            android:id="@+id/rb_gider"
-            android:layout_width="0dp"
-            android:layout_height="match_parent"
-            android:layout_weight="1"
-            android:button="@null"
-            android:gravity="center"
-            android:text="GİDER"
-            android:checked="true" />
-        <RadioButton
-            android:id="@+id/rb_gelir"
-            android:layout_width="0dp"
-            android:layout_height="match_parent"
-            android:layout_weight="1"
-            android:button="@null"
-            android:gravity="center"
-            android:text="GELİR" />
-    </RadioGroup>
+        <!-- Başlık satırı -->
+        <TextView
+            android:id="@+id/tv_gunluk_baslik"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Günlük Takip"
+            android:textColor="#FFFFFF"
+            android:textSize="20sp"
+            android:textStyle="bold"
+            android:layout_marginBottom="8dp"/>
 
-    <EditText
-        android:id="@+id/et_tutar"
-        android:layout_width="match_parent"
-        android:layout_height="54dp"
-        android:hint="Tutar"
-        android:inputType="numberDecimal"
-        android:background="@drawable/modern_edittext_bg"
-        android:paddingStart="16dp"
-        android:layout_marginBottom="8dp"/>
-
-    <EditText
-        android:id="@+id/et_aciklama"
-        android:layout_width="match_parent"
-        android:layout_height="54dp"
-        android:hint="Açıklama"
-        android:background="@drawable/modern_edittext_bg"
-        android:paddingStart="16dp"
-        android:layout_marginBottom="8dp"/>
-
-    <FrameLayout
-        android:layout_width="match_parent"
-        android:layout_height="54dp"
-        android:background="@drawable/modern_edittext_bg"
-        android:layout_marginBottom="16dp">
-        <AutoCompleteTextView
-            android:id="@+id/auto_kategori"
+        <!-- Toggle satırı -->
+        <LinearLayout
+            android:id="@+id/toggle_pill"
             android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:background="@android:color/transparent"
-            android:hint="Kategori"
-            android:paddingStart="16dp"
-            android:focusable="false"
-            android:inputType="none" />
-    </FrameLayout>
+            android:layout_height="40dp"
+            android:orientation="horizontal"
+            android:background="@drawable/toggle_pill_bg"
+            android:padding="4dp">
 
-    <Button
-        android:id="@+id/btn_kaydet"
-        android:layout_width="match_parent"
-        android:layout_height="56dp"
-        android:text="KAYDET"
-        android:backgroundTint="#2E7D32"
-        android:textColor="@color/beyaz"
-        app:cornerRadius="12dp"/>
+            <TextView
+                android:id="@+id/btn_gider"
+                android:layout_width="0dp"
+                android:layout_height="match_parent"
+                android:layout_weight="1"
+                android:gravity="center"
+                android:text="💸  Gider"
+                android:textSize="13sp"
+                android:textStyle="bold"
+                android:textColor="@color/green_primary"
+                android:background="@drawable/toggle_pill_selected"
+                android:clickable="true"
+                android:focusable="true"/>
 
-    <androidx.recyclerview.widget.RecyclerView
-        android:id="@+id/rv_gunluk_islemler"
+            <TextView
+                android:id="@+id/btn_gelir"
+                android:layout_width="0dp"
+                android:layout_height="match_parent"
+                android:layout_weight="1"
+                android:gravity="center"
+                android:text="💰  Gelir"
+                android:textSize="13sp"
+                android:textStyle="bold"
+                android:textColor="#80FFFFFF"
+                android:clickable="true"
+                android:focusable="true"/>
+        </LinearLayout>
+
+        <!-- Gizli view — binding için -->
+        <TextView
+            android:id="@+id/tv_gunluk_tarih"
+            android:layout_width="0dp"
+            android:layout_height="0dp"
+            android:visibility="gone"/>
+
+    </LinearLayout>
+
+
+
+    <!-- SCROLL İÇERİK -->
+    <androidx.swiperefreshlayout.widget.SwipeRefreshLayout
+        android:id="@+id/swipe_refresh"
         android:layout_width="match_parent"
         android:layout_height="0dp"
-        android:layout_weight="1"
-        android:layout_marginTop="16dp"
-        android:clipToPadding="false"
-        android:paddingBottom="70dp"/>
+        android:layout_weight="1">
 
-    <ImageView
-        android:id="@+id/iv_dropdown_arrow"  android:layout_width="24dp"
-        android:layout_height="24dp"
-        android:layout_gravity="end|center_vertical"
-        android:layout_marginEnd="15dp"
-        android:src="@android:drawable/arrow_down_float"
-        android:contentDescription="Aç"
-        app:tint="#2E7D32" />
+    <androidx.core.widget.NestedScrollView
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:fillViewport="true">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:padding="16dp">
+
+            <!-- FORM KARTI -->
+            <androidx.cardview.widget.CardView
+                app:cardBackgroundColor="#FFFFFF"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                app:cardCornerRadius="16dp"
+                app:cardElevation="0dp"
+                android:layout_marginBottom="16dp">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:padding="16dp">
+
+                    <!-- 1. Tutar -->
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Tutar"
+                        android:textSize="13sp"
+                        android:textColor="@color/text_secondary"
+                        android:layout_marginBottom="6dp" />
+
+                    <com.google.android.material.textfield.TextInputLayout
+                        android:id="@+id/til_tutar"
+                        style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginBottom="16dp"
+                        app:suffixText="₺"
+                        app:boxCornerRadiusTopStart="12dp"
+                        app:boxCornerRadiusTopEnd="12dp"
+                        app:boxCornerRadiusBottomStart="12dp"
+                        app:boxCornerRadiusBottomEnd="12dp">
+
+                        <com.google.android.material.textfield.TextInputEditText
+                            android:id="@+id/et_tutar"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:inputType="numberDecimal"
+                            android:imeOptions="actionDone"
+                            android:textSize="16sp" />
+                    </com.google.android.material.textfield.TextInputLayout>
+
+                    <!-- 2. Tarih -->
+                    <LinearLayout
+                        android:id="@+id/tarih_row"
+                        android:layout_width="match_parent"
+                        android:layout_height="48dp"
+                        android:orientation="horizontal"
+                        android:gravity="center_vertical"
+                        android:paddingStart="14dp"
+                        android:paddingEnd="14dp"
+                        android:layout_marginBottom="12dp"
+                        android:background="@drawable/modern_edittext_bg"
+                        android:clickable="true"
+                        android:focusable="true">
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="📅"
+                            android:textSize="16sp"
+                            android:layout_marginEnd="8dp"/>
+
+                        <TextView
+                            android:id="@+id/et_tarih"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:textSize="14sp"
+                            android:textColor="@color/text_primary"
+                            android:clickable="true"
+                            android:focusable="true"/>
+                    </LinearLayout>
+
+                    <!-- 3. Kategori -->
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Kategori"
+                        android:textSize="13sp"
+                        android:textColor="@color/text_secondary"
+                        android:layout_marginBottom="8dp" />
+
+                    <androidx.recyclerview.widget.RecyclerView
+                        android:id="@+id/rv_kategoriler"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:nestedScrollingEnabled="false"
+                        android:layout_marginBottom="16dp" />
+
+                    <!-- 3. Açıklama -->
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Açıklama (opsiyonel)"
+                        android:textSize="13sp"
+                        android:textColor="@color/text_secondary"
+                        android:layout_marginBottom="6dp" />
+
+                    <com.google.android.material.textfield.TextInputLayout
+                        android:id="@+id/til_aciklama"
+                        style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginBottom="16dp"
+                        app:boxCornerRadiusTopStart="12dp"
+                        app:boxCornerRadiusTopEnd="12dp"
+                        app:boxCornerRadiusBottomStart="12dp"
+                        app:boxCornerRadiusBottomEnd="12dp">
+
+                        <com.google.android.material.textfield.TextInputEditText
+                            android:id="@+id/et_aciklama"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:imeOptions="actionDone"
+                            android:textSize="14sp" />
+                    </com.google.android.material.textfield.TextInputLayout>
+
+                    <!-- Kaydet -->
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btn_kaydet"
+                        android:layout_width="match_parent"
+                        android:layout_height="52dp"
+                        android:text="Gider Ekle"
+                        android:textSize="14sp"
+                        app:backgroundTint="@color/green_primary"
+                        app:cornerRadius="12dp" />
+
+                </LinearLayout>
+            </androidx.cardview.widget.CardView>
+
+            <!-- SEÇİLEN GÜNÜN İŞLEMLERİ -->
+            <androidx.cardview.widget.CardView
+                app:cardBackgroundColor="#FFFFFF"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                app:cardCornerRadius="16dp"
+                app:cardElevation="0dp">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:padding="16dp">
+
+                    <TextView
+                        android:id="@+id/tv_islemler_baslik"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Bugünün işlemleri"
+                        android:textSize="14sp"
+                        android:textStyle="bold"
+                        android:textColor="@color/text_primary"
+                        android:layout_marginBottom="12dp" />
+
+                    <LinearLayout
+                        android:id="@+id/empty_state_gunluk"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical"
+                        android:gravity="center"
+                        android:padding="16dp"
+                        android:visibility="gone">
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="📭"
+                            android:textSize="28sp" />
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Bu tarihte işlem yok"
+                            android:textSize="13sp"
+                            android:textColor="@color/text_secondary"
+                            android:layout_marginTop="6dp" />
+                    </LinearLayout>
+
+                    <androidx.recyclerview.widget.RecyclerView
+                        android:id="@+id/rv_gunluk_islemler"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:nestedScrollingEnabled="false" />
+
+                </LinearLayout>
+            </androidx.cardview.widget.CardView>
+
+            <View android:layout_width="match_parent" android:layout_height="80dp" />
+
+        </LinearLayout>
+    </androidx.core.widget.NestedScrollView>
+
+    </androidx.swiperefreshlayout.widget.SwipeRefreshLayout>
 
 </LinearLayout>

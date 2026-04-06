@@ -19,13 +19,13 @@ interface CategoryDao {
     @Delete
     suspend fun delete(category: CategoryEntity)
     
-    @Query("SELECT * FROM categories ORDER BY name ASC")
+    @Query("SELECT * FROM categories ORDER BY id ASC")
     fun getAllCategories(): Flow<List<CategoryEntity>>
     
     @Query("SELECT * FROM categories WHERE id = :id")
     suspend fun getCategoryById(id: Long): CategoryEntity?
     
-    @Query("SELECT * FROM categories WHERE isIncome = :isIncome ORDER BY name ASC")
+    @Query("SELECT * FROM categories WHERE isIncome = :isIncome ORDER BY id ASC")
     fun getCategoriesByType(isIncome: Boolean): Flow<List<CategoryEntity>>
     
     @Query("SELECT * FROM categories WHERE isDefault = 1")
@@ -33,4 +33,7 @@ interface CategoryDao {
     
     @Query("DELETE FROM categories WHERE isDefault = 0")
     suspend fun deleteNonDefaultCategories()
+
+    @Query("SELECT COUNT(*) FROM categories")
+    suspend fun getCategoryCount(): Int
 }
