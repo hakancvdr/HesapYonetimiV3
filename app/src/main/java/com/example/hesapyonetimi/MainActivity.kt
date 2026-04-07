@@ -5,6 +5,7 @@ import android.content.Intent
 import android.graphics.Color
 import android.os.Bundle
 import androidx.appcompat.app.AppCompatActivity
+import androidx.appcompat.app.AppCompatDelegate
 import androidx.core.view.WindowInsetsControllerCompat
 import androidx.fragment.app.Fragment
 import com.google.android.material.bottomnavigation.BottomNavigationView
@@ -13,15 +14,18 @@ import dagger.hilt.android.AndroidEntryPoint
 @AndroidEntryPoint
 class MainActivity : AppCompatActivity() {
 
-    // Fragment cache — her biri bir kez oluşturulur, show/hide ile geçiş yapılır
     private val dashboardFragment = DashboardFragment()
     private val gunlukFragment    = GunlukFragment()
     private val aylikFragment     = AylikFragment()
     private val yaklasanFragment  = YaklasanFragment()
+    private val profileFragment   = ProfileFragment()
 
     private var activeFragment: Fragment = dashboardFragment
 
     override fun onCreate(savedInstanceState: Bundle?) {
+        // ── Tema: SharedPreferences'tan oku, Activity oluşmadan önce uygula ─
+        applyThemeFromPrefs()
+
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
@@ -31,11 +35,11 @@ class MainActivity : AppCompatActivity() {
         }
 
         if (savedInstanceState == null) {
-            // İlk açılış: tüm fragment'ları ekle, sadece dashboard'u göster
             supportFragmentManager.beginTransaction().apply {
                 add(R.id.fragment_container, yaklasanFragment,  "yaklasan").hide(yaklasanFragment)
                 add(R.id.fragment_container, aylikFragment,     "aylik").hide(aylikFragment)
                 add(R.id.fragment_container, gunlukFragment,    "gunluk").hide(gunlukFragment)
+                add(R.id.fragment_container, profileFragment,   "profil").hide(profileFragment)
                 add(R.id.fragment_container, dashboardFragment, "dashboard")
             }.commit()
         }
@@ -50,28 +54,26 @@ class MainActivity : AppCompatActivity() {
             intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
             startActivity(intent)
         } else {
-            val prefs = getSharedPreferences("HesapPrefs", Context.MODE_PRIVATE)
-            prefs.edit().putLong("son_giris_zamani", System.currentTimeMillis()).apply()
+            getSharedPreferences("HesapPrefs", Context.MODE_PRIVATE)
+                .edit().putLong("son_giris_zamani", System.currentTimeMillis()).apply()
         }
     }
 
     private fun pinGerekliMi(): Boolean {
         val prefs = getSharedPreferences("HesapPrefs", Context.MODE_PRIVATE)
         val sonGiris = prefs.getLong("son_giris_zamani", 0L)
-        val suAn = System.currentTimeMillis()
-        val otuzDakikaMs = 30 * 60 * 1000
         if (sonGiris == 0L) return true
-        return (suAn - sonGiris) > otuzDakikaMs
+        return (System.currentTimeMillis() - sonGiris) > 30 * 60 * 1000
     }
 
     private fun setupNavigation() {
         val bottomNav = findViewById<BottomNavigationView>(R.id.bottom_navigation)
-
         bottomNav.setOnItemSelectedListener { item ->
             val target = when (item.itemId) {
                 R.id.nav_gunluk   -> gunlukFragment
                 R.id.nav_aylik    -> aylikFragment
                 R.id.nav_yaklasan -> yaklasanFragment
+                R.id.nav_profil   -> profileFragment
                 else              -> dashboardFragment
             }
             goster(target)
@@ -79,10 +81,41 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    // ── Tema uygulama: çöküş olmadan ─────────────────────────────────────────
+    fun applyTheme(mode: String) {
+        // SharedPreferences'a kaydet
+        getSharedPreferences("HesapPrefs", Context.MODE_PRIVATE)
+            .edit().putString("theme_mode", mode).apply()
+
+        val nightMode = when (mode) {
+            "LIGHT"  -> AppCompatDelegate.MODE_NIGHT_NO
+            "DARK"   -> AppCompatDelegate.MODE_NIGHT_YES
+            else     -> AppCompatDelegate.MODE_NIGHT_FOLLOW_SYSTEM
+        }
+        AppCompatDelegate.setDefaultNightMode(nightMode)
+        // recreate() çağırmıyoruz — setDefaultNightMode yeterli
+    }
+
+    private fun applyThemeFromPrefs() {
+        val mode = getSharedPreferences("HesapPrefs", Context.MODE_PRIVATE)
+            .getString("theme_mode", "SYSTEM") ?: "SYSTEM"
+        val nightMode = when (mode) {
+            "LIGHT" -> AppCompatDelegate.MODE_NIGHT_NO
+            "DARK"  -> AppCompatDelegate.MODE_NIGHT_YES
+            else    -> AppCompatDelegate.MODE_NIGHT_FOLLOW_SYSTEM
+        }
+        AppCompatDelegate.setDefaultNightMode(nightMode)
+    }
+
+    // ── Navigasyon yardımcıları ───────────────────────────────────────────────
     fun gosterYaklasan() {
         goster(yaklasanFragment)
-        findViewById<com.google.android.material.bottomnavigation.BottomNavigationView>(R.id.bottom_navigation)
-            .selectedItemId = R.id.nav_yaklasan
+        findViewById<BottomNavigationView>(R.id.bottom_navigation).selectedItemId = R.id.nav_yaklasan
+    }
+
+    fun gosterProfil() {
+        goster(profileFragment)
+        findViewById<BottomNavigationView>(R.id.bottom_navigation).selectedItemId = R.id.nav_profil
     }
 
     fun showKategoriDetay(detay: Fragment) {
@@ -97,8 +130,8 @@ class MainActivity : AppCompatActivity() {
     override fun onBackPressed() {
         if (supportFragmentManager.backStackEntryCount > 0) {
             supportFragmentManager.popBackStack()
-            // popBackStack async, listener ile show yapalım
-            supportFragmentManager.addOnBackStackChangedListener(object : androidx.fragment.app.FragmentManager.OnBackStackChangedListener {
+            supportFragmentManager.addOnBackStackChangedListener(object :
+                androidx.fragment.app.FragmentManager.OnBackStackChangedListener {
                 override fun onBackStackChanged() {
                     if (supportFragmentManager.backStackEntryCount == 0) {
                         supportFragmentManager.beginTransaction().show(activeFragment).commit()
@@ -112,9 +145,10 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun goster(hedef: Fragment) {
-        // Detay fragment varsa temizle
         if (supportFragmentManager.backStackEntryCount > 0) {
-            supportFragmentManager.popBackStack(null, androidx.fragment.app.FragmentManager.POP_BACK_STACK_INCLUSIVE)
+            supportFragmentManager.popBackStack(
+                null, androidx.fragment.app.FragmentManager.POP_BACK_STACK_INCLUSIVE
+            )
         }
         if (hedef == activeFragment) {
             supportFragmentManager.beginTransaction().show(hedef).commit()

@@ -104,19 +104,13 @@
 
             <TextView android:id="@+id/btn_tek_sefer"
                 android:layout_width="0dp" android:layout_height="32dp" android:layout_weight="1"
-                android:gravity="center" android:text="Tek"
+                android:gravity="center" android:text="Tek seferlik"
                 android:textSize="12sp" android:textColor="@color/green_primary"
                 android:background="@drawable/kategori_item_selected_bg"
-                android:layout_marginEnd="4dp" android:clickable="true" android:focusable="true"/>
+                android:layout_marginEnd="6dp" android:clickable="true" android:focusable="true"/>
             <TextView android:id="@+id/btn_aylik"
                 android:layout_width="0dp" android:layout_height="32dp" android:layout_weight="1"
-                android:gravity="center" android:text="Aylık"
-                android:textSize="12sp" android:textColor="@color/text_secondary"
-                android:background="@drawable/kategori_item_bg"
-                android:layout_marginEnd="4dp" android:clickable="true" android:focusable="true"/>
-            <TextView android:id="@+id/btn_yillik"
-                android:layout_width="0dp" android:layout_height="32dp" android:layout_weight="1"
-                android:gravity="center" android:text="Yıllık"
+                android:gravity="center" android:text="Aylık tekrar"
                 android:textSize="12sp" android:textColor="@color/text_secondary"
                 android:background="@drawable/kategori_item_bg"
                 android:clickable="true" android:focusable="true"/>

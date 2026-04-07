@@ -44,6 +44,15 @@ class DashboardViewModel @Inject constructor(
     init {
         loadMonthlyStats()
         observeSelectedDate()
+        loadRemindersNow()
+    }
+
+    private fun loadRemindersNow() {
+        viewModelScope.launch {
+            reminderRepository.getUnpaidReminders().collect { reminders ->
+                _uiState.update { it.copy(upcomingReminders = reminders.take(5)) }
+            }
+        }
     }
 
     // Aylık istatistikler — recentTransactions'a hiç dokunmuyor

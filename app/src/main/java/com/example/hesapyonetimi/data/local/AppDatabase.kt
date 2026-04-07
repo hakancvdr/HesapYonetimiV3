@@ -18,9 +18,10 @@ import kotlinx.coroutines.launch
         TransactionEntity::class,
         CategoryEntity::class,
         BudgetEntity::class,
-        ReminderEntity::class
+        ReminderEntity::class,
+        UserProfileEntity::class   // ← YENİ
     ],
-    version = 4,
+    version = 6,                   // ← 5'ten 6'ya
     exportSchema = false
 )
 @TypeConverters(Converters::class)
@@ -30,6 +31,7 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun categoryDao(): CategoryDao
     abstract fun budgetDao(): BudgetDao
     abstract fun reminderDao(): ReminderDao
+    abstract fun userProfileDao(): UserProfileDao  // ← YENİ
 
     companion object {
         @Volatile
@@ -57,6 +59,8 @@ abstract class AppDatabase : RoomDatabase() {
             INSTANCE?.let { database ->
                 CoroutineScope(Dispatchers.IO).launch {
                     populateDefaultCategories(database.categoryDao())
+                    // Profil kaydı oluştur
+                    database.userProfileDao().upsertProfile(UserProfileEntity())
                 }
             }
         }

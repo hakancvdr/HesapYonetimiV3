@@ -52,6 +52,28 @@ class AddTransactionDialog : BottomSheetDialogFragment() {
         return inflater.inflate(R.layout.dialog_add_transaction, container, false)
     }
 
+    override fun onCreateDialog(savedInstanceState: android.os.Bundle?): android.app.Dialog {
+        val dialog = super.onCreateDialog(savedInstanceState)
+        dialog.window?.setSoftInputMode(
+            android.view.WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE
+        )
+        return dialog
+    }
+
+    override fun onStart() {
+        super.onStart()
+        val behavior = com.google.android.material.bottomsheet.BottomSheetBehavior.from(
+            requireView().parent as android.view.View
+        )
+        behavior.state = com.google.android.material.bottomsheet.BottomSheetBehavior.STATE_EXPANDED
+        behavior.skipCollapsed = true
+        // Status bar yüksekliği kadar padding ekle — sheet status bar arkasına girmesin
+        val statusBarHeight = requireContext().resources.getDimensionPixelSize(
+            requireContext().resources.getIdentifier("status_bar_height", "dimen", "android")
+        )
+        (requireView().parent as android.view.View).setPadding(0, statusBarHeight, 0, 0)
+    }
+
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
@@ -131,6 +153,7 @@ class AddTransactionDialog : BottomSheetDialogFragment() {
         }
 
         etAmount.setOnEditorActionListener { _, _, _ -> hideKeyboard(); true }
+        etDescription.setOnEditorActionListener { _, _, _ -> hideKeyboard(); true }
         btnCancel.setOnClickListener { dismiss() }
 
         btnSave.setOnClickListener {

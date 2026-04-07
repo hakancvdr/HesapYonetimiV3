@@ -48,6 +48,14 @@ class EditTransactionSheet : BottomSheetDialogFragment() {
         }
     }
 
+    override fun onCreateDialog(savedInstanceState: android.os.Bundle?): android.app.Dialog {
+        val dialog = super.onCreateDialog(savedInstanceState)
+        dialog.window?.setSoftInputMode(
+            android.view.WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE
+        )
+        return dialog
+    }
+
     override fun onStart() {
         super.onStart()
         val behavior = com.google.android.material.bottomsheet.BottomSheetBehavior.from(

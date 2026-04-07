@@ -48,6 +48,10 @@ class HatirlaticiEkleSheet : BottomSheetDialogFragment() {
         )
         behavior.state = com.google.android.material.bottomsheet.BottomSheetBehavior.STATE_EXPANDED
         behavior.skipCollapsed = true
+        // Klavye açılınca layout kaymasını engelle
+        dialog?.window?.setSoftInputMode(
+            android.view.WindowManager.LayoutParams.SOFT_INPUT_ADJUST_PAN
+        )
     }
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
@@ -147,9 +151,8 @@ class HatirlaticiEkleSheet : BottomSheetDialogFragment() {
     private fun setupTekrar(view: View) {
         val btnTek = view.findViewById<TextView>(R.id.btn_tek_sefer)
         val btnAylik = view.findViewById<TextView>(R.id.btn_aylik)
-        val btnYillik = view.findViewById<TextView>(R.id.btn_yillik)
         val donemContainer = view.findViewById<View>(R.id.donem_container)
-        val tekrarButonlari = listOf(btnTek, btnAylik, btnYillik)
+        val tekrarButonlari = listOf(btnTek, btnAylik)
 
         fun secTekrar(secili: TextView, recurring: RecurringType?) {
             selectedRecurring = recurring
@@ -165,7 +168,6 @@ class HatirlaticiEkleSheet : BottomSheetDialogFragment() {
         secTekrar(btnTek, null)
         btnTek.setOnClickListener { secTekrar(btnTek, null) }
         btnAylik.setOnClickListener { secTekrar(btnAylik, RecurringType.MONTHLY) }
-        btnYillik.setOnClickListener { secTekrar(btnYillik, RecurringType.YEARLY) }
 
         // Dönem sayısı
         val donemButonlari = listOf(

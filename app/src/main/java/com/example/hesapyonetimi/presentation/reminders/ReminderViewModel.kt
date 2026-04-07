@@ -83,25 +83,20 @@ class ReminderViewModel @Inject constructor(
     ) {
         viewModelScope.launch {
             try {
-                repeat(donemSayisi) { i ->
-                    val adjustedDate = when (recurringType) {
-                        RecurringType.MONTHLY -> addMonths(dueDate, i)
-                        RecurringType.YEARLY -> addYears(dueDate, i)
-                        else -> if (i == 0) dueDate else return@repeat
-                    }
-                    val reminder = Reminder(
-                        title = title,
-                        amount = amount,
-                        dueDate = adjustedDate,
-                        categoryId = categoryId,
-                        isRecurring = recurringType != null,
-                        recurringType = recurringType,
-                        totalDonem = donemSayisi,
-                        donemIndex = i + 1
-                    )
-                    val id = reminderRepository.insertReminder(reminder)
-                    ReminderScheduler.schedule(context, reminder.copy(id = id))
-                }
+                // Tek kayıt oluştur — ödendi basınca sıradaki dönem otomatik oluşur
+                val reminder = Reminder(
+                    title = title,
+                    amount = amount,
+                    dueDate = dueDate,
+                    categoryId = categoryId,
+                    isRecurring = recurringType != null,
+                    recurringType = recurringType,
+                    // totalDonem: 0=sınırsız, 1=tek seferlik, >1=sınırlı dönem sayısı
+                    totalDonem = if (recurringType == null) 1 else donemSayisi,
+                    donemIndex = 1
+                )
+                val id = reminderRepository.insertReminder(reminder)
+                ReminderScheduler.schedule(context, reminder.copy(id = id))
             } catch (e: Exception) {
                 _uiState.value = _uiState.value.copy(error = e.message)
             }
@@ -154,12 +149,16 @@ class ReminderViewModel @Inject constructor(
                 // Tekrarlayansa bir sonraki dönemi oluştur — ama dönem sınırını aşmamak lazım
                 if (reminder.isRecurring && reminder.recurringType != null) {
                     val sonrakiIndex = reminder.donemIndex + 1
-                    // totalDonem == 0 ise sonsuz değil, sınırlı — sonrakiIndex > totalDonem ise durur
-                    val devamEder = reminder.totalDonem == 0 || sonrakiIndex <= reminder.totalDonem
+                    val devamEder = when {
+                        !reminder.isRecurring -> false
+                        reminder.recurringType == null -> false
+                        reminder.totalDonem == 1 -> false  // tek seferlik
+                        reminder.totalDonem == 0 -> false  // 0 = tanımsız, güvenli taraf: devam etme
+                        else -> sonrakiIndex <= reminder.totalDonem  // sınırlı dönem
+                    }
                     if (devamEder) {
                         val nextDate = when (reminder.recurringType) {
                             RecurringType.MONTHLY -> addMonths(reminder.dueDate, 1)
-                            RecurringType.YEARLY -> addYears(reminder.dueDate, 1)
                             RecurringType.WEEKLY -> reminder.dueDate + 7 * 24 * 60 * 60 * 1000L
                             else -> return@launch
                         }
