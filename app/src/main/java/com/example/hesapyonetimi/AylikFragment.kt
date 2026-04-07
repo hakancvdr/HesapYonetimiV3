@@ -61,11 +61,34 @@ class AylikFragment : Fragment() {
         val rvKategoriler = view.findViewById<RecyclerView>(R.id.rv_kategoriler)
         rvKategoriler.layoutManager = LinearLayoutManager(requireContext())
 
+        val rvGelirKategoriler = view.findViewById<RecyclerView>(R.id.rv_gelir_kategoriler)
+        rvGelirKategoriler?.layoutManager = LinearLayoutManager(requireContext())
+
+        val btnGiderSekme = view.findViewById<android.widget.TextView>(R.id.btn_gider_sekme)
+        val btnGelirSekme = view.findViewById<android.widget.TextView>(R.id.btn_gelir_sekme)
+        var giderSecili = true
+
+        fun updateSekme() {
+            rvKategoriler.visibility = if (giderSecili) android.view.View.VISIBLE else android.view.View.GONE
+            rvGelirKategoriler?.visibility = if (!giderSecili) android.view.View.VISIBLE else android.view.View.GONE
+            btnGiderSekme?.setBackgroundResource(if (giderSecili) R.drawable.kategori_item_selected_bg else R.drawable.kategori_item_bg)
+            btnGiderSekme?.setTextColor(androidx.core.content.ContextCompat.getColor(requireContext(), if (giderSecili) R.color.green_primary else R.color.text_secondary))
+            btnGelirSekme?.setBackgroundResource(if (!giderSecili) R.drawable.kategori_item_selected_bg else R.drawable.kategori_item_bg)
+            btnGelirSekme?.setTextColor(androidx.core.content.ContextCompat.getColor(requireContext(), if (!giderSecili) R.color.green_primary else R.color.text_secondary))
+        }
+        updateSekme()
+        btnGiderSekme?.setOnClickListener { giderSecili = true; updateSekme() }
+        btnGelirSekme?.setOnClickListener { giderSecili = false; updateSekme() }
+
         viewLifecycleOwner.lifecycleScope.launch {
             viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
                 viewModel.uiState.collect { state ->
                     updateUI(view, state)
                     rvKategoriler.adapter = KategoriAnalizAdapter(state.kategoriler) { kat ->
+                        val detay = KategoriDetayFragment.newInstance(kat, state.ayOffset)
+                        (requireActivity() as MainActivity).showKategoriDetay(detay)
+                    }
+                    rvGelirKategoriler?.adapter = KategoriAnalizAdapter(state.gelirKategoriler) { kat ->
                         val detay = KategoriDetayFragment.newInstance(kat, state.ayOffset)
                         (requireActivity() as MainActivity).showKategoriDetay(detay)
                     }

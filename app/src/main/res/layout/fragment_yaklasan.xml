@@ -13,7 +13,7 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="vertical"
-        android:background="@color/green_primary"
+        android:background="@drawable/gradient_header"
         android:paddingStart="20dp"
         android:paddingEnd="20dp"
         android:paddingTop="52dp"
@@ -214,7 +214,7 @@
                     <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
                         android:text="🔔" android:textSize="48sp" android:layout_marginBottom="12dp"/>
                     <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
-                        android:text="Hatırlatıcı yok"
+                        android:text="✅ Bekleyen ödemen yok"
                         android:textSize="16sp" android:textStyle="bold"
                         android:textColor="@color/text_primary" android:layout_marginBottom="6dp"/>
                     <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"

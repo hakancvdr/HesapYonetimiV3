@@ -154,37 +154,27 @@ class HatirlaticiAdapter(
                 val itemHeight = itemView.bottom - itemView.top
                 val cornerRadius = 28f
 
+                val swipeWidth = 220f // maksimum swipe genişliği
                 if (dX < 0) {
-                    // Sola kaydırma → kırmızı "Sil"
-                    val rect = RectF(
-                        itemView.right + dX, itemView.top.toFloat(),
-                        itemView.right.toFloat(), itemView.bottom.toFloat()
-                    )
+                    val left = (itemView.right + dX).coerceAtLeast(itemView.right - swipeWidth)
+                    val rect = RectF(left, itemView.top.toFloat(), itemView.right.toFloat(), itemView.bottom.toFloat())
                     paint.color = Color.parseColor("#EF5350")
                     c.drawRoundRect(rect, cornerRadius, cornerRadius, paint)
-
                     paint.color = Color.WHITE
-                    paint.textSize = 36f
-                    val textX = itemView.right - 80f
-                    val textY = itemView.top + itemHeight / 2f + 13f
+                    paint.textSize = 32f
+                    val textX = (left + itemView.right) / 2f
+                    val textY = itemView.top + itemHeight / 2f + 10f
                     c.drawText("🗑", textX, textY, paint)
-                    c.drawText("Sil", textX, textY + 40f, paint.apply { textSize = 28f })
-
                 } else if (dX > 0) {
-                    // Sağa kaydırma → mavi "Düzenle"
-                    val rect = RectF(
-                        itemView.left.toFloat(), itemView.top.toFloat(),
-                        itemView.left + dX, itemView.bottom.toFloat()
-                    )
-                    paint.color = Color.parseColor("#1976D2")
+                    val right = (itemView.left + dX).coerceAtMost(itemView.left + swipeWidth)
+                    val rect = RectF(itemView.left.toFloat(), itemView.top.toFloat(), right, itemView.bottom.toFloat())
+                    paint.color = Color.parseColor("#2C3E8C")
                     c.drawRoundRect(rect, cornerRadius, cornerRadius, paint)
-
                     paint.color = Color.WHITE
-                    paint.textSize = 36f
-                    val textX = itemView.left + 80f
-                    val textY = itemView.top + itemHeight / 2f + 13f
+                    paint.textSize = 32f
+                    val textX = (itemView.left + right) / 2f
+                    val textY = itemView.top + itemHeight / 2f + 10f
                     c.drawText("✏", textX, textY, paint)
-                    c.drawText("Düzenle", textX, textY + 40f, paint.apply { textSize = 28f })
                 }
 
                 super.onChildDraw(c, recyclerView, viewHolder, dX, dY, actionState, isCurrentlyActive)

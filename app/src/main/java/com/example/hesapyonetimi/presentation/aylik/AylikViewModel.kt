@@ -11,6 +11,7 @@ import java.util.*
 import javax.inject.Inject
 
 data class KategoriOzet(
+    val isIncome: Boolean = false,
     val kategoriId: Long,
     val ad: String,
     val icon: String,
@@ -27,6 +28,7 @@ data class AylikUiState(
     val toplamGider: Double = 0.0,
     val toplamGelir: Double = 0.0,
     val kategoriler: List<KategoriOzet> = emptyList(),
+    val gelirKategoriler: List<KategoriOzet> = emptyList(),
     val ayAdi: String = "",
     val ayOffset: Int = 0,
     val donem: Int = 0,
@@ -82,6 +84,7 @@ class AylikViewModel @Inject constructor(
                     val gecenAy = prevGiderler.filter { it.categoryId == catId }.sumOf { it.amount }
                     val degisim = if (gecenAy > 0) ((toplam - gecenAy) / gecenAy * 100).toFloat() else 0f
                     KategoriOzet(
+                        isIncome = false,
                         kategoriId = catId,
                         ad = txs.first().categoryName,
                         icon = txs.first().categoryIcon,
@@ -94,11 +97,32 @@ class AylikViewModel @Inject constructor(
                     )
                 }.sortedByDescending { it.toplam }
 
+                val gelirler = transactions.filter { it.isIncome }
+                val prevGelirler = prevTx.filter { it.isIncome }
+                val gelirKategoriler = gelirler.groupBy { it.categoryId }.map { (catId, txs) ->
+                    val toplam = txs.sumOf { it.amount }
+                    val gecenAy = prevGelirler.filter { it.categoryId == catId }.sumOf { it.amount }
+                    val degisim = if (gecenAy > 0) ((toplam - gecenAy) / gecenAy * 100).toFloat() else 0f
+                    KategoriOzet(
+                        isIncome = true,
+                        kategoriId = catId,
+                        ad = txs.first().categoryName,
+                        icon = txs.first().categoryIcon,
+                        toplam = toplam,
+                        islemSayisi = txs.size,
+                        yuzde = if (toplamGelir > 0) (toplam / toplamGelir * 100).toFloat() else 0f,
+                        islemler = txs.sortedByDescending { it.date },
+                        gecenAyToplam = gecenAy,
+                        degisimYuzde = degisim
+                    )
+                }.sortedByDescending { it.toplam }
+
                 _uiState.value = AylikUiState(
                     transactions = transactions,
                     toplamGider = toplamGider,
                     toplamGelir = toplamGelir,
                     kategoriler = kategoriler,
+                    gelirKategoriler = gelirKategoriler,
                     ayAdi = ayAdi,
                     ayOffset = if (donem == 1) -1 else 0,
                     donem = donem,

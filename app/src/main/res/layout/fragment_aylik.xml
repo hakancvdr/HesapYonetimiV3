@@ -12,7 +12,7 @@
         android:id="@+id/aylik_header"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:background="@color/green_primary"
+        android:background="@drawable/gradient_header"
         android:paddingStart="20dp"
         android:paddingEnd="20dp"
         android:paddingTop="52dp"
@@ -263,13 +263,55 @@
                         android:textSize="15sp"
                         android:textStyle="bold"
                         android:textColor="@color/text_primary"
-                        android:layout_marginBottom="12dp"/>
+                        android:layout_marginBottom="10dp"/>
+
+                    <!-- Gider/Gelir sekme -->
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:layout_marginBottom="12dp">
+
+                        <TextView
+                            android:id="@+id/btn_gider_sekme"
+                            android:layout_width="0dp"
+                            android:layout_height="32dp"
+                            android:layout_weight="1"
+                            android:gravity="center"
+                            android:text="Gider"
+                            android:textSize="12sp"
+                            android:textColor="@color/green_primary"
+                            android:background="@drawable/kategori_item_selected_bg"
+                            android:layout_marginEnd="6dp"
+                            android:clickable="true"
+                            android:focusable="true"/>
+
+                        <TextView
+                            android:id="@+id/btn_gelir_sekme"
+                            android:layout_width="0dp"
+                            android:layout_height="32dp"
+                            android:layout_weight="1"
+                            android:gravity="center"
+                            android:text="Gelir"
+                            android:textSize="12sp"
+                            android:textColor="@color/text_secondary"
+                            android:background="@drawable/kategori_item_bg"
+                            android:clickable="true"
+                            android:focusable="true"/>
+                    </LinearLayout>
 
                     <androidx.recyclerview.widget.RecyclerView
                         android:id="@+id/rv_kategoriler"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:nestedScrollingEnabled="false"/>
+
+                    <androidx.recyclerview.widget.RecyclerView
+                        android:id="@+id/rv_gelir_kategoriler"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:nestedScrollingEnabled="false"
+                        android:visibility="gone"/>
                 </LinearLayout>
             </androidx.cardview.widget.CardView>
 

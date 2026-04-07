@@ -36,6 +36,7 @@ class DashboardViewModel @Inject constructor(
 
     // Seçili tarih — başlangıçta bugün
     private val _selectedDate = MutableStateFlow(System.currentTimeMillis())
+    val selectedDateMillis: Long get() = _selectedDate.value
 
     private var statsJob: Job? = null
     private var dateJob: Job? = null

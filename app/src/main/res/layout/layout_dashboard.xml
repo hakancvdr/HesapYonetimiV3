@@ -27,7 +27,7 @@
         android:id="@+id/header_container"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:background="@color/green_primary"
+        android:background="@drawable/gradient_header"
         android:paddingStart="20dp"
         android:paddingEnd="20dp"
         android:paddingTop="52dp"
@@ -96,7 +96,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="vertical"
-                android:background="@color/green_primary"
+                android:background="@drawable/gradient_header"
                 android:paddingStart="20dp"
                 android:paddingEnd="20dp"
                 android:paddingBottom="24dp">
@@ -277,7 +277,7 @@
                             <TextView
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
-                                android:text="Henüz işlem yok"
+                                android:text="Bugün henüz işlem yok 📭"
                                 android:textSize="13sp"
                                 android:textStyle="bold"
                                 android:textColor="@color/text_primary"
@@ -416,6 +416,13 @@
                 </LinearLayout>
 
                 <!-- Yaklaşan ödemeler -->
+                <LinearLayout
+                    android:id="@+id/yaklasan_odeme_container"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:visibility="gone">
+
                 <TextView
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
@@ -432,6 +439,8 @@
                     android:layout_height="wrap_content"
                     android:nestedScrollingEnabled="false" />
 
+                </LinearLayout>
+
                 <!-- Yaklaşan ödeme yok — placeholder -->
                 <LinearLayout
                     android:id="@+id/empty_reminders"
@@ -446,7 +455,7 @@
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="Yaklaşan ödemeniz yok"
+                        android:text="🎉 Harika! Bekleyen ödemen yok"
                         android:textSize="13sp"
                         android:textColor="@color/text_secondary"
                         android:layout_marginBottom="12dp" />

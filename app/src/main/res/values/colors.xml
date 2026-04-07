@@ -1,51 +1,59 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- Primary Colors - Modern Green Palette -->
-    <color name="green_primary">#2D6A5E</color>
-    <color name="green_light">#4A9B8E</color>
-    <color name="green_dark">#1E4D43</color>
-    
+    <!-- Primary Colors - New Blue/Purple Palette -->
+    <color name="green_primary">#2C3E8C</color>
+    <color name="green_light">#0099CC</color>
+    <color name="green_dark">#1E2D6B</color>
+
+    <!-- Gradient -->
+    <color name="gradient_start">#2C3E8C</color>
+    <color name="gradient_end">#0099CC</color>
+
     <!-- Background Colors -->
     <color name="background">#F5F7F9</color>
     <color name="card_background">#FFFFFF</color>
     <color name="surface">#FAFBFC</color>
-    
+
     <!-- Text Colors -->
     <color name="text_primary">#1A1C1E</color>
     <color name="text_secondary">#6B7280</color>
     <color name="text_tertiary">#9CA3AF</color>
     <color name="text_white">#FFFFFF</color>
-    
+
     <!-- Status Colors -->
     <color name="income_green">#4CAF50</color>
     <color name="expense_red">#EF5350</color>
     <color name="saved_yellow">#FFC107</color>
-    
+
     <!-- Semantic Colors -->
     <color name="success">#10B981</color>
     <color name="warning">#F59E0B</color>
     <color name="error">#EF4444</color>
     <color name="info">#3B82F6</color>
-    
+
     <!-- UI Elements -->
     <color name="divider">#E5E7EB</color>
     <color name="border">#D1D5DB</color>
     <color name="overlay">#80000000</color>
-    
-    <!-- Legacy Support (backward compatibility) -->
+
+    <!-- Bottom Nav -->
+    <color name="bottom_nav_active">#2C3E8C</color>
+    <color name="bottom_nav_inactive">#9CA3AF</color>
+
+    <!-- Legacy Support -->
     <color name="arka_plan">#F5F7F9</color>
     <color name="kart_beyaz">#FFFFFF</color>
     <color name="beyaz">#FFFFFF</color>
     <color name="ana_lacivert">#1A1C1E</color>
-    <color name="ana_mavi">#3B82F6</color>
-    <color name="ikincil_mavi">#4A9B8E</color>
+    <color name="ana_mavi">#2C3E8C</color>
+    <color name="ikincil_mavi">#0099CC</color>
     <color name="yazi_ana">#1A1C1E</color>
     <color name="yazi_koyu">#1A1C1E</color>
     <color name="yazi_gri">#6B7280</color>
     <color name="acik_gri">#F5F7F9</color>
     <color name="gri_isik">#E5E7EB</color>
     <color name="gelir_yesil">#4CAF50</color>
-    <color name="ana_yesil">#4A9B8E</color>
+    <color name="ana_yesil">#2C3E8C</color>
     <color name="gider_kirmizi">#EF5350</color>
     <color name="gider_kkirmizi">#B91C1C</color>
     <color name="mustard">#F59E0B</color>

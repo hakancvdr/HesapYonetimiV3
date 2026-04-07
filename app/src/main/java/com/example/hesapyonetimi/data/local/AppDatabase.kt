@@ -20,7 +20,7 @@ import kotlinx.coroutines.launch
         BudgetEntity::class,
         ReminderEntity::class
     ],
-    version = 3,
+    version = 4,
     exportSchema = false
 )
 @TypeConverters(Converters::class)

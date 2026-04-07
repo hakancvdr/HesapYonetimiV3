@@ -155,16 +155,31 @@ class DashboardFragment : Fragment() {
             binding.tvHighestCategory.text = state.highestCategory.ifEmpty { "—" }
         }
 
-        // Yaklaşan ödemeler
-        if (state.upcomingReminders.isEmpty()) {
+        // Seçili güne ait yaklaşan ödemeler
+        val cal = Calendar.getInstance().apply { timeInMillis = viewModel.selectedDateMillis }
+        val seciliGun = cal.get(Calendar.DAY_OF_MONTH)
+        val seciliAy = cal.get(Calendar.MONTH)
+        val seciliYil = cal.get(Calendar.YEAR)
+
+        val gunOdemeleri = state.upcomingReminders.filter { r ->
+            val rc = Calendar.getInstance().apply { timeInMillis = r.dueDate }
+            rc.get(Calendar.DAY_OF_MONTH) == seciliGun &&
+            rc.get(Calendar.MONTH) == seciliAy &&
+            rc.get(Calendar.YEAR) == seciliYil
+        }
+
+        val yaklasamaContainer = binding.root.findViewById<View>(R.id.yaklasan_odeme_container)
+        if (gunOdemeleri.isEmpty()) {
             binding.rvDashboardReminders.visibility = View.GONE
             binding.emptyReminders.visibility = View.VISIBLE
+            yaklasamaContainer?.visibility = View.GONE
         } else {
+            yaklasamaContainer?.visibility = View.VISIBLE
             binding.rvDashboardReminders.visibility = View.VISIBLE
             binding.emptyReminders.visibility = View.GONE
             val dateFormat = SimpleDateFormat("d MMMM", Locale("tr"))
             binding.rvDashboardReminders.adapter = ReminderAdapter(
-                state.upcomingReminders.map { reminder ->
+                gunOdemeleri.map { reminder ->
                     val dateStr = when {
                         reminder.daysUntilDue == 0 -> "Bugün"
                         reminder.daysUntilDue == 1 -> "Yarın"

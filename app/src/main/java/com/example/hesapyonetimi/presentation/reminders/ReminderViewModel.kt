@@ -95,7 +95,9 @@ class ReminderViewModel @Inject constructor(
                         dueDate = adjustedDate,
                         categoryId = categoryId,
                         isRecurring = recurringType != null,
-                        recurringType = recurringType
+                        recurringType = recurringType,
+                        totalDonem = donemSayisi,
+                        donemIndex = i + 1
                     )
                     val id = reminderRepository.insertReminder(reminder)
                     ReminderScheduler.schedule(context, reminder.copy(id = id))
@@ -149,24 +151,31 @@ class ReminderViewModel @Inject constructor(
                     )
                 )
 
-                // Tekrarlayansa bir sonraki dönemi oluştur
+                // Tekrarlayansa bir sonraki dönemi oluştur — ama dönem sınırını aşmamak lazım
                 if (reminder.isRecurring && reminder.recurringType != null) {
-                    val nextDate = when (reminder.recurringType) {
-                        RecurringType.MONTHLY -> addMonths(reminder.dueDate, 1)
-                        RecurringType.YEARLY -> addYears(reminder.dueDate, 1)
-                        RecurringType.WEEKLY -> reminder.dueDate + 7 * 24 * 60 * 60 * 1000L
-                        else -> return@launch
+                    val sonrakiIndex = reminder.donemIndex + 1
+                    // totalDonem == 0 ise sonsuz değil, sınırlı — sonrakiIndex > totalDonem ise durur
+                    val devamEder = reminder.totalDonem == 0 || sonrakiIndex <= reminder.totalDonem
+                    if (devamEder) {
+                        val nextDate = when (reminder.recurringType) {
+                            RecurringType.MONTHLY -> addMonths(reminder.dueDate, 1)
+                            RecurringType.YEARLY -> addYears(reminder.dueDate, 1)
+                            RecurringType.WEEKLY -> reminder.dueDate + 7 * 24 * 60 * 60 * 1000L
+                            else -> return@launch
+                        }
+                        val next = Reminder(
+                            title = reminder.title,
+                            amount = reminder.amount,
+                            dueDate = nextDate,
+                            categoryId = reminder.categoryId,
+                            isRecurring = true,
+                            recurringType = reminder.recurringType,
+                            totalDonem = reminder.totalDonem,
+                            donemIndex = sonrakiIndex
+                        )
+                        val nextId = reminderRepository.insertReminder(next)
+                        ReminderScheduler.schedule(context, next.copy(id = nextId))
                     }
-                    val next = Reminder(
-                        title = reminder.title,
-                        amount = reminder.amount,
-                        dueDate = nextDate,
-                        categoryId = reminder.categoryId,
-                        isRecurring = true,
-                        recurringType = reminder.recurringType
-                    )
-                    val nextId = reminderRepository.insertReminder(next)
-                    ReminderScheduler.schedule(context, next.copy(id = nextId))
                 }
             } catch (e: Exception) {
                 _uiState.value = _uiState.value.copy(error = e.message)

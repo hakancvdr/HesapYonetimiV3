@@ -14,6 +14,8 @@ data class ReminderEntity(
     val isPaid: Boolean = false,
     val isRecurring: Boolean = false,
     val recurringType: RecurringType? = null,
+    val totalDonem: Int = 0,      // 0 = sonsuz değil, sınırlı dönem sayısı
+    val donemIndex: Int = 0,      // bu hatırlatıcı kaçıncı dönem (1-based)
     val createdAt: Long = System.currentTimeMillis(),
     val updatedAt: Long = System.currentTimeMillis()
 )

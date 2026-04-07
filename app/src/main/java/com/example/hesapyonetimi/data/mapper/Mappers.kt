@@ -94,7 +94,9 @@ fun ReminderEntity.toDomain(category: CategoryEntity? = null): Reminder {
         isPaid = isPaid,
         isRecurring = isRecurring,
         recurringType = recurringType,
-        daysUntilDue = daysUntil
+        daysUntilDue = daysUntil,
+        totalDonem = totalDonem,
+        donemIndex = donemIndex
     )
 }
 
@@ -108,6 +110,8 @@ fun Reminder.toEntity(): ReminderEntity {
         isPaid = isPaid,
         isRecurring = isRecurring,
         recurringType = recurringType,
+        totalDonem = totalDonem,
+        donemIndex = donemIndex,
         updatedAt = System.currentTimeMillis()
     )
 }
