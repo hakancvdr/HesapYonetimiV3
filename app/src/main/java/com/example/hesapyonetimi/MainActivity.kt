@@ -83,17 +83,15 @@ class MainActivity : AppCompatActivity() {
 
     // ── Tema uygulama: çöküş olmadan ─────────────────────────────────────────
     fun applyTheme(mode: String) {
-        // SharedPreferences'a kaydet
         getSharedPreferences("HesapPrefs", Context.MODE_PRIVATE)
             .edit().putString("theme_mode", mode).apply()
-
         val nightMode = when (mode) {
-            "LIGHT"  -> AppCompatDelegate.MODE_NIGHT_NO
-            "DARK"   -> AppCompatDelegate.MODE_NIGHT_YES
-            else     -> AppCompatDelegate.MODE_NIGHT_FOLLOW_SYSTEM
+            "LIGHT" -> AppCompatDelegate.MODE_NIGHT_NO
+            "DARK"  -> AppCompatDelegate.MODE_NIGHT_YES
+            else    -> AppCompatDelegate.MODE_NIGHT_FOLLOW_SYSTEM
         }
         AppCompatDelegate.setDefaultNightMode(nightMode)
-        // recreate() çağırmıyoruz — setDefaultNightMode yeterli
+        recreate()
     }
 
     private fun applyThemeFromPrefs() {
