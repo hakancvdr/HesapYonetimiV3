@@ -6,6 +6,8 @@ import com.example.hesapyonetimi.domain.model.Reminder
 import com.example.hesapyonetimi.domain.model.Transaction
 import com.example.hesapyonetimi.domain.repository.ReminderRepository
 import com.example.hesapyonetimi.domain.repository.TransactionRepository
+import com.example.hesapyonetimi.presentation.common.AkilliOneriService
+import com.example.hesapyonetimi.presentation.common.HizliOneri
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.*
@@ -28,11 +30,15 @@ data class DashboardUiState(
 @HiltViewModel
 class DashboardViewModel @Inject constructor(
     private val transactionRepository: TransactionRepository,
-    private val reminderRepository: ReminderRepository
+    private val reminderRepository: ReminderRepository,
+    private val akilliOneriService: AkilliOneriService
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(DashboardUiState(isLoading = true))
     val uiState: StateFlow<DashboardUiState> = _uiState.asStateFlow()
+
+    private val _suggestions = MutableStateFlow<List<HizliOneri>>(emptyList())
+    val suggestions: StateFlow<List<HizliOneri>> = _suggestions.asStateFlow()
 
     // Seçili tarih — başlangıçta bugün
     private val _selectedDate = MutableStateFlow(System.currentTimeMillis())
@@ -45,6 +51,14 @@ class DashboardViewModel @Inject constructor(
         loadMonthlyStats()
         observeSelectedDate()
         loadRemindersNow()
+        loadSuggestions()
+    }
+
+    private fun loadSuggestions() {
+        viewModelScope.launch {
+            try { _suggestions.value = akilliOneriService.bugunOneri() }
+            catch (_: Exception) {}
+        }
     }
 
     private fun loadRemindersNow() {

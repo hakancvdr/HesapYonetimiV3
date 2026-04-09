@@ -62,7 +62,8 @@ class TransactionViewModel @Inject constructor(
         categoryId: Long,
         description: String,
         date: Long,
-        isIncome: Boolean
+        isIncome: Boolean,
+        walletId: Long? = null
     ) {
         viewModelScope.launch {
             try {
@@ -71,7 +72,8 @@ class TransactionViewModel @Inject constructor(
                     categoryId = categoryId,
                     description = description,
                     date = date,
-                    isIncome = isIncome
+                    isIncome = isIncome,
+                    walletId = walletId
                 )
                 
                 transactionRepository.insertTransaction(transaction)

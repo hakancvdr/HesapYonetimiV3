@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:padding="20dp">
+
+    <com.google.android.material.textfield.TextInputLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
+        android:hint="Cüzdan adı (örn. İş Bankası, Kripto Cüzdanım)"
+        android:layout_marginBottom="16dp">
+
+        <com.google.android.material.textfield.TextInputEditText
+            android:id="@+id/etWalletName"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:inputType="textCapSentences"
+            android:maxLength="40" />
+    </com.google.android.material.textfield.TextInputLayout>
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Hesap Tipi"
+        android:textColor="@color/text_secondary"
+        android:textSize="12sp"
+        android:layout_marginBottom="8dp" />
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center_vertical">
+
+        <TextView android:id="@+id/btnWalletType0" android:layout_width="0dp"
+            android:layout_height="34dp" android:layout_weight="1" android:gravity="center"
+            android:text="💵 Nakit" android:textSize="11sp" android:textColor="@color/text_secondary"
+            android:background="@drawable/kategori_item_bg" android:layout_marginEnd="4dp"
+            android:clickable="true" android:focusable="true"/>
+
+        <TextView android:id="@+id/btnWalletType1" android:layout_width="0dp"
+            android:layout_height="34dp" android:layout_weight="1" android:gravity="center"
+            android:text="🏦 Banka" android:textSize="11sp" android:textColor="@color/green_primary"
+            android:background="@drawable/kategori_item_selected_bg" android:layout_marginEnd="4dp"
+            android:clickable="true" android:focusable="true"/>
+
+        <TextView android:id="@+id/btnWalletType2" android:layout_width="0dp"
+            android:layout_height="34dp" android:layout_weight="1" android:gravity="center"
+            android:text="💳 K.Kartı" android:textSize="11sp" android:textColor="@color/text_secondary"
+            android:background="@drawable/kategori_item_bg" android:layout_marginEnd="4dp"
+            android:clickable="true" android:focusable="true"/>
+
+        <TextView android:id="@+id/btnWalletType3" android:layout_width="0dp"
+            android:layout_height="34dp" android:layout_weight="1" android:gravity="center"
+            android:text="₿ Kripto" android:textSize="11sp" android:textColor="@color/text_secondary"
+            android:background="@drawable/kategori_item_bg"
+            android:clickable="true" android:focusable="true"/>
+    </LinearLayout>
+
+</LinearLayout>

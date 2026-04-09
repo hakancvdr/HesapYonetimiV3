@@ -11,9 +11,9 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="✏️  İsim Düzenle"
-        android:textColor="#212121"
-        android:textSize="17sp"
-        android:textStyle="bold" />
+    android:textColor="@color/text_primary"
+    android:textSize="17sp"
+    android:textStyle="bold" />
 
     <com.google.android.material.textfield.TextInputLayout
         android:id="@+id/tilName"
@@ -45,7 +45,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="İptal"
-            android:textColor="#9E9E9E" />
+            android:textColor="@color/text_secondary" />
 
         <Button
             android:id="@+id/btnSave"

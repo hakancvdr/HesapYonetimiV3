@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:background="@drawable/bottom_sheet_bg"
+    android:orientation="vertical"
+    android:padding="24dp">
+
+    <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+        android:text="🛡  Güvenlik Sorusu" android:textColor="@color/text_primary"
+        android:textSize="17sp" android:textStyle="bold" android:layout_marginBottom="8dp"/>
+
+    <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+        android:text="Soru seç:"
+        android:textColor="@color/text_secondary" android:textSize="12sp"
+        android:layout_marginBottom="10dp"/>
+
+    <TextView android:id="@+id/btnQ0"
+        android:layout_width="match_parent" android:layout_height="wrap_content"
+        android:background="@drawable/kategori_item_bg"
+        android:padding="10dp" android:layout_marginBottom="6dp"
+        android:textSize="12sp" android:clickable="true" android:focusable="true"/>
+
+    <TextView android:id="@+id/btnQ1"
+        android:layout_width="match_parent" android:layout_height="wrap_content"
+        android:background="@drawable/kategori_item_bg"
+        android:padding="10dp" android:layout_marginBottom="6dp"
+        android:textSize="12sp" android:clickable="true" android:focusable="true"/>
+
+    <TextView android:id="@+id/btnQ2"
+        android:layout_width="match_parent" android:layout_height="wrap_content"
+        android:background="@drawable/kategori_item_bg"
+        android:padding="10dp" android:layout_marginBottom="6dp"
+        android:textSize="12sp" android:clickable="true" android:focusable="true"/>
+
+    <TextView android:id="@+id/btnQ3"
+        android:layout_width="match_parent" android:layout_height="wrap_content"
+        android:background="@drawable/kategori_item_bg"
+        android:padding="10dp" android:layout_marginBottom="16dp"
+        android:textSize="12sp" android:clickable="true" android:focusable="true"/>
+
+    <com.google.android.material.textfield.TextInputLayout
+        android:id="@+id/tilNewSecurityAnswer"
+        style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
+        android:layout_width="match_parent" android:layout_height="wrap_content"
+        android:hint="Yeni cevabınız" android:layout_marginBottom="20dp">
+        <com.google.android.material.textfield.TextInputEditText
+            android:id="@+id/etNewSecurityAnswer"
+            android:layout_width="match_parent" android:layout_height="wrap_content"
+            android:inputType="text" android:imeOptions="actionDone"
+            android:singleLine="true"/>
+    </com.google.android.material.textfield.TextInputLayout>
+
+    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+        android:orientation="horizontal">
+        <Button android:id="@+id/btnCancelSecQ"
+            style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+            android:layout_width="0dp" android:layout_height="48dp" android:layout_weight="1"
+            android:text="İptal" android:layout_marginEnd="8dp"
+            app:strokeColor="@color/green_primary" app:cornerRadius="12dp"/>
+        <Button android:id="@+id/btnSaveSecQ"
+            android:layout_width="0dp" android:layout_height="48dp" android:layout_weight="2"
+            android:backgroundTint="@color/green_primary" android:text="Kaydet"
+            android:textColor="#FFFFFF" app:cornerRadius="12dp"/>
+    </LinearLayout>
+</LinearLayout>

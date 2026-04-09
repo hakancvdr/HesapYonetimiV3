@@ -49,7 +49,20 @@ class AylikViewModel @Inject constructor(
     private var ozelBaslangic: Long? = null
     private var ozelBitis: Long? = null
 
-    init { loadData() }
+    // ── Takvim görünümü için ayrı ay state'i ─────────────────────────────────
+    private val _calendarOffset = MutableStateFlow(0)
+    val calendarOffset: StateFlow<Int> = _calendarOffset.asStateFlow()
+
+    private val _calendarTransactions = MutableStateFlow<List<Transaction>>(emptyList())
+    val calendarTransactions: StateFlow<List<Transaction>> = _calendarTransactions.asStateFlow()
+
+    fun nextCalendarMonth() = _calendarOffset.update { it + 1 }
+    fun prevCalendarMonth() = _calendarOffset.update { it - 1 }
+
+    init {
+        loadData()
+        observeCalendarMonth()
+    }
 
     fun setDonem(yeniDonem: Int) {
         donem = yeniDonem
@@ -132,6 +145,27 @@ class AylikViewModel @Inject constructor(
                 )
             }
         }
+    }
+
+    private fun observeCalendarMonth() {
+        viewModelScope.launch {
+            _calendarOffset.collectLatest { offset ->
+                val (start, end) = getCalendarMonthRange(offset)
+                transactionRepository.getTransactionsByDateRange(start, end).collect {
+                    _calendarTransactions.value = it
+                }
+            }
+        }
+    }
+
+    private fun getCalendarMonthRange(offset: Int): Pair<Long, Long> {
+        val cal = Calendar.getInstance().apply { add(Calendar.MONTH, offset) }
+        cal.set(Calendar.DAY_OF_MONTH, 1)
+        cal.set(Calendar.HOUR_OF_DAY, 0); cal.set(Calendar.MINUTE, 0); cal.set(Calendar.SECOND, 0)
+        val start = cal.timeInMillis
+        cal.set(Calendar.DAY_OF_MONTH, cal.getActualMaximum(Calendar.DAY_OF_MONTH))
+        cal.set(Calendar.HOUR_OF_DAY, 23); cal.set(Calendar.MINUTE, 59); cal.set(Calendar.SECOND, 59)
+        return start to cal.timeInMillis
     }
 
     data class DateRange(val start: Long, val end: Long, val label: String, val gunSayisi: Int)

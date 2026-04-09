@@ -70,9 +70,9 @@
         <com.google.android.material.textfield.TextInputLayout
             android:id="@+id/tilAmount"
             style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
-            app:boxBackgroundColor="#FFFFFF"
-            app:boxStrokeColor="#2C3E8C"
-            app:hintTextColor="#2C3E8C"
+            app:boxBackgroundColor="@color/card_background"
+            app:boxStrokeColor="@color/green_primary"
+            app:hintTextColor="@color/green_primary"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginBottom="16dp"
@@ -116,9 +116,9 @@
         <com.google.android.material.textfield.TextInputLayout
             android:id="@+id/tilDescription"
             style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
-            app:boxBackgroundColor="#FFFFFF"
-            app:boxStrokeColor="#2C3E8C"
-            app:hintTextColor="#2C3E8C"
+            app:boxBackgroundColor="@color/card_background"
+            app:boxStrokeColor="@color/green_primary"
+            app:hintTextColor="@color/green_primary"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginBottom="20dp"
@@ -138,6 +138,23 @@
                 android:textColor="@color/text_primary"
                 android:textSize="14sp" />
         </com.google.android.material.textfield.TextInputLayout>
+
+        <!-- Cüzdan seçimi -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Cüzdan"
+            android:textColor="@color/text_secondary"
+            android:textSize="12sp"
+            android:layout_marginBottom="6dp" />
+
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/rvWallets"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:nestedScrollingEnabled="false"
+            android:layout_marginBottom="16dp" />
 
         <!-- Butonlar -->
         <LinearLayout

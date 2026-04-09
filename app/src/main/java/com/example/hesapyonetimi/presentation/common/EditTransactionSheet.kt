@@ -13,8 +13,11 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.example.hesapyonetimi.R
 import com.example.hesapyonetimi.adapter.CategoryChipAdapter
+import com.example.hesapyonetimi.adapter.WalletChipAdapter
+import com.example.hesapyonetimi.data.local.dao.WalletDao
 import com.example.hesapyonetimi.domain.model.Category
 import com.example.hesapyonetimi.domain.model.Transaction
+import javax.inject.Inject
 import com.example.hesapyonetimi.presentation.transactions.TransactionViewModel
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment
 import com.google.android.material.button.MaterialButton
@@ -29,11 +32,15 @@ import kotlinx.coroutines.launch
 @AndroidEntryPoint
 class EditTransactionSheet : BottomSheetDialogFragment() {
 
+    @Inject
+    lateinit var walletDao: WalletDao
+
     private val viewModel: TransactionViewModel by viewModels()
     private lateinit var categoryAdapter: CategoryChipAdapter
     private var selectedCategory: Category? = null
     private var isIncome: Boolean = false
     private lateinit var transaction: Transaction
+    private var selectedWalletId: Long? = null
 
     companion object {
         private const val ARG_TRANSACTION_ID = "transaction_id"
@@ -86,6 +93,21 @@ class EditTransactionSheet : BottomSheetDialogFragment() {
 
         // Mevcut değerleri doldur
         isIncome = transaction.isIncome
+        selectedWalletId = transaction.walletId
+
+        val rvEditWallets = view.findViewById<RecyclerView>(R.id.rvEditWallets)
+        rvEditWallets.layoutManager = LinearLayoutManager(requireContext(), LinearLayoutManager.HORIZONTAL, false)
+        viewLifecycleOwner.lifecycleScope.launch {
+            walletDao.getAllWallets().collect { wallets ->
+                rvEditWallets.adapter = WalletChipAdapter(wallets, selectedWalletId) { wallet ->
+                    selectedWalletId = wallet.id
+                    rvEditWallets.adapter?.notifyDataSetChanged()
+                }
+                if (selectedWalletId == null) {
+                    selectedWalletId = wallets.firstOrNull { it.isDefault }?.id ?: wallets.firstOrNull()?.id
+                }
+            }
+        }
         etAmount.setText(transaction.amount.toBigDecimal().stripTrailingZeros().toPlainString())
         etDescription.setText(transaction.description)
 
@@ -197,7 +219,8 @@ class EditTransactionSheet : BottomSheetDialogFragment() {
                     categoryId = cat.id,
                     description = if (description.isEmpty()) cat.name else description,
                     isIncome = isIncome,
-                    date = selectedDateMillis
+                    date = selectedDateMillis,
+                    walletId = selectedWalletId
                 )
             )
             toast("✅ İşlem güncellendi!")

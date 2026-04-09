@@ -19,6 +19,9 @@ interface TransactionDao {
     @Query("SELECT * FROM transactions ORDER BY date DESC")
     fun getAllTransactions(): Flow<List<TransactionEntity>>
 
+    @Query("SELECT * FROM transactions ORDER BY date DESC")
+    suspend fun getAllTransactionsOnce(): List<TransactionEntity>
+
     @Query("SELECT * FROM transactions WHERE id = :id")
     suspend fun getTransactionById(id: Long): TransactionEntity?
 
@@ -47,4 +50,10 @@ interface TransactionDao {
 
     @Query("SELECT MIN(date) FROM transactions")
     suspend fun getFirstTransactionDate(): Long?
+
+    @Query("SELECT SUM(amount) FROM transactions WHERE isIncome = 0 AND date >= :startDate AND date <= :endDate")
+    fun getTotalExpenseFlow(startDate: Long, endDate: Long): Flow<Double?>
+
+    @Query("SELECT SUM(amount) FROM transactions WHERE isIncome = 1 AND date >= :startDate AND date <= :endDate")
+    fun getTotalIncomeFlow(startDate: Long, endDate: Long): Flow<Double?>
 }

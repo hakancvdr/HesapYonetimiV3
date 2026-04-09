@@ -10,5 +10,7 @@ data class Transaction(
     val description: String,
     val date: Long,
     val isIncome: Boolean,
-    val createdAt: Long = System.currentTimeMillis()
+    val createdAt: Long = System.currentTimeMillis(),
+    val walletId: Long? = null,
+    val walletName: String? = null
 )

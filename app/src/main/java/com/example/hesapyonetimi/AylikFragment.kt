@@ -1,11 +1,19 @@
 package com.example.hesapyonetimi
 
 import android.app.DatePickerDialog
+import android.graphics.Color
+import android.graphics.drawable.GradientDrawable
 import android.os.Bundle
+import android.text.Editable
+import android.text.TextWatcher
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.FrameLayout
+import android.widget.GridLayout
+import android.widget.ImageButton
 import android.widget.TextView
+import androidx.core.content.ContextCompat
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.fragment.app.Fragment
@@ -17,10 +25,15 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout
 import com.example.hesapyonetimi.adapter.KategoriAnalizAdapter
+import com.example.hesapyonetimi.adapter.TimelineAdapter
+import com.example.hesapyonetimi.domain.model.Transaction
+import com.example.hesapyonetimi.presentation.common.EditTransactionSheet
+import com.example.hesapyonetimi.ui.PieChartView
 import com.example.hesapyonetimi.presentation.aylik.AylikUiState
 import com.example.hesapyonetimi.presentation.aylik.AylikViewModel
 import com.example.hesapyonetimi.presentation.aylik.KategoriDetayFragment
 import com.example.hesapyonetimi.presentation.common.CurrencyFormatter
+import com.google.android.material.textfield.TextInputEditText
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
@@ -31,10 +44,25 @@ class AylikFragment : Fragment() {
 
     private val viewModel: AylikViewModel by viewModels()
     private val tarihFormat = SimpleDateFormat("d MMM yyyy", Locale("tr"))
+    private val ayYilFormat = SimpleDateFormat("MMMM yyyy", Locale("tr"))
 
-    override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
-        return inflater.inflate(R.layout.fragment_aylik, container, false)
-    }
+    private lateinit var tabCalendar: TextView
+    private lateinit var tabTimeline: TextView
+    private lateinit var tabKategori: TextView
+    private lateinit var tabCalendarContent: View
+    private lateinit var tabTimelineContent: View
+    private lateinit var tabKategoriContent: View
+
+    private val timelineAdapter = TimelineAdapter(
+        onItemClick = { tx ->
+            EditTransactionSheet.newInstance(tx).show(childFragmentManager, "EditTx")
+        }
+    )
+    private var selectedTab = 0  // 0=Takvim, 1=Timeline, 2=Kategori
+    private var showPieChart = true
+
+    override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? =
+        inflater.inflate(R.layout.fragment_aylik, container, false)
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
@@ -46,77 +74,403 @@ class AylikFragment : Fragment() {
             insets
         }
 
-        // Pull-to-refresh
         view.findViewById<SwipeRefreshLayout>(R.id.swipe_refresh)?.apply {
             setColorSchemeResources(R.color.green_primary)
             setOnRefreshListener { viewModel.refresh(); isRefreshing = false }
         }
 
-        // Manuel tarih seçici
-        setupTarihSecici(view)
-
-        // Dönem butonları
+        bindTabViews(view)
+        setupTabListeners()
+        setupCalendarNav(view)
+        setupTimelineSearch(view)
+        setupDatePickers(view)
         setupDonemButonlari(view)
+        setupKategoriTabs(view)
 
-        val rvKategoriler = view.findViewById<RecyclerView>(R.id.rv_kategoriler)
-        rvKategoriler.layoutManager = LinearLayoutManager(requireContext())
-
-        val rvGelirKategoriler = view.findViewById<RecyclerView>(R.id.rv_gelir_kategoriler)
-        rvGelirKategoriler?.layoutManager = LinearLayoutManager(requireContext())
-
-        val btnGiderSekme = view.findViewById<android.widget.TextView>(R.id.btn_gider_sekme)
-        val btnGelirSekme = view.findViewById<android.widget.TextView>(R.id.btn_gelir_sekme)
-        var giderSecili = true
-
-        fun updateSekme() {
-            rvKategoriler.visibility = if (giderSecili) android.view.View.VISIBLE else android.view.View.GONE
-            rvGelirKategoriler?.visibility = if (!giderSecili) android.view.View.VISIBLE else android.view.View.GONE
-            btnGiderSekme?.setBackgroundResource(if (giderSecili) R.drawable.kategori_item_selected_bg else R.drawable.kategori_item_bg)
-            btnGiderSekme?.setTextColor(androidx.core.content.ContextCompat.getColor(requireContext(), if (giderSecili) R.color.green_primary else R.color.text_secondary))
-            btnGelirSekme?.setBackgroundResource(if (!giderSecili) R.drawable.kategori_item_selected_bg else R.drawable.kategori_item_bg)
-            btnGelirSekme?.setTextColor(androidx.core.content.ContextCompat.getColor(requireContext(), if (!giderSecili) R.color.green_primary else R.color.text_secondary))
+        view.findViewById<RecyclerView>(R.id.rvTimeline).apply {
+            layoutManager = LinearLayoutManager(requireContext())
+            adapter = timelineAdapter
         }
-        updateSekme()
-        btnGiderSekme?.setOnClickListener { giderSecili = true; updateSekme() }
-        btnGelirSekme?.setOnClickListener { giderSecili = false; updateSekme() }
 
+        observeViewModel(view)
+        showTab(0)
+    }
+
+    // ── Tab yönetimi ─────────────────────────────────────────────────────────
+
+    private fun bindTabViews(v: View) {
+        tabCalendar        = v.findViewById(R.id.tabCalendar)
+        tabTimeline        = v.findViewById(R.id.tabTimeline)
+        tabKategori        = v.findViewById(R.id.tabKategori)
+        tabCalendarContent = v.findViewById(R.id.tabCalendarContent)
+        tabTimelineContent = v.findViewById(R.id.tabTimelineContent)
+        tabKategoriContent = v.findViewById(R.id.tabKategoriContent)
+    }
+
+    private fun setupTabListeners() {
+        tabCalendar.setOnClickListener { showTab(0) }
+        tabTimeline.setOnClickListener { showTab(1) }
+        tabKategori.setOnClickListener { showTab(2) }
+    }
+
+    private fun showTab(index: Int) {
+        selectedTab = index
+        tabCalendarContent.visibility = if (index == 0) View.VISIBLE else View.GONE
+        tabTimelineContent.visibility = if (index == 1) View.VISIBLE else View.GONE
+        tabKategoriContent.visibility = if (index == 2) View.VISIBLE else View.GONE
+
+        val tabs = listOf(tabCalendar, tabTimeline, tabKategori)
+        tabs.forEachIndexed { i, tv ->
+            tv.setBackgroundResource(if (i == index) R.drawable.kategori_item_selected_bg else R.drawable.kategori_item_bg)
+            tv.setTextColor(ContextCompat.getColor(requireContext(),
+                if (i == index) R.color.green_primary else R.color.text_secondary))
+        }
+    }
+
+    // ── Takvim görünümü ───────────────────────────────────────────────────────
+
+    private fun setupCalendarNav(v: View) {
+        v.findViewById<ImageButton>(R.id.btnPrevMonth).setOnClickListener {
+            viewModel.prevCalendarMonth()
+        }
+        v.findViewById<ImageButton>(R.id.btnNextMonth).setOnClickListener {
+            viewModel.nextCalendarMonth()
+        }
+    }
+
+    private fun buildCalendar(v: View, transactions: List<Transaction>, offset: Int) {
+        val cal = Calendar.getInstance().apply { add(Calendar.MONTH, offset) }
+        v.findViewById<TextView>(R.id.tvCalendarMonth).text = ayYilFormat.format(cal.time)
+
+        val txByDay = transactions.groupBy { tx ->
+            Calendar.getInstance().apply { timeInMillis = tx.date }.get(Calendar.DAY_OF_MONTH)
+        }
+        val expenseByDay = transactions.filter { !it.isIncome }.groupBy { tx ->
+            Calendar.getInstance().apply { timeInMillis = tx.date }.get(Calendar.DAY_OF_MONTH)
+        }.mapValues { (_, txs) -> txs.sumOf { it.amount } }
+        val maxExpense = expenseByDay.values.maxOrNull() ?: 1.0
+
+        val grid = v.findViewById<GridLayout>(R.id.calendarGrid)
+        grid.removeAllViews()
+
+        cal.set(Calendar.DAY_OF_MONTH, 1)
+        val firstDow = cal.get(Calendar.DAY_OF_WEEK)
+        val offset7  = (firstDow - 2 + 7) % 7
+        val daysInMonth = cal.getActualMaximum(Calendar.DAY_OF_MONTH)
+        val cellPx = ((resources.displayMetrics.widthPixels -
+                dpToPx(32)) / 7).coerceAtLeast(dpToPx(36))
+
+        val todayCal = Calendar.getInstance()
+        val isThisMonth = cal.get(Calendar.YEAR)  == todayCal.get(Calendar.YEAR) &&
+                          cal.get(Calendar.MONTH) == todayCal.get(Calendar.MONTH)
+        val today = todayCal.get(Calendar.DAY_OF_MONTH)
+
+        // Boş hücreler (ay başı boşluk)
+        repeat(offset7) { grid.addView(makeEmptyCell(cellPx)) }
+
+        // Gün hücreleri
+        for (day in 1..daysInMonth) {
+            val hasTx    = txByDay.containsKey(day)
+            val expense  = expenseByDay[day] ?: 0.0
+            val intensity = (expense / maxExpense).toFloat().coerceIn(0f, 1f)
+            val isToday  = isThisMonth && day == today
+            val cell     = makeDayCell(day, hasTx, intensity, isToday) {
+                showSelectedDay(v, day, txByDay[day] ?: emptyList())
+            }
+            grid.addView(cell)
+        }
+    }
+
+    private fun makeEmptyCell(sizePx: Int): View = View(requireContext()).apply {
+        layoutParams = GridLayout.LayoutParams().apply {
+            width = sizePx; height = sizePx
+            columnSpec = GridLayout.spec(GridLayout.UNDEFINED, 1, 1f)
+        }
+    }
+
+    private fun makeDayCell(
+        day: Int, hasTx: Boolean, intensity: Float, isToday: Boolean,
+        onClick: () -> Unit
+    ): FrameLayout {
+        val sizePx = ((resources.displayMetrics.widthPixels - dpToPx(32)) / 7).coerceAtLeast(dpToPx(36))
+
+        val cell = FrameLayout(requireContext()).apply {
+            layoutParams = GridLayout.LayoutParams().apply {
+                width = sizePx; height = sizePx
+                columnSpec = GridLayout.spec(GridLayout.UNDEFINED, 1, 1f)
+            }
+            if (hasTx) setOnClickListener { onClick() }
+        }
+
+        if (isToday) {
+            cell.background = GradientDrawable().apply {
+                shape = GradientDrawable.OVAL
+                setColor(ContextCompat.getColor(requireContext(), R.color.green_primary))
+                alpha = 40
+            }
+        }
+
+        val tvDay = TextView(requireContext()).apply {
+            text = day.toString()
+            gravity = android.view.Gravity.CENTER
+            textSize = 13f
+            setTextColor(when {
+                isToday  -> ContextCompat.getColor(requireContext(), R.color.green_primary)
+                hasTx    -> ContextCompat.getColor(requireContext(), R.color.text_primary)
+                else     -> ContextCompat.getColor(requireContext(), R.color.text_secondary)
+            })
+            if (isToday) setTypeface(null, android.graphics.Typeface.BOLD)
+        }
+        cell.addView(tvDay, FrameLayout.LayoutParams(
+            FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.MATCH_PARENT))
+
+        if (hasTx) {
+            val dotColor = interpolateColor(
+                Color.parseColor("#66BB6A"),
+                Color.parseColor("#EF5350"),
+                intensity
+            )
+            val dot = View(requireContext()).apply {
+                val dotSize = dpToPx(5)
+                background = GradientDrawable().apply {
+                    shape = GradientDrawable.OVAL
+                    setColor(dotColor)
+                }
+                layoutParams = FrameLayout.LayoutParams(dotSize, dotSize).apply {
+                    gravity = android.view.Gravity.BOTTOM or android.view.Gravity.CENTER_HORIZONTAL
+                    bottomMargin = dpToPx(4)
+                }
+            }
+            cell.addView(dot)
+        }
+
+        return cell
+    }
+
+    private fun showSelectedDay(v: View, day: Int, transactions: List<Transaction>) {
+        val card  = v.findViewById<View>(R.id.selectedDayCard)
+        val title = v.findViewById<TextView>(R.id.tvSelectedDayTitle)
+        val rv    = v.findViewById<RecyclerView>(R.id.rvSelectedDayTx)
+
+        if (transactions.isEmpty()) {
+            card.visibility = View.GONE
+            return
+        }
+        card.visibility = View.VISIBLE
+        val timeFmt = java.text.SimpleDateFormat("HH:mm", Locale.getDefault())
+        title.text = "$day ${ayYilFormat.format(Calendar.getInstance().time).split(" ")[0]}" +
+                " — ${transactions.size} işlem"
+        rv.layoutManager = LinearLayoutManager(requireContext())
+        // Bireysel işlemleri göster, tıklanabilir
+        rv.adapter = com.example.hesapyonetimi.adapter.TransactionAdapter(
+            transactions.map { t ->
+                com.example.hesapyonetimi.model.TransactionModel(
+                    id = t.id,
+                    title = t.description.ifBlank { t.categoryName },
+                    category = "${t.categoryIcon} ${t.categoryName}",
+                    amount = com.example.hesapyonetimi.presentation.common.CurrencyFormatter.formatWithSign(t.amount, t.isIncome),
+                    isIncome = t.isIncome,
+                    time = timeFmt.format(java.util.Date(t.date)),
+                    transaction = t
+                )
+            }
+        ) { tx ->
+            EditTransactionSheet.newInstance(tx).show(childFragmentManager, "EditTxDay")
+        }
+    }
+
+    // ── Timeline arama ────────────────────────────────────────────────────────
+
+    private fun setupTimelineSearch(v: View) {
+        v.findViewById<TextInputEditText>(R.id.etTimelineSearch)
+            .addTextChangedListener(object : TextWatcher {
+                override fun afterTextChanged(s: Editable?) { timelineAdapter.filter(s?.toString() ?: "") }
+                override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
+                override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
+            })
+    }
+
+    // ── Kategori tabı ─────────────────────────────────────────────────────────
+
+    private fun setupKategoriTabs(v: View) {
+        v.findViewById<TextView>(R.id.tabKatGider).setOnClickListener { updateKatTab(v, false) }
+        v.findViewById<TextView>(R.id.tabKatGelir).setOnClickListener { updateKatTab(v, true) }
+
+        v.findViewById<TextView>(R.id.btnChartPie).setOnClickListener {
+            showPieChart = true
+            updateChartToggle(v)
+            v.findViewById<PieChartView>(R.id.pieChart).setMode(false)
+        }
+        v.findViewById<TextView>(R.id.btnChartBar).setOnClickListener {
+            showPieChart = false
+            updateChartToggle(v)
+            v.findViewById<PieChartView>(R.id.pieChart).setMode(true)
+        }
+    }
+
+    private fun updateChartToggle(v: View) {
+        val btnPie = v.findViewById<TextView>(R.id.btnChartPie)
+        val btnBar = v.findViewById<TextView>(R.id.btnChartBar)
+        btnPie.setBackgroundResource(if (showPieChart) R.drawable.kategori_item_selected_bg else R.drawable.kategori_item_bg)
+        btnBar.setBackgroundResource(if (!showPieChart) R.drawable.kategori_item_selected_bg else R.drawable.kategori_item_bg)
+    }
+
+    private fun updateKatTab(v: View, showIncome: Boolean) {
+        val btnGider = v.findViewById<TextView>(R.id.tabKatGider)
+        val btnGelir = v.findViewById<TextView>(R.id.tabKatGelir)
+
+        btnGider.setBackgroundResource(if (!showIncome) R.drawable.kategori_item_selected_bg else R.drawable.kategori_item_bg)
+        btnGider.setTextColor(ContextCompat.getColor(requireContext(), if (!showIncome) R.color.green_primary else R.color.text_secondary))
+        btnGelir.setBackgroundResource(if (showIncome)  R.drawable.kategori_item_selected_bg else R.drawable.kategori_item_bg)
+        btnGelir.setTextColor(ContextCompat.getColor(requireContext(), if (showIncome) R.color.green_primary else R.color.text_secondary))
+
+        val state = viewModel.uiState.value
+        val list  = if (showIncome) state.gelirKategoriler else state.kategoriler
+        v.findViewById<RecyclerView>(R.id.rvKatAnaliz).adapter =
+            KategoriAnalizAdapter(list) { kat ->
+                val detay = KategoriDetayFragment.newInstance(kat, state.ayOffset)
+                (requireActivity() as MainActivity).showKategoriDetay(detay)
+            }
+        updatePieChart(v, list)
+    }
+
+    private val chartColors = listOf(
+        Color.parseColor("#4CAF50"), Color.parseColor("#2196F3"), Color.parseColor("#FF9800"),
+        Color.parseColor("#E91E63"), Color.parseColor("#9C27B0"), Color.parseColor("#00BCD4"),
+        Color.parseColor("#FF5722"), Color.parseColor("#607D8B"), Color.parseColor("#FFC107"),
+        Color.parseColor("#8BC34A")
+    )
+
+    private fun updatePieChart(v: View, list: List<com.example.hesapyonetimi.presentation.aylik.KategoriOzet>) {
+        val chart = v.findViewById<PieChartView>(R.id.pieChart) ?: return
+        if (list.isEmpty()) { chart.visibility = View.GONE; return }
+        chart.visibility = View.VISIBLE
+        chart.setMode(!showPieChart)
+        val entries = list.mapIndexed { i, kat ->
+            PieChartView.PieEntry(
+                value = kat.toplam.toFloat(),
+                color = chartColors[i % chartColors.size],
+                label = kat.ad
+            )
+        }
+        chart.setData(entries)
+        // Dilime tıklandığında kategori detay aç
+        chart.onSliceTap = sliceTap@{ entry ->
+            val kat = list.find { it.ad == entry.label } ?: return@sliceTap
+            val detay = com.example.hesapyonetimi.presentation.aylik.KategoriDetayFragment
+                .newInstance(kat, viewModel.uiState.value.ayOffset)
+            (requireActivity() as MainActivity).showKategoriDetay(detay)
+        }
+    }
+
+    // ── Observer ─────────────────────────────────────────────────────────────
+
+    private fun observeViewModel(view: View) {
         viewLifecycleOwner.lifecycleScope.launch {
             viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
-                viewModel.uiState.collect { state ->
-                    updateUI(view, state)
-                    rvKategoriler.adapter = KategoriAnalizAdapter(state.kategoriler) { kat ->
-                        val detay = KategoriDetayFragment.newInstance(kat, state.ayOffset)
-                        (requireActivity() as MainActivity).showKategoriDetay(detay)
+
+                launch {
+                    viewModel.uiState.collect { state ->
+                        updateHeader(view, state)
+                        updateDateLabels(view, state)
+                        timelineAdapter.submitList(state.transactions)
+                        updateKatList(view, state)
+                        updateOneri(view, state)
                     }
-                    rvGelirKategoriler?.adapter = KategoriAnalizAdapter(state.gelirKategoriler) { kat ->
-                        val detay = KategoriDetayFragment.newInstance(kat, state.ayOffset)
-                        (requireActivity() as MainActivity).showKategoriDetay(detay)
+                }
+
+                launch {
+                    kotlinx.coroutines.flow.combine(
+                        viewModel.calendarTransactions,
+                        viewModel.calendarOffset
+                    ) { txs, offset -> txs to offset }.collect { (txs, offset) ->
+                        buildCalendar(view, txs, offset)
                     }
                 }
             }
         }
     }
 
-    private fun setupTarihSecici(view: View) {
-        val tvBaslangic = view.findViewById<TextView>(R.id.tv_baslangic_tarih)
-        val tvBitis = view.findViewById<TextView>(R.id.tv_bitis_tarih)
+    private fun updateHeader(v: View, state: AylikUiState) {
+        v.findViewById<TextView>(R.id.tv_toplam_gelir).text = CurrencyFormatter.format(state.toplamGelir)
+        v.findViewById<TextView>(R.id.tv_toplam_gider).text = CurrencyFormatter.format(state.toplamGider)
+        val net = state.toplamGelir - state.toplamGider
+        val tvNet = v.findViewById<TextView>(R.id.tv_net)
+        tvNet.text = CurrencyFormatter.format(net)
+        tvNet.setTextColor(if (net >= 0) Color.parseColor("#A5F3BB") else Color.parseColor("#FFAAAA"))
+    }
 
-        tvBaslangic.setOnClickListener {
-            val current = Calendar.getInstance().apply { timeInMillis = viewModel.uiState.value.baslangicMillis }
-            DatePickerDialog(requireContext(), { _, y, m, d ->
-                val sec = Calendar.getInstance().apply { set(y, m, d, 0, 0, 0) }
-                viewModel.setOzelAralik(sec.timeInMillis, viewModel.uiState.value.bitisMillis)
-                seciliDonemTemizle(view)
-            }, current.get(Calendar.YEAR), current.get(Calendar.MONTH), current.get(Calendar.DAY_OF_MONTH)).show()
+    private fun updateDateLabels(v: View, state: AylikUiState) {
+        v.findViewById<TextView>(R.id.tv_baslangic_tarih).text = tarihFormat.format(Date(state.baslangicMillis))
+        v.findViewById<TextView>(R.id.tv_bitis_tarih).text     = tarihFormat.format(Date(state.bitisMillis))
+    }
+
+    private fun updateKatList(v: View, state: AylikUiState) {
+        val rv = v.findViewById<RecyclerView>(R.id.rvKatAnaliz) ?: return
+        val btnGider = v.findViewById<TextView>(R.id.tabKatGider)
+        val showIncome = btnGider.background.constantState ==
+            ContextCompat.getDrawable(requireContext(), R.drawable.kategori_item_bg)?.constantState
+        val list = if (showIncome) state.gelirKategoriler else state.kategoriler
+        rv.adapter = KategoriAnalizAdapter(list) { kat ->
+            val detay = KategoriDetayFragment.newInstance(kat, state.ayOffset)
+            (requireActivity() as MainActivity).showKategoriDetay(detay)
         }
+        updatePieChart(v, list)
+    }
 
-        tvBitis.setOnClickListener {
-            val current = Calendar.getInstance().apply { timeInMillis = viewModel.uiState.value.bitisMillis }
+    private fun updateOneri(v: View, state: AylikUiState) {
+        val row   = v.findViewById<View>(R.id.katOneriRow) ?: return
+        val emoji = v.findViewById<TextView>(R.id.tv_oneri_emoji)
+        val metin = v.findViewById<TextView>(R.id.tv_oneri_metin)
+        val enCok = state.kategoriler.firstOrNull()
+        when {
+            state.transactions.isEmpty() -> {
+                row.visibility = View.GONE
+            }
+            state.toplamGider > state.toplamGelir -> {
+                row.visibility = View.VISIBLE
+                emoji.text = "⚠️"
+                val fark = CurrencyFormatter.format(state.toplamGider - state.toplamGelir)
+                metin.text = "Giderler geliri $fark aştı. ${enCok?.let { "En büyük kalem: ${it.ad}" } ?: ""}"
+            }
+            enCok != null && enCok.degisimYuzde > 20 -> {
+                row.visibility = View.VISIBLE
+                emoji.text = "📈"
+                metin.text = "${enCok.ad} harcaman geçen aya göre %${enCok.degisimYuzde.toInt()} arttı."
+            }
+            state.toplamGider < state.toplamGelir * 0.5 -> {
+                row.visibility = View.VISIBLE
+                emoji.text = "💰"
+                metin.text = "Gelirinizin yarısından azını harcadınız. Tasarruf oranınız yüksek!"
+            }
+            else -> {
+                row.visibility = View.VISIBLE
+                emoji.text = "💡"
+                val oran = if (state.toplamGelir > 0)
+                    (state.toplamGider / state.toplamGelir * 100).toInt() else 0
+                metin.text = "Harcamalar gelirin %$oran'i."
+            }
+        }
+    }
+
+    // ── Dönem / tarih seçici ─────────────────────────────────────────────────
+
+    private fun setupDatePickers(view: View) {
+        view.findViewById<TextView>(R.id.tv_baslangic_tarih).setOnClickListener {
+            val c = Calendar.getInstance().apply { timeInMillis = viewModel.uiState.value.baslangicMillis }
             DatePickerDialog(requireContext(), { _, y, m, d ->
-                val sec = Calendar.getInstance().apply { set(y, m, d, 23, 59, 59) }
-                viewModel.setOzelAralik(viewModel.uiState.value.baslangicMillis, sec.timeInMillis)
+                val sel = Calendar.getInstance().apply { set(y, m, d, 0, 0, 0) }
+                viewModel.setOzelAralik(sel.timeInMillis, viewModel.uiState.value.bitisMillis)
                 seciliDonemTemizle(view)
-            }, current.get(Calendar.YEAR), current.get(Calendar.MONTH), current.get(Calendar.DAY_OF_MONTH)).show()
+            }, c.get(Calendar.YEAR), c.get(Calendar.MONTH), c.get(Calendar.DAY_OF_MONTH)).show()
+        }
+        view.findViewById<TextView>(R.id.tv_bitis_tarih).setOnClickListener {
+            val c = Calendar.getInstance().apply { timeInMillis = viewModel.uiState.value.bitisMillis }
+            DatePickerDialog(requireContext(), { _, y, m, d ->
+                val sel = Calendar.getInstance().apply { set(y, m, d, 23, 59, 59) }
+                viewModel.setOzelAralik(viewModel.uiState.value.baslangicMillis, sel.timeInMillis)
+                seciliDonemTemizle(view)
+            }, c.get(Calendar.YEAR), c.get(Calendar.MONTH), c.get(Calendar.DAY_OF_MONTH)).show()
         }
     }
 
@@ -124,52 +478,7 @@ class AylikFragment : Fragment() {
         listOf(R.id.btn_donem_1a, R.id.btn_donem_3a, R.id.btn_donem_6a, R.id.btn_donem_tumu).forEach { id ->
             view.findViewById<TextView>(id).apply {
                 setBackgroundResource(R.drawable.kategori_item_bg)
-                setTextColor(androidx.core.content.ContextCompat.getColor(requireContext(), R.color.text_secondary))
-            }
-        }
-    }
-
-    private fun updateUI(view: View, state: AylikUiState) {
-        view.findViewById<TextView>(R.id.tv_toplam_gelir).text = CurrencyFormatter.format(state.toplamGelir)
-        view.findViewById<TextView>(R.id.tv_toplam_gider).text = CurrencyFormatter.format(state.toplamGider)
-        val net = state.toplamGelir - state.toplamGider
-        view.findViewById<TextView>(R.id.tv_net).text = CurrencyFormatter.format(net)
-
-        view.findViewById<TextView>(R.id.tv_islem_sayisi).text = "${state.transactions.size} adet"
-        val gunlukOrt = state.toplamGider / state.gunSayisi.coerceAtLeast(1)
-        view.findViewById<TextView>(R.id.tv_gunluk_ort).text = CurrencyFormatter.format(gunlukOrt)
-
-        // Tarih — her zaman ViewModel'den göster
-        view.findViewById<TextView>(R.id.tv_baslangic_tarih).text = tarihFormat.format(Date(state.baslangicMillis))
-        view.findViewById<TextView>(R.id.tv_bitis_tarih).text = tarihFormat.format(Date(state.bitisMillis))
-
-        // Gelişmiş öneri
-        val tvEmoji = view.findViewById<TextView>(R.id.tv_oneri_emoji)
-        val tvMetin = view.findViewById<TextView>(R.id.tv_oneri_metin)
-        val enCokKat = state.kategoriler.firstOrNull()
-        when {
-            state.transactions.isEmpty() -> { tvEmoji.text = "📊"; tvMetin.text = "Bu dönem için henüz veri yok." }
-            state.toplamGider > state.toplamGelir -> {
-                tvEmoji.text = "⚠️"
-                val fark = CurrencyFormatter.format(state.toplamGider - state.toplamGelir)
-                tvMetin.text = "Giderler geliri $fark aştı. ${enCokKat?.let { "En büyük kalem: ${it.ad} (${CurrencyFormatter.format(it.toplam)})" } ?: ""}"
-            }
-            enCokKat != null && enCokKat.degisimYuzde > 20 -> {
-                tvEmoji.text = "📈"
-                tvMetin.text = "${enCokKat.ad} harcaman geçen aya göre %${enCokKat.degisimYuzde.toInt()} arttı."
-            }
-            enCokKat != null && enCokKat.degisimYuzde < -10 -> {
-                tvEmoji.text = "🎉"
-                tvMetin.text = "${enCokKat.ad} harcamanı %${(-enCokKat.degisimYuzde).toInt()} azalttın, aferin!"
-            }
-            state.toplamGider < state.toplamGelir * 0.5 -> {
-                tvEmoji.text = "💰"
-                tvMetin.text = "Gelirinizin yarısından azını harcadınız. Tasarruf oranınız yüksek!"
-            }
-            else -> {
-                tvEmoji.text = "💡"
-                val oran = (state.toplamGider / state.toplamGelir * 100).toInt()
-                tvMetin.text = "Harcamalar gelirin %$oran'i. ${if (oran > 80) "Dikkatli olun." else "Makul seviyede."}"
+                setTextColor(ContextCompat.getColor(requireContext(), R.color.text_secondary))
             }
         }
     }
@@ -186,16 +495,26 @@ class AylikFragment : Fragment() {
             butonlar.forEach { (btn, donem) ->
                 val secili = donem == secilenDonem
                 btn.setBackgroundResource(if (secili) R.drawable.kategori_item_selected_bg else R.drawable.kategori_item_bg)
-                btn.setTextColor(
-                    if (secili) androidx.core.content.ContextCompat.getColor(requireContext(), R.color.green_primary)
-                    else androidx.core.content.ContextCompat.getColor(requireContext(), R.color.text_secondary)
-                )
+                btn.setTextColor(ContextCompat.getColor(requireContext(),
+                    if (secili) R.color.green_primary else R.color.text_secondary))
             }
         }
-
         guncelle(0)
         butonlar.forEach { (btn, donem) ->
             btn.setOnClickListener { guncelle(donem); viewModel.setDonem(donem) }
         }
+    }
+
+    // ── Yardımcı ─────────────────────────────────────────────────────────────
+
+    private fun dpToPx(dp: Int) = (dp * resources.displayMetrics.density).toInt()
+
+    private fun interpolateColor(start: Int, end: Int, t: Float): Int {
+        val f = t.coerceIn(0f, 1f)
+        return Color.rgb(
+            (Color.red(start)   + (Color.red(end)   - Color.red(start))   * f).toInt(),
+            (Color.green(start) + (Color.green(end) - Color.green(start)) * f).toInt(),
+            (Color.blue(start)  + (Color.blue(end)  - Color.blue(start))  * f).toInt()
+        )
     }
 }

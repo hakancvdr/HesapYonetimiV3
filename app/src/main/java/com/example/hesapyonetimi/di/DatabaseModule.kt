@@ -46,7 +46,13 @@ object DatabaseModule {
 
     @Provides
     @Singleton
-    fun provideUserProfileDao(database: AppDatabase): UserProfileDao {  // ← YENİ
+    fun provideUserProfileDao(database: AppDatabase): UserProfileDao {
         return database.userProfileDao()
+    }
+
+    @Provides
+    @Singleton
+    fun provideWalletDao(database: AppDatabase): WalletDao {
+        return database.walletDao()
     }
 }

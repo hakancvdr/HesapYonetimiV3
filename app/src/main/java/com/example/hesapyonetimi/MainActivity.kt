@@ -14,13 +14,12 @@ import dagger.hilt.android.AndroidEntryPoint
 @AndroidEntryPoint
 class MainActivity : AppCompatActivity() {
 
-    private val dashboardFragment = DashboardFragment()
-    private val gunlukFragment    = GunlukFragment()
-    private val aylikFragment     = AylikFragment()
-    private val yaklasanFragment  = YaklasanFragment()
-    private val profileFragment   = ProfileFragment()
-
-    private var activeFragment: Fragment = dashboardFragment
+    private lateinit var dashboardFragment: DashboardFragment
+    private lateinit var gunlukFragment: GunlukFragment
+    private lateinit var aylikFragment: AylikFragment
+    private lateinit var yaklasanFragment: YaklasanFragment
+    private lateinit var profileFragment: ProfileFragment
+    private lateinit var activeFragment: Fragment
 
     override fun onCreate(savedInstanceState: Bundle?) {
         // ── Tema: SharedPreferences'tan oku, Activity oluşmadan önce uygula ─
@@ -35,6 +34,13 @@ class MainActivity : AppCompatActivity() {
         }
 
         if (savedInstanceState == null) {
+            dashboardFragment = DashboardFragment()
+            gunlukFragment    = GunlukFragment()
+            aylikFragment     = AylikFragment()
+            yaklasanFragment  = YaklasanFragment()
+            profileFragment   = ProfileFragment()
+            activeFragment    = dashboardFragment
+
             supportFragmentManager.beginTransaction().apply {
                 add(R.id.fragment_container, yaklasanFragment,  "yaklasan").hide(yaklasanFragment)
                 add(R.id.fragment_container, aylikFragment,     "aylik").hide(aylikFragment)
@@ -42,9 +48,44 @@ class MainActivity : AppCompatActivity() {
                 add(R.id.fragment_container, profileFragment,   "profil").hide(profileFragment)
                 add(R.id.fragment_container, dashboardFragment, "dashboard")
             }.commit()
+        } else {
+            // Tema değişikliği gibi Activity yeniden oluşturulunca fragment referanslarını geri yükle
+            dashboardFragment = (supportFragmentManager.findFragmentByTag("dashboard") as? DashboardFragment)
+                ?: DashboardFragment()
+            gunlukFragment    = (supportFragmentManager.findFragmentByTag("gunluk") as? GunlukFragment)
+                ?: GunlukFragment()
+            aylikFragment     = (supportFragmentManager.findFragmentByTag("aylik") as? AylikFragment)
+                ?: AylikFragment()
+            yaklasanFragment  = (supportFragmentManager.findFragmentByTag("yaklasan") as? YaklasanFragment)
+                ?: YaklasanFragment()
+            profileFragment   = (supportFragmentManager.findFragmentByTag("profil") as? ProfileFragment)
+                ?: ProfileFragment()
+
+            val activeTag = savedInstanceState.getString("active_fragment", "dashboard")
+            activeFragment = when (activeTag) {
+                "gunluk"   -> gunlukFragment
+                "aylik"    -> aylikFragment
+                "yaklasan" -> yaklasanFragment
+                "profil"   -> profileFragment
+                else       -> dashboardFragment
+            }
         }
 
         setupNavigation()
+    }
+
+    override fun onSaveInstanceState(outState: Bundle) {
+        super.onSaveInstanceState(outState)
+        if (::activeFragment.isInitialized) {
+            val tag = when (activeFragment) {
+                gunlukFragment   -> "gunluk"
+                aylikFragment    -> "aylik"
+                yaklasanFragment -> "yaklasan"
+                profileFragment  -> "profil"
+                else             -> "dashboard"
+            }
+            outState.putString("active_fragment", tag)
+        }
     }
 
     override fun onStart() {
@@ -81,7 +122,9 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    // ── Tema uygulama: çöküş olmadan ─────────────────────────────────────────
+    // ── Tema uygulama ─────────────────────────────────────────────────────────
+    // AppCompatDelegate.setDefaultNightMode, gerektiğinde Activity'i otomatik
+    // yeniden oluşturur; ayrıca recreate() çağırmak gerekmez.
     fun applyTheme(mode: String) {
         getSharedPreferences("HesapPrefs", Context.MODE_PRIVATE)
             .edit().putString("theme_mode", mode).apply()
@@ -91,7 +134,6 @@ class MainActivity : AppCompatActivity() {
             else    -> AppCompatDelegate.MODE_NIGHT_FOLLOW_SYSTEM
         }
         AppCompatDelegate.setDefaultNightMode(nightMode)
-        recreate()
     }
 
     private fun applyThemeFromPrefs() {
@@ -109,6 +151,11 @@ class MainActivity : AppCompatActivity() {
     fun gosterYaklasan() {
         goster(yaklasanFragment)
         findViewById<BottomNavigationView>(R.id.bottom_navigation).selectedItemId = R.id.nav_yaklasan
+    }
+
+    fun gosterAylik() {
+        goster(aylikFragment)
+        findViewById<BottomNavigationView>(R.id.bottom_navigation).selectedItemId = R.id.nav_aylik
     }
 
     fun gosterProfil() {

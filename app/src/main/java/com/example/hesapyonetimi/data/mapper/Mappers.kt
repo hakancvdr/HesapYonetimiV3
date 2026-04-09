@@ -15,7 +15,8 @@ fun TransactionEntity.toDomain(category: CategoryEntity? = null): Transaction {
         description = description,
         date = date,
         isIncome = isIncome,
-        createdAt = createdAt
+        createdAt = createdAt,
+        walletId = walletId
     )
 }
 
@@ -28,7 +29,8 @@ fun Transaction.toEntity(): TransactionEntity {
         date = date,
         isIncome = isIncome,
         createdAt = createdAt,
-        updatedAt = System.currentTimeMillis()
+        updatedAt = System.currentTimeMillis(),
+        walletId = walletId
     )
 }
 

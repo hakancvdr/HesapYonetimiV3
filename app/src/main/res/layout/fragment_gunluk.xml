@@ -98,7 +98,7 @@
 
             <!-- FORM KARTI -->
             <androidx.cardview.widget.CardView
-                app:cardBackgroundColor="#FFFFFF"
+                app:cardBackgroundColor="@color/card_background"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 app:cardCornerRadius="16dp"
@@ -217,6 +217,18 @@
                             android:textSize="14sp" />
                     </com.google.android.material.textfield.TextInputLayout>
 
+                    <!-- Cüzdan seçimi -->
+                    <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                        android:text="Cüzdan" android:textColor="@color/text_secondary"
+                        android:textSize="12sp" android:layout_marginBottom="6dp"/>
+                    <androidx.recyclerview.widget.RecyclerView
+                        android:id="@+id/rvGunlukWallets"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:nestedScrollingEnabled="false"
+                        android:layout_marginBottom="14dp"/>
+
                     <!-- Kaydet -->
                     <com.google.android.material.button.MaterialButton
                         android:id="@+id/btn_kaydet"
@@ -232,7 +244,7 @@
 
             <!-- SEÇİLEN GÜNÜN İŞLEMLERİ -->
             <androidx.cardview.widget.CardView
-                app:cardBackgroundColor="#FFFFFF"
+                app:cardBackgroundColor="@color/card_background"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 app:cardCornerRadius="16dp"

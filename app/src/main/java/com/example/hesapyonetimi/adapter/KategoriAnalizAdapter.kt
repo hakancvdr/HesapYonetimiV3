@@ -32,8 +32,26 @@ class KategoriAnalizAdapter(
         val kat = kategoriler[position]
         holder.icon.text = kat.icon
         holder.name.text = kat.ad
-        holder.amount.text = CurrencyFormatter.format(kat.toplam)
-        holder.pct.text = "%${kat.yuzde.toInt()} · ${kat.islemSayisi} işlem"
+        val amountStr = CurrencyFormatter.format(kat.toplam)
+        holder.amount.text = if (kat.isIncome) "+$amountStr" else amountStr
+        val amountColor = if (kat.isIncome)
+            androidx.core.content.ContextCompat.getColor(holder.itemView.context, R.color.income_green)
+        else
+            androidx.core.content.ContextCompat.getColor(holder.itemView.context, R.color.expense_red)
+        holder.amount.setTextColor(amountColor)
+
+        val barColor = if (kat.isIncome)
+            androidx.core.content.ContextCompat.getColor(holder.itemView.context, R.color.income_green)
+        else
+            androidx.core.content.ContextCompat.getColor(holder.itemView.context, R.color.green_primary)
+        holder.bar.setBackgroundColor(barColor)
+
+        val degisimText = when {
+            kat.degisimYuzde > 0f  -> " ▲${kat.degisimYuzde.toInt()}%"
+            kat.degisimYuzde < 0f  -> " ▼${(-kat.degisimYuzde).toInt()}%"
+            else -> ""
+        }
+        holder.pct.text = "%${kat.yuzde.toInt()} · ${kat.islemSayisi} işlem$degisimText"
 
         holder.bar.post {
             val parent = holder.bar.parent as View

@@ -36,5 +36,8 @@ data class TransactionEntity(
     val updatedAt: Long = System.currentTimeMillis(),
     
     // Opsiyonel: Tekrarlayan işlem ID'si (null ise tek seferlik)
-    val recurringTransactionId: Long? = null
+    val recurringTransactionId: Long? = null,
+
+    // Cüzdan bağlantısı (null = varsayılan)
+    val walletId: Long? = null
 )

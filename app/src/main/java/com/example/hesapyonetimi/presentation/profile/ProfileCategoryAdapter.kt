@@ -6,75 +6,64 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.ImageButton
 import android.widget.TextView
-import androidx.recyclerview.widget.DiffUtil
-import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import com.example.hesapyonetimi.R
 import com.example.hesapyonetimi.domain.model.Category
 
 class ProfileCategoryAdapter(
+    private val onEdit: (Category) -> Unit,
     private val onDelete: (Category) -> Unit
-) : ListAdapter<Category, ProfileCategoryAdapter.ViewHolder>(DiffCallback()) {
-
-    var filterType: String = "ALL" // ALL, INCOME, EXPENSE
-        set(value) {
-            field = value
-            submitFiltered(fullList)
-        }
+) : RecyclerView.Adapter<ProfileCategoryAdapter.ViewHolder>() {
 
     private var fullList: List<Category> = emptyList()
+    private var displayList: List<Category> = emptyList()
+
+    /** true → gelir kategorileri, false → gider kategorileri */
+    var showIncome: Boolean = false
+        set(value) {
+            field = value
+            applyFilter()
+        }
 
     fun submitFullList(list: List<Category>) {
         fullList = list
-        submitFiltered(list)
+        applyFilter()
     }
 
-    private fun submitFiltered(list: List<Category>) {
-        val filtered = when (filterType) {
-            "INCOME" -> list.filter { it.isIncome }
-            "EXPENSE" -> list.filter { !it.isIncome }
-            else -> list
-        }
-        submitList(filtered)
+    private fun applyFilter() {
+        displayList = fullList.filter { it.isIncome == showIncome }
+        notifyDataSetChanged()
     }
 
-    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
-        val view = LayoutInflater.from(parent.context)
-            .inflate(R.layout.item_profile_category, parent, false)
-        return ViewHolder(view)
-    }
+    override fun getItemCount() = displayList.size
+
+    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder =
+        ViewHolder(
+            LayoutInflater.from(parent.context)
+                .inflate(R.layout.item_profile_category, parent, false)
+        )
 
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
-        holder.bind(getItem(position))
+        holder.bind(displayList[position])
     }
 
-    inner class ViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
-        private val vColorDot: View = itemView.findViewById(R.id.vColorDot)
-        private val tvEmoji: TextView = itemView.findViewById(R.id.tvEmoji)
-        private val tvName: TextView = itemView.findViewById(R.id.tvCategoryName)
-        private val tvType: TextView = itemView.findViewById(R.id.tvCategoryType)
-        private val tvDefault: TextView = itemView.findViewById(R.id.tvDefaultBadge)
-        private val btnDelete: ImageButton = itemView.findViewById(R.id.btnDeleteCategory)
+    inner class ViewHolder(view: View) : RecyclerView.ViewHolder(view) {
+        private val vColorDot: View      = view.findViewById(R.id.vColorDot)
+        private val tvEmoji: TextView    = view.findViewById(R.id.tvEmoji)
+        private val tvName: TextView     = view.findViewById(R.id.tvCategoryName)
+        private val tvType: TextView     = view.findViewById(R.id.tvCategoryType)
+        private val btnEdit: ImageButton = view.findViewById(R.id.btnEditCategory)
+        private val btnDel: ImageButton  = view.findViewById(R.id.btnDeleteCategory)
 
         fun bind(category: Category) {
             tvEmoji.text = category.icon
-            tvName.text = category.name
-            tvType.text = if (category.isIncome) "Gelir" else "Gider"
-
+            tvName.text  = category.name
+            tvType.text  = if (category.isIncome) "Gelir" else "Gider"
             try {
-                val bg = vColorDot.background.mutate()
-                bg.setTint(Color.parseColor(category.color))
-                vColorDot.background = bg
+                vColorDot.background.mutate().setTint(Color.parseColor(category.color))
             } catch (_: Exception) {}
-
-            tvDefault.visibility = if (category.isDefault) View.VISIBLE else View.GONE
-            btnDelete.visibility = if (category.isDefault) View.INVISIBLE else View.VISIBLE
-            btnDelete.setOnClickListener { onDelete(category) }
+            btnEdit.setOnClickListener { onEdit(category) }
+            btnDel.setOnClickListener  { onDelete(category) }
         }
-    }
-
-    class DiffCallback : DiffUtil.ItemCallback<Category>() {
-        override fun areItemsTheSame(old: Category, new: Category) = old.id == new.id
-        override fun areContentsTheSame(old: Category, new: Category) = old == new
     }
 }

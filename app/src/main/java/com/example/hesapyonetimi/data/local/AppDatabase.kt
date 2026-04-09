@@ -9,6 +9,8 @@ import androidx.sqlite.db.SupportSQLiteDatabase
 import com.example.hesapyonetimi.data.local.converters.Converters
 import com.example.hesapyonetimi.data.local.dao.*
 import com.example.hesapyonetimi.data.local.entity.*
+import androidx.room.migration.Migration
+import androidx.sqlite.db.SupportSQLiteDatabase as MigSQLiteDatabase
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -19,9 +21,10 @@ import kotlinx.coroutines.launch
         CategoryEntity::class,
         BudgetEntity::class,
         ReminderEntity::class,
-        UserProfileEntity::class   // ← YENİ
+        UserProfileEntity::class,
+        WalletEntity::class
     ],
-    version = 6,                   // ← 5'ten 6'ya
+    version = 7,
     exportSchema = false
 )
 @TypeConverters(Converters::class)
@@ -31,11 +34,34 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun categoryDao(): CategoryDao
     abstract fun budgetDao(): BudgetDao
     abstract fun reminderDao(): ReminderDao
-    abstract fun userProfileDao(): UserProfileDao  // ← YENİ
+    abstract fun userProfileDao(): UserProfileDao
+    abstract fun walletDao(): WalletDao
 
     companion object {
         @Volatile
         private var INSTANCE: AppDatabase? = null
+
+        val MIGRATION_6_7 = object : Migration(6, 7) {
+            override fun migrate(db: MigSQLiteDatabase) {
+                db.execSQL("""
+                    CREATE TABLE IF NOT EXISTS `wallets` (
+                        `id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                        `name` TEXT NOT NULL,
+                        `icon` TEXT NOT NULL DEFAULT '💳',
+                        `color` TEXT NOT NULL DEFAULT '#0099CC',
+                        `type` TEXT NOT NULL DEFAULT 'BANK',
+                        `isDefault` INTEGER NOT NULL DEFAULT 0,
+                        `createdAt` INTEGER NOT NULL
+                    )
+                """.trimIndent())
+                db.execSQL("ALTER TABLE `transactions` ADD COLUMN `walletId` INTEGER DEFAULT NULL")
+                db.execSQL("""
+                    INSERT INTO `wallets` (`name`, `icon`, `color`, `type`, `isDefault`, `createdAt`)
+                    VALUES ('Nakit', '💵', '#4CAF50', 'CASH', 0, ${System.currentTimeMillis()}),
+                           ('Banka Hesabı', '🏦', '#2196F3', 'BANK', 1, ${System.currentTimeMillis()})
+                """.trimIndent())
+            }
+        }
 
         fun getDatabase(context: Context): AppDatabase {
             return INSTANCE ?: synchronized(this) {
@@ -44,6 +70,7 @@ abstract class AppDatabase : RoomDatabase() {
                     AppDatabase::class.java,
                     "hesap_yonetimi_database"
                 )
+                    .addMigrations(MIGRATION_6_7)
                     .fallbackToDestructiveMigration()
                     .addCallback(DatabaseCallback())
                     .build()
@@ -59,8 +86,12 @@ abstract class AppDatabase : RoomDatabase() {
             INSTANCE?.let { database ->
                 CoroutineScope(Dispatchers.IO).launch {
                     populateDefaultCategories(database.categoryDao())
-                    // Profil kaydı oluştur
-                    database.userProfileDao().upsertProfile(UserProfileEntity())
+                    populateDefaultWallets(database.walletDao())
+                    // Profil kaydı yalnızca hiç yoksa oluştur
+                    // (RegistrationActivity sonradan kendi adını yazacak)
+                    if (database.userProfileDao().getProfileOnce() == null) {
+                        database.userProfileDao().upsertProfile(UserProfileEntity())
+                    }
                 }
             }
         }
@@ -86,6 +117,11 @@ abstract class AppDatabase : RoomDatabase() {
             )
 
             categoryDao.insertAll(defaultExpenseCategories + defaultIncomeCategories)
+        }
+
+        private suspend fun populateDefaultWallets(walletDao: WalletDao) {
+            walletDao.insert(WalletEntity(name = "Nakit", icon = "💵", color = "#4CAF50", type = "CASH"))
+            walletDao.insert(WalletEntity(name = "Banka Hesabı", icon = "🏦", color = "#2196F3", type = "BANK", isDefault = true))
         }
     }
 }

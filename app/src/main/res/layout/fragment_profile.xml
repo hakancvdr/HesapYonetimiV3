@@ -3,7 +3,7 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="#F0F4FF"
+    android:background="@color/background"
     android:orientation="vertical">
 
     <!-- ══ HEADER ══ -->
@@ -110,99 +110,85 @@
         </LinearLayout>
 
         <!-- Stats satırı — glassmorphism panel -->
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="20dp"
-            android:background="@drawable/bg_profile_stats_panel"
-            android:orientation="horizontal"
-            android:paddingVertical="14dp">
+        <!-- Bu Ay Finansal Özet -->
+        <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+            android:layout_marginTop="18dp" android:orientation="vertical"
+            android:background="@drawable/bg_profile_stats_panel" android:padding="16dp">
 
-            <LinearLayout
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:gravity="center"
-                android:orientation="vertical">
+            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                android:text="Bu Ay Özeti" android:textColor="#88BBFF"
+                android:textSize="10sp" android:letterSpacing="0.1" android:layout_marginBottom="10dp"/>
 
-                <TextView
-                    android:id="@+id/tvTotalTransactions"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="0"
-                    android:textColor="#FFFFFF"
-                    android:textSize="26sp"
-                    android:textStyle="bold" />
+            <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+                android:orientation="horizontal">
 
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="İşlem"
-                    android:textColor="#88BBFF"
-                    android:textSize="11sp"
-                    android:layout_marginTop="2dp" />
+                <!-- Gelir -->
+                <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content"
+                    android:layout_weight="1" android:orientation="vertical" android:gravity="center_horizontal">
+                    <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                        android:text="↑" android:textColor="#A5F3BB" android:textSize="16sp"/>
+                    <TextView android:id="@+id/tvMonthIncome"
+                        android:layout_width="wrap_content" android:layout_height="wrap_content"
+                        android:text="₺0" android:textColor="#A5F3BB" android:textSize="15sp"
+                        android:textStyle="bold" android:layout_marginTop="2dp"/>
+                    <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                        android:text="Gelir" android:textColor="#88BBFF" android:textSize="10sp"
+                        android:layout_marginTop="2dp"/>
+                </LinearLayout>
+
+                <View android:layout_width="1dp" android:layout_height="44dp"
+                    android:layout_gravity="center_vertical" android:background="#33FFFFFF"/>
+
+                <!-- Gider -->
+                <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content"
+                    android:layout_weight="1" android:orientation="vertical" android:gravity="center_horizontal">
+                    <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                        android:text="↓" android:textColor="#FFAAAA" android:textSize="16sp"/>
+                    <TextView android:id="@+id/tvMonthExpense"
+                        android:layout_width="wrap_content" android:layout_height="wrap_content"
+                        android:text="₺0" android:textColor="#FFAAAA" android:textSize="15sp"
+                        android:textStyle="bold" android:layout_marginTop="2dp"/>
+                    <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                        android:text="Gider" android:textColor="#88BBFF" android:textSize="10sp"
+                        android:layout_marginTop="2dp"/>
+                </LinearLayout>
+
+                <View android:layout_width="1dp" android:layout_height="44dp"
+                    android:layout_gravity="center_vertical" android:background="#33FFFFFF"/>
+
+                <!-- Net -->
+                <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content"
+                    android:layout_weight="1" android:orientation="vertical" android:gravity="center_horizontal">
+                    <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                        android:text="≈" android:textColor="#FFFFFF" android:textSize="16sp"/>
+                    <TextView android:id="@+id/tvMonthNet"
+                        android:layout_width="wrap_content" android:layout_height="wrap_content"
+                        android:text="₺0" android:textColor="#FFFFFF" android:textSize="15sp"
+                        android:textStyle="bold" android:layout_marginTop="2dp"/>
+                    <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                        android:text="Net" android:textColor="#88BBFF" android:textSize="10sp"
+                        android:layout_marginTop="2dp"/>
+                </LinearLayout>
             </LinearLayout>
 
-            <View
-                android:layout_width="1dp"
-                android:layout_height="36dp"
-                android:layout_gravity="center_vertical"
-                android:background="#33FFFFFF" />
+            <!-- Alt satır: işlem / kategori / üyelik -->
+            <View android:layout_width="match_parent" android:layout_height="1dp"
+                android:background="#22FFFFFF" android:layout_marginTop="12dp" android:layout_marginBottom="10dp"/>
 
-            <LinearLayout
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:gravity="center"
-                android:orientation="vertical">
-
-                <TextView
-                    android:id="@+id/tvCategoryCount"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="0"
-                    android:textColor="#FFFFFF"
-                    android:textSize="26sp"
-                    android:textStyle="bold" />
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="Kategori"
-                    android:textColor="#88BBFF"
-                    android:textSize="11sp"
-                    android:layout_marginTop="2dp" />
-            </LinearLayout>
-
-            <View
-                android:layout_width="1dp"
-                android:layout_height="36dp"
-                android:layout_gravity="center_vertical"
-                android:background="#33FFFFFF" />
-
-            <LinearLayout
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:gravity="center"
-                android:orientation="vertical">
-
-                <TextView
-                    android:id="@+id/tvActiveDays"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="0"
-                    android:textColor="#FFFFFF"
-                    android:textSize="26sp"
-                    android:textStyle="bold" />
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="Aktif Gün"
-                    android:textColor="#88BBFF"
-                    android:textSize="11sp"
-                    android:layout_marginTop="2dp" />
+            <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+                android:orientation="horizontal">
+                <TextView android:id="@+id/tvTotalTransactions"
+                    android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1"
+                    android:gravity="center" android:text="0 İşlem"
+                    android:textColor="#BBDDFF" android:textSize="11sp"/>
+                <TextView android:id="@+id/tvCategoryCount"
+                    android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1"
+                    android:gravity="center" android:text="0 Kategori"
+                    android:textColor="#BBDDFF" android:textSize="11sp"/>
+                <TextView android:id="@+id/tvActiveDays"
+                    android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1"
+                    android:gravity="center" android:text="Yeni"
+                    android:textColor="#A5F3BB" android:textSize="11sp"/>
             </LinearLayout>
         </LinearLayout>
     </LinearLayout>
@@ -228,7 +214,7 @@
                 android:layout_height="wrap_content"
                 android:layout_marginBottom="10dp"
                 android:text="FİNANS"
-                android:textColor="#8899BB"
+                android:textColor="@color/text_secondary"
                 android:textSize="11sp"
                 android:letterSpacing="0.15"
                 android:textStyle="bold" />
@@ -238,7 +224,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginBottom="8dp"
-                app:cardBackgroundColor="#FFFFFF"
+                app:cardBackgroundColor="@color/card_background"
                 app:cardCornerRadius="18dp"
                 app:cardElevation="0dp">
 
@@ -280,7 +266,7 @@
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
                                 android:text="Aylık Bütçe"
-                                android:textColor="#99AABB"
+                                android:textColor="@color/text_secondary"
                                 android:textSize="12sp" />
 
                             <TextView
@@ -288,7 +274,7 @@
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
                                 android:text="Ayarlanmadı"
-                                android:textColor="#1A2540"
+                                android:textColor="@color/text_primary"
                                 android:textSize="17sp"
                                 android:textStyle="bold"
                                 android:layout_marginTop="1dp" />
@@ -302,7 +288,7 @@
                             android:paddingHorizontal="14dp"
                             android:paddingVertical="7dp"
                             android:text="Düzenle"
-                            android:textColor="#3366FF"
+                            android:textColor="@color/green_primary"
                             android:textSize="12sp"
                             android:textStyle="bold" />
                     </LinearLayout>
@@ -327,7 +313,7 @@
                                 android:layout_height="wrap_content"
                                 android:layout_weight="1"
                                 android:text="Bu ay: ₺0"
-                                android:textColor="#99AABB"
+                                android:textColor="@color/text_secondary"
                                 android:textSize="12sp" />
 
                             <TextView
@@ -335,7 +321,7 @@
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
                                 android:text="%0"
-                                android:textColor="#3366FF"
+                                android:textColor="@color/green_primary"
                                 android:textSize="12sp"
                                 android:textStyle="bold" />
                         </LinearLayout>
@@ -359,7 +345,7 @@
                 android:layout_marginTop="16dp"
                 android:layout_marginBottom="10dp"
                 android:text="AYARLAR"
-                android:textColor="#8899BB"
+                android:textColor="@color/text_secondary"
                 android:textSize="11sp"
                 android:letterSpacing="0.15"
                 android:textStyle="bold" />
@@ -369,7 +355,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginBottom="8dp"
-                app:cardBackgroundColor="#FFFFFF"
+                app:cardBackgroundColor="@color/card_background"
                 app:cardCornerRadius="18dp"
                 app:cardElevation="0dp">
 
@@ -411,7 +397,7 @@
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
                                 android:text="Kategori Yönetimi"
-                                android:textColor="#1A2540"
+                                android:textColor="@color/text_primary"
                                 android:textSize="14sp"
                                 android:textStyle="bold" />
 
@@ -421,7 +407,7 @@
                                 android:layout_height="wrap_content"
                                 android:layout_marginTop="2dp"
                                 android:text="Kategorileri düzenle"
-                                android:textColor="#99AABB"
+                                android:textColor="@color/text_secondary"
                                 android:textSize="12sp" />
                         </LinearLayout>
 
@@ -429,16 +415,180 @@
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:text="›"
-                            android:textColor="#CCDDFF"
+                            android:textColor="@color/text_secondary"
+                            android:textSize="26sp" />
+                    </LinearLayout>
+
+                    <!-- Cüzdan Yönetimi -->
+                    <LinearLayout
+                        android:id="@+id/cardWallets"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:background="?attr/selectableItemBackground"
+                        android:gravity="center_vertical"
+                        android:orientation="horizontal"
+                        android:padding="16dp">
+
+                        <LinearLayout
+                            android:layout_width="42dp"
+                            android:layout_height="42dp"
+                            android:background="@drawable/bg_profile_icon_category"
+                            android:gravity="center">
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="💳"
+                                android:textSize="18sp" />
+                        </LinearLayout>
+
+                        <LinearLayout
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_marginStart="12dp"
+                            android:layout_weight="1"
+                            android:orientation="vertical">
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="Cüzdan Yönetimi"
+                                android:textColor="@color/text_primary"
+                                android:textSize="14sp"
+                                android:textStyle="bold" />
+
+                            <TextView
+                                android:id="@+id/tvWalletSubtitle"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="2dp"
+                                android:text="Hesapları düzenle"
+                                android:textColor="@color/text_secondary"
+                                android:textSize="12sp" />
+                        </LinearLayout>
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="›"
+                            android:textColor="@color/text_secondary"
                             android:textSize="26sp" />
                     </LinearLayout>
 
                     <!-- Ayraç -->
-                    <View
-                        android:layout_width="match_parent"
-                        android:layout_height="1dp"
-                        android:layout_marginHorizontal="16dp"
-                        android:background="#F0F4FF" />
+                    <View android:layout_width="match_parent" android:layout_height="1dp"
+                        android:layout_marginHorizontal="16dp" android:background="@color/divider" />
+
+                    <!-- Biyometrik Giriş -->
+                    <LinearLayout android:id="@+id/cardBiometric"
+                        android:layout_width="match_parent" android:layout_height="wrap_content"
+                        android:background="?attr/selectableItemBackground"
+                        android:gravity="center_vertical" android:orientation="horizontal" android:padding="16dp">
+                        <LinearLayout android:layout_width="42dp" android:layout_height="42dp"
+                            android:background="@drawable/bg_profile_icon_category" android:gravity="center">
+                            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                                android:text="👆" android:textSize="18sp" />
+                        </LinearLayout>
+                        <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content"
+                            android:layout_marginStart="12dp" android:layout_weight="1" android:orientation="vertical">
+                            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                                android:text="Biyometrik Giriş" android:textColor="@color/text_primary"
+                                android:textSize="14sp" android:textStyle="bold" />
+                            <TextView android:id="@+id/tvBiometricSubtitle"
+                                android:layout_width="wrap_content" android:layout_height="wrap_content"
+                                android:layout_marginTop="2dp" android:text="Parmak izi / yüz ile giriş"
+                                android:textColor="@color/text_secondary" android:textSize="12sp" />
+                        </LinearLayout>
+                        <androidx.appcompat.widget.SwitchCompat
+                            android:id="@+id/switchBiometric"
+                            android:layout_width="wrap_content" android:layout_height="wrap_content"/>
+                    </LinearLayout>
+
+                    <!-- Ayraç -->
+                    <View android:layout_width="match_parent" android:layout_height="1dp"
+                        android:layout_marginHorizontal="16dp" android:background="@color/divider" />
+
+                    <!-- PIN Değiştir -->
+                    <LinearLayout android:id="@+id/cardChangePin"
+                        android:layout_width="match_parent" android:layout_height="wrap_content"
+                        android:background="?attr/selectableItemBackground"
+                        android:gravity="center_vertical" android:orientation="horizontal" android:padding="16dp">
+                        <LinearLayout android:layout_width="42dp" android:layout_height="42dp"
+                            android:background="@drawable/bg_profile_icon_category" android:gravity="center">
+                            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                                android:text="🔑" android:textSize="18sp" />
+                        </LinearLayout>
+                        <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content"
+                            android:layout_marginStart="12dp" android:layout_weight="1" android:orientation="vertical">
+                            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                                android:text="PIN Değiştir" android:textColor="@color/text_primary"
+                                android:textSize="14sp" android:textStyle="bold" />
+                            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                                android:layout_marginTop="2dp" android:text="Giriş PIN'ini güncelle"
+                                android:textColor="@color/text_secondary" android:textSize="12sp" />
+                        </LinearLayout>
+                        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                            android:text="›" android:textColor="@color/text_secondary" android:textSize="26sp" />
+                    </LinearLayout>
+
+                    <!-- Ayraç -->
+                    <View android:layout_width="match_parent" android:layout_height="1dp"
+                        android:layout_marginHorizontal="16dp" android:background="@color/divider" />
+
+                    <!-- Güvenlik Sorusu -->
+                    <LinearLayout android:id="@+id/cardSecurityQ"
+                        android:layout_width="match_parent" android:layout_height="wrap_content"
+                        android:background="?attr/selectableItemBackground"
+                        android:gravity="center_vertical" android:orientation="horizontal" android:padding="16dp">
+                        <LinearLayout android:layout_width="42dp" android:layout_height="42dp"
+                            android:background="@drawable/bg_profile_icon_category" android:gravity="center">
+                            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                                android:text="🛡" android:textSize="18sp" />
+                        </LinearLayout>
+                        <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content"
+                            android:layout_marginStart="12dp" android:layout_weight="1" android:orientation="vertical">
+                            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                                android:text="Güvenlik Sorusu" android:textColor="@color/text_primary"
+                                android:textSize="14sp" android:textStyle="bold" />
+                            <TextView android:id="@+id/tvSecurityQSubtitle"
+                                android:layout_width="wrap_content" android:layout_height="wrap_content"
+                                android:layout_marginTop="2dp" android:text="Güvenlik sorusunu değiştir"
+                                android:textColor="@color/text_secondary" android:textSize="12sp" />
+                        </LinearLayout>
+                        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                            android:text="›" android:textColor="@color/text_secondary" android:textSize="26sp" />
+                    </LinearLayout>
+
+                    <!-- Ayraç -->
+                    <View android:layout_width="match_parent" android:layout_height="1dp"
+                        android:layout_marginHorizontal="16dp" android:background="@color/divider" />
+
+                    <!-- Para Birimi -->
+                    <LinearLayout android:id="@+id/cardCurrency"
+                        android:layout_width="match_parent" android:layout_height="wrap_content"
+                        android:background="?attr/selectableItemBackground"
+                        android:gravity="center_vertical" android:orientation="horizontal" android:padding="16dp">
+                        <LinearLayout android:layout_width="42dp" android:layout_height="42dp"
+                            android:background="@drawable/bg_profile_icon_theme" android:gravity="center">
+                            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                                android:text="💱" android:textSize="18sp" />
+                        </LinearLayout>
+                        <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content"
+                            android:layout_marginStart="12dp" android:layout_weight="1" android:orientation="vertical">
+                            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                                android:text="Para Birimi" android:textColor="@color/text_primary"
+                                android:textSize="14sp" android:textStyle="bold" />
+                            <TextView android:id="@+id/tvCurrencySubtitle"
+                                android:layout_width="wrap_content" android:layout_height="wrap_content"
+                                android:layout_marginTop="2dp" android:text="Türk Lirası (₺)"
+                                android:textColor="@color/text_secondary" android:textSize="12sp" />
+                        </LinearLayout>
+                        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                            android:text="›" android:textColor="@color/text_secondary" android:textSize="26sp" />
+                    </LinearLayout>
+
+                    <!-- Ayraç -->
+                    <View android:layout_width="match_parent" android:layout_height="1dp"
+                        android:layout_marginHorizontal="16dp" android:background="@color/divider" />
 
                     <!-- Tema -->
                     <LinearLayout
@@ -473,7 +623,7 @@
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
                                 android:text="Tema"
-                                android:textColor="#1A2540"
+                                android:textColor="@color/text_primary"
                                 android:textSize="14sp"
                                 android:textStyle="bold" />
 
@@ -483,7 +633,7 @@
                                 android:layout_height="wrap_content"
                                 android:layout_marginTop="2dp"
                                 android:text="Sistem varsayılanı"
-                                android:textColor="#99AABB"
+                                android:textColor="@color/text_secondary"
                                 android:textSize="12sp" />
                         </LinearLayout>
 
@@ -491,7 +641,7 @@
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:text="›"
-                            android:textColor="#CCDDFF"
+                            android:textColor="@color/text_secondary"
                             android:textSize="26sp" />
                     </LinearLayout>
                 </LinearLayout>
@@ -502,7 +652,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="8dp"
-                app:cardBackgroundColor="#FFFFFF"
+                app:cardBackgroundColor="@color/card_background"
                 app:cardCornerRadius="18dp"
                 app:cardElevation="0dp">
 
@@ -536,7 +686,7 @@
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:text="Hesap Yönetimi"
-                            android:textColor="#1A2540"
+                            android:textColor="@color/text_primary"
                             android:textSize="14sp"
                             android:textStyle="bold" />
 
@@ -545,7 +695,7 @@
                             android:layout_height="wrap_content"
                             android:layout_marginTop="2dp"
                             android:text="Kişisel finans takip uygulaması"
-                            android:textColor="#99AABB"
+                            android:textColor="@color/text_secondary"
                             android:textSize="12sp" />
                     </LinearLayout>
 
@@ -557,9 +707,46 @@
                         android:paddingHorizontal="8dp"
                         android:paddingVertical="4dp"
                         android:text="v1.0"
-                        android:textColor="#6680FF"
+                        android:textColor="@color/green_primary"
                         android:textSize="11sp"
                         android:textStyle="bold" />
+                </LinearLayout>
+            </androidx.cardview.widget.CardView>
+
+            <!-- Dışa Aktar / Yedek kartı -->
+            <androidx.cardview.widget.CardView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                app:cardBackgroundColor="@color/card_background"
+                app:cardCornerRadius="18dp"
+                app:cardElevation="0dp">
+
+                <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+                    android:orientation="vertical">
+
+                    <LinearLayout android:id="@+id/cardExportCsv"
+                        android:layout_width="match_parent" android:layout_height="wrap_content"
+                        android:background="?attr/selectableItemBackground"
+                        android:gravity="center_vertical" android:orientation="horizontal" android:padding="16dp">
+                        <LinearLayout android:layout_width="42dp" android:layout_height="42dp"
+                            android:background="@drawable/bg_profile_icon_category" android:gravity="center">
+                            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                                android:text="📤" android:textSize="18sp" />
+                        </LinearLayout>
+                        <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content"
+                            android:layout_marginStart="12dp" android:layout_weight="1" android:orientation="vertical">
+                            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                                android:text="Veri Dışa Aktar (CSV)" android:textColor="@color/text_primary"
+                                android:textSize="14sp" android:textStyle="bold" />
+                            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                                android:layout_marginTop="2dp" android:text="Tüm işlemleri Excel/CSV olarak paylaş"
+                                android:textColor="@color/text_secondary" android:textSize="12sp" />
+                        </LinearLayout>
+                        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                            android:text="›" android:textColor="@color/text_secondary" android:textSize="26sp" />
+                    </LinearLayout>
+
                 </LinearLayout>
             </androidx.cardview.widget.CardView>
 

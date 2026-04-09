@@ -2,11 +2,11 @@
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
-    android:layout_height="wrap_content"
+    android:layout_height="match_parent"
     android:background="@drawable/bottom_sheet_bg"
     android:orientation="vertical">
 
-    <!-- Header -->
+    <!-- Gradient header -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
@@ -34,38 +34,48 @@
             app:tint="#0099CC" />
     </LinearLayout>
 
-    <!-- Filtre sekmeleri -->
-    <com.google.android.material.tabs.TabLayout
-        android:id="@+id/tabFilter"
+    <!-- Gider / Gelir tab butonları -->
+    <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:background="#FFFFFF"
-        app:tabIndicatorColor="#0099CC"
-        app:tabSelectedTextColor="#0099CC"
-        app:tabTextColor="#9E9E9E">
+        android:background="@color/card_background"
+        android:orientation="horizontal"
+        android:padding="10dp">
 
-        <com.google.android.material.tabs.TabItem
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Tümü" />
+        <TextView
+            android:id="@+id/btnExpenseTab"
+            android:layout_width="0dp"
+            android:layout_height="40dp"
+            android:layout_marginEnd="6dp"
+            android:layout_weight="1"
+            android:background="@drawable/kategori_item_selected_bg"
+            android:gravity="center"
+            android:text="💸  Gider"
+            android:textColor="@color/green_primary"
+            android:textSize="13sp"
+            android:textStyle="bold" />
 
-        <com.google.android.material.tabs.TabItem
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Gider" />
+        <TextView
+            android:id="@+id/btnIncomeTab"
+            android:layout_width="0dp"
+            android:layout_height="40dp"
+            android:layout_marginStart="6dp"
+            android:layout_weight="1"
+            android:background="@drawable/kategori_item_bg"
+            android:gravity="center"
+            android:text="💰  Gelir"
+            android:textColor="@color/text_secondary"
+            android:textSize="13sp"
+            android:textStyle="bold" />
+    </LinearLayout>
 
-        <com.google.android.material.tabs.TabItem
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Gelir" />
-    </com.google.android.material.tabs.TabLayout>
-
-    <!-- Liste -->
+    <!-- Kategori listesi -->
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/rvCategories"
         android:layout_width="match_parent"
-        android:layout_height="320dp"
+        android:layout_height="0dp"
+        android:layout_weight="1"
         android:clipToPadding="false"
-        android:padding="8dp" />
+        android:paddingBottom="12dp" />
 
 </LinearLayout>

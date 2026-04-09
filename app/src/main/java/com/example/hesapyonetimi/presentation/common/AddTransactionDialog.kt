@@ -12,8 +12,12 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.example.hesapyonetimi.R
 import com.example.hesapyonetimi.adapter.CategoryChipAdapter
+import com.example.hesapyonetimi.adapter.WalletChipAdapter
+import com.example.hesapyonetimi.data.local.dao.WalletDao
+import com.example.hesapyonetimi.data.local.entity.WalletEntity
 import com.example.hesapyonetimi.domain.model.Category
 import com.example.hesapyonetimi.presentation.transactions.TransactionViewModel
+import javax.inject.Inject
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment
 import com.google.android.material.button.MaterialButton
 import com.google.android.material.button.MaterialButtonToggleGroup
@@ -28,11 +32,15 @@ import kotlinx.coroutines.launch
 @AndroidEntryPoint
 class AddTransactionDialog : BottomSheetDialogFragment() {
 
+    @Inject
+    lateinit var walletDao: WalletDao
+
     private val viewModel: TransactionViewModel by viewModels()
     private var selectedCategory: Category? = null
     private var isIncome: Boolean = false
     private var preSelectedType: Boolean? = null
     private lateinit var categoryAdapter: CategoryChipAdapter
+    private var selectedWalletId: Long? = null
 
     companion object {
         private const val ARG_IS_INCOME = "arg_is_income"
@@ -76,6 +84,21 @@ class AddTransactionDialog : BottomSheetDialogFragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
+
+        val rvWallets = view.findViewById<RecyclerView>(R.id.rvWallets)
+        rvWallets.layoutManager = LinearLayoutManager(requireContext(), LinearLayoutManager.HORIZONTAL, false)
+        viewLifecycleOwner.lifecycleScope.launch {
+            walletDao.getAllWallets().collect { wallets ->
+                val walletAdapter = WalletChipAdapter(wallets, selectedWalletId) { wallet ->
+                    selectedWalletId = wallet.id
+                    rvWallets.adapter?.notifyDataSetChanged()
+                }
+                rvWallets.adapter = walletAdapter
+                if (selectedWalletId == null) {
+                    selectedWalletId = wallets.firstOrNull { it.isDefault }?.id ?: wallets.firstOrNull()?.id
+                }
+            }
+        }
 
         val etAmount      = view.findViewById<TextInputEditText>(R.id.etAmount)
         val etDescription = view.findViewById<TextInputEditText>(R.id.etDescription)
@@ -171,7 +194,8 @@ class AddTransactionDialog : BottomSheetDialogFragment() {
                 categoryId = cat.id,
                 description = if (description.isEmpty()) cat.name else description,
                 date = System.currentTimeMillis(),
-                isIncome = isIncome
+                isIncome = isIncome,
+                walletId = selectedWalletId
             )
             toast("✅ İşlem eklendi!")
             dismiss()

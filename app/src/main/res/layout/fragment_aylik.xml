@@ -7,7 +7,7 @@
     android:orientation="vertical"
     android:background="@color/background">
 
-    <!-- STICKY HEADER -->
+    <!-- ═══ STICKY HEADER ═══ -->
     <androidx.constraintlayout.widget.ConstraintLayout
         android:id="@+id/aylik_header"
         android:layout_width="match_parent"
@@ -22,14 +22,13 @@
             android:id="@+id/tv_aylik_baslik"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Aylık Analiz"
+            android:text="Analiz"
             android:textColor="#FFFFFF"
             android:textSize="20sp"
             android:textStyle="bold"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toTopOf="parent" />
 
-        <!-- Özet kartları -->
         <LinearLayout
             android:id="@+id/ozet_row"
             android:layout_width="0dp"
@@ -40,286 +39,406 @@
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintTop_toBottomOf="@id/tv_aylik_baslik">
 
-            <LinearLayout
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:orientation="vertical"
-                android:background="@drawable/btn_header_card"
-                android:padding="10dp"
-                android:layout_marginEnd="6dp">
+            <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content"
+                android:layout_weight="1" android:orientation="vertical"
+                android:background="@drawable/btn_header_card" android:padding="10dp" android:layout_marginEnd="6dp">
                 <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
                     android:text="Gelir" android:textSize="12sp" android:textColor="#AAFFFFFF"/>
-                <TextView android:id="@+id/tv_toplam_gelir"
-                    android:layout_width="wrap_content" android:layout_height="wrap_content"
-                    android:text="0 ₺" android:textSize="13sp" android:textStyle="bold"
-                    android:textColor="#FFFFFF" android:layout_marginTop="2dp"/>
+                <TextView android:id="@+id/tv_toplam_gelir" android:layout_width="wrap_content"
+                    android:layout_height="wrap_content" android:text="0 ₺" android:textSize="13sp"
+                    android:textStyle="bold" android:textColor="#FFFFFF" android:layout_marginTop="2dp"/>
             </LinearLayout>
 
-            <LinearLayout
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:orientation="vertical"
-                android:background="@drawable/btn_header_card"
-                android:padding="10dp"
-                android:layout_marginEnd="6dp">
+            <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content"
+                android:layout_weight="1" android:orientation="vertical"
+                android:background="@drawable/btn_header_card" android:padding="10dp" android:layout_marginEnd="6dp">
                 <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
                     android:text="Gider" android:textSize="12sp" android:textColor="#AAFFFFFF"/>
-                <TextView android:id="@+id/tv_toplam_gider"
-                    android:layout_width="wrap_content" android:layout_height="wrap_content"
-                    android:text="0 ₺" android:textSize="13sp" android:textStyle="bold"
-                    android:textColor="#FFFFFF" android:layout_marginTop="2dp"/>
+                <TextView android:id="@+id/tv_toplam_gider" android:layout_width="wrap_content"
+                    android:layout_height="wrap_content" android:text="0 ₺" android:textSize="13sp"
+                    android:textStyle="bold" android:textColor="#FFFFFF" android:layout_marginTop="2dp"/>
             </LinearLayout>
 
-            <LinearLayout
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:orientation="vertical"
-                android:background="@drawable/btn_header_card"
-                android:padding="10dp">
+            <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content"
+                android:layout_weight="1" android:orientation="vertical"
+                android:background="@drawable/btn_header_card" android:padding="10dp">
                 <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
                     android:text="Net" android:textSize="12sp" android:textColor="#AAFFFFFF"/>
-                <TextView android:id="@+id/tv_net"
-                    android:layout_width="wrap_content" android:layout_height="wrap_content"
-                    android:text="0 ₺" android:textSize="13sp" android:textStyle="bold"
-                    android:textColor="#FFFFFF" android:layout_marginTop="2dp"/>
+                <TextView android:id="@+id/tv_net" android:layout_width="wrap_content"
+                    android:layout_height="wrap_content" android:text="0 ₺" android:textSize="13sp"
+                    android:textStyle="bold" android:textColor="#FFFFFF" android:layout_marginTop="2dp"/>
             </LinearLayout>
         </LinearLayout>
-
     </androidx.constraintlayout.widget.ConstraintLayout>
 
-    <!-- Tarih + hızlı butonlar — tek satır -->
+    <!-- ═══ TAB SATIRI ═══ -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        android:background="#FFFFFF"
+        android:background="@color/card_background"
         android:elevation="2dp"
-        android:paddingStart="10dp"
-        android:paddingEnd="10dp"
-        android:paddingTop="8dp"
-        android:paddingBottom="8dp"
-        android:gravity="center_vertical">
-
-        <TextView android:id="@+id/btn_donem_1a"
-            android:layout_width="wrap_content" android:layout_height="32dp"
-            android:paddingStart="9dp" android:paddingEnd="9dp"
-            android:gravity="center" android:text="1A"
-            android:textSize="12sp" android:textColor="@color/green_primary"
-            android:background="@drawable/kategori_item_selected_bg"
-            android:layout_marginEnd="3dp"
-            android:clickable="true" android:focusable="true"/>
-
-        <TextView android:id="@+id/btn_donem_3a"
-            android:layout_width="wrap_content" android:layout_height="32dp"
-            android:paddingStart="9dp" android:paddingEnd="9dp"
-            android:gravity="center" android:text="Önceki"
-            android:textSize="12sp" android:textColor="@color/text_secondary"
-            android:background="@drawable/kategori_item_bg"
-            android:layout_marginEnd="3dp"
-            android:clickable="true" android:focusable="true"/>
-
-        <TextView android:id="@+id/btn_donem_6a"
-            android:layout_width="wrap_content" android:layout_height="32dp"
-            android:paddingStart="9dp" android:paddingEnd="9dp"
-            android:gravity="center" android:text="3A"
-            android:textSize="12sp" android:textColor="@color/text_secondary"
-            android:background="@drawable/kategori_item_bg"
-            android:layout_marginEnd="3dp"
-            android:clickable="true" android:focusable="true"/>
-
-        <TextView android:id="@+id/btn_donem_tumu"
-            android:layout_width="wrap_content" android:layout_height="32dp"
-            android:paddingStart="9dp" android:paddingEnd="9dp"
-            android:gravity="center" android:text="6A"
-            android:textSize="12sp" android:textColor="@color/text_secondary"
-            android:background="@drawable/kategori_item_bg"
-            android:layout_marginEnd="6dp"
-            android:clickable="true" android:focusable="true"/>
-
-        <View android:layout_width="1dp" android:layout_height="22dp"
-            android:background="#DDDDDD" android:layout_marginEnd="6dp"/>
-
-        <TextView android:id="@+id/tv_baslangic_tarih"
-            android:layout_width="0dp" android:layout_height="32dp" android:layout_weight="1"
-            android:gravity="center" android:textSize="12sp"
-            android:textColor="@color/text_primary"
-            android:background="@drawable/tarih_chip_bg"
-            android:layout_marginEnd="3dp"
-            android:clickable="true" android:focusable="true"/>
+        android:orientation="horizontal"
+        android:padding="8dp">
 
         <TextView
-            android:layout_width="wrap_content" android:layout_height="wrap_content"
-            android:text="→" android:textSize="12sp"
-            android:textColor="@color/text_secondary"
-            android:layout_marginEnd="3dp"/>
+            android:id="@+id/tabCalendar"
+            android:layout_width="0dp"
+            android:layout_height="36dp"
+            android:layout_weight="1"
+            android:layout_marginEnd="4dp"
+            android:background="@drawable/kategori_item_selected_bg"
+            android:gravity="center"
+            android:text="📅  Takvim"
+            android:textColor="@color/green_primary"
+            android:textSize="12sp"
+            android:textStyle="bold" />
 
-        <TextView android:id="@+id/tv_bitis_tarih"
-            android:layout_width="0dp" android:layout_height="32dp" android:layout_weight="1"
-            android:gravity="center" android:textSize="12sp"
-            android:textColor="@color/text_primary"
-            android:background="@drawable/tarih_chip_bg"
-            android:clickable="true" android:focusable="true"/>
+        <TextView
+            android:id="@+id/tabTimeline"
+            android:layout_width="0dp"
+            android:layout_height="36dp"
+            android:layout_weight="1"
+            android:layout_marginHorizontal="4dp"
+            android:background="@drawable/kategori_item_bg"
+            android:gravity="center"
+            android:text="📋  Timeline"
+            android:textColor="@color/text_secondary"
+            android:textSize="12sp"
+            android:textStyle="bold" />
+
+        <TextView
+            android:id="@+id/tabKategori"
+            android:layout_width="0dp"
+            android:layout_height="36dp"
+            android:layout_weight="1"
+            android:layout_marginStart="4dp"
+            android:background="@drawable/kategori_item_bg"
+            android:gravity="center"
+            android:text="📊  Kategori"
+            android:textColor="@color/text_secondary"
+            android:textSize="12sp"
+            android:textStyle="bold" />
     </LinearLayout>
 
-    <!-- SCROLL -->
-    <androidx.swiperefreshlayout.widget.SwipeRefreshLayout
-        android:id="@+id/swipe_refresh"
+    <!-- ═══ TAB İÇERİKLERİ ═══ -->
+    <FrameLayout
         android:layout_width="match_parent"
         android:layout_height="0dp"
         android:layout_weight="1">
 
-    <androidx.core.widget.NestedScrollView
-        android:layout_width="match_parent"
-        android:layout_height="match_parent">
-
-        <LinearLayout
+        <!-- ── TAB 1: TAKVİM ─────────────────────────────────────────────── -->
+        <androidx.core.widget.NestedScrollView
+            android:id="@+id/tabCalendarContent"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="vertical"
-            android:padding="16dp">
+            android:layout_height="match_parent"
+            android:visibility="visible">
 
-            <!-- İstatistik kartları — kompakt, 3'lü -->
-            <androidx.cardview.widget.CardView
-                app:cardBackgroundColor="#FFFFFF"
+            <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                app:cardCornerRadius="16dp"
-                app:cardElevation="0dp"
-                android:layout_marginBottom="12dp">
+                android:orientation="vertical"
+                android:padding="16dp">
 
+                <!-- Ay navigasyonu -->
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:orientation="vertical"
-                    android:padding="14dp">
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal"
+                    android:layout_marginBottom="12dp">
 
-                    <LinearLayout
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:orientation="horizontal"
-                        android:layout_marginBottom="12dp">
-
-                        <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content"
-                            android:layout_weight="1" android:orientation="vertical">
-                            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
-                                android:text="İşlem" android:textSize="12sp" android:textColor="@color/text_secondary"/>
-                            <TextView android:id="@+id/tv_islem_sayisi"
-                                android:layout_width="wrap_content" android:layout_height="wrap_content"
-                                android:textSize="18sp" android:textStyle="bold"
-                                android:textColor="@color/text_primary" android:layout_marginTop="2dp"/>
-                        </LinearLayout>
-
-                        <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content"
-                            android:layout_weight="1" android:orientation="vertical">
-                            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
-                                android:text="Günlük ort." android:textSize="12sp" android:textColor="@color/text_secondary"/>
-                            <TextView android:id="@+id/tv_gunluk_ort"
-                                android:layout_width="wrap_content" android:layout_height="wrap_content"
-                                android:textSize="18sp" android:textStyle="bold"
-                                android:textColor="@color/expense_red" android:layout_marginTop="2dp"/>
-                        </LinearLayout>
-                    </LinearLayout>
-
-                    <!-- Öneri metni -->
-                    <View android:layout_width="match_parent" android:layout_height="1dp"
-                        android:background="#F0F0F0" android:layout_marginBottom="10dp"/>
-
-                    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
-                        android:orientation="horizontal" android:gravity="center_vertical">
-                        <TextView android:id="@+id/tv_oneri_emoji"
-                            android:layout_width="wrap_content" android:layout_height="wrap_content"
-                            android:textSize="16sp" android:layout_marginEnd="8dp"/>
-                        <TextView android:id="@+id/tv_oneri_metin"
-                            android:layout_width="0dp" android:layout_height="wrap_content"
-                            android:layout_weight="1"
-                            android:textSize="12sp" android:textColor="@color/text_secondary"
-                            android:lineSpacingExtra="2dp"/>
-                    </LinearLayout>
-                </LinearLayout>
-            </androidx.cardview.widget.CardView>
-
-            <!-- Kategoriler -->
-            <androidx.cardview.widget.CardView
-                app:cardBackgroundColor="#FFFFFF"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                app:cardCornerRadius="16dp"
-                app:cardElevation="0dp"
-                android:layout_marginBottom="12dp">
-
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:orientation="vertical"
-                    android:padding="14dp">
+                    <ImageButton
+                        android:id="@+id/btnPrevMonth"
+                        android:layout_width="36dp"
+                        android:layout_height="36dp"
+                        android:background="@drawable/kategori_item_bg"
+                        android:src="@drawable/ic_chevron_left"
+                        app:tint="@color/text_primary" />
 
                     <TextView
-                        android:layout_width="wrap_content"
+                        android:id="@+id/tvCalendarMonth"
+                        android:layout_width="0dp"
                         android:layout_height="wrap_content"
-                        android:text="Kategoriler"
-                        android:textSize="15sp"
-                        android:textStyle="bold"
+                        android:layout_weight="1"
+                        android:gravity="center"
+                        android:text="Nisan 2025"
                         android:textColor="@color/text_primary"
-                        android:layout_marginBottom="10dp"/>
+                        android:textSize="16sp"
+                        android:textStyle="bold" />
 
-                    <!-- Gider/Gelir sekme -->
+                    <ImageButton
+                        android:id="@+id/btnNextMonth"
+                        android:layout_width="36dp"
+                        android:layout_height="36dp"
+                        android:background="@drawable/kategori_item_bg"
+                        android:src="@drawable/ic_chevron_right"
+                        app:tint="@color/text_primary" />
+                </LinearLayout>
+
+                <!-- Gün başlıkları: Pt Sa Ça Pe Cu Ct Pz -->
+                <LinearLayout
+                    android:id="@+id/dayHeaderRow"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:layout_marginBottom="4dp">
+
+                    <TextView android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:gravity="center" android:text="Pt" android:textSize="11sp" android:textColor="@color/text_secondary"/>
+                    <TextView android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:gravity="center" android:text="Sa" android:textSize="11sp" android:textColor="@color/text_secondary"/>
+                    <TextView android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:gravity="center" android:text="Ça" android:textSize="11sp" android:textColor="@color/text_secondary"/>
+                    <TextView android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:gravity="center" android:text="Pe" android:textSize="11sp" android:textColor="@color/text_secondary"/>
+                    <TextView android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:gravity="center" android:text="Cu" android:textSize="11sp" android:textColor="@color/text_secondary"/>
+                    <TextView android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:gravity="center" android:text="Ct" android:textSize="11sp" android:textColor="@color/text_secondary"/>
+                    <TextView android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:gravity="center" android:text="Pz" android:textSize="11sp" android:textColor="#EF5350"/>
+                </LinearLayout>
+
+                <!-- Takvim hücreleri (programatik doldurulacak) -->
+                <GridLayout
+                    android:id="@+id/calendarGrid"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:columnCount="7"
+                    android:layout_marginBottom="16dp" />
+
+                <!-- Seçilen gün işlemleri -->
+                <androidx.cardview.widget.CardView
+                    android:id="@+id/selectedDayCard"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    app:cardBackgroundColor="@color/card_background"
+                    app:cardCornerRadius="14dp"
+                    app:cardElevation="0dp"
+                    android:visibility="gone">
+
                     <LinearLayout
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:orientation="horizontal"
-                        android:layout_marginBottom="12dp">
+                        android:orientation="vertical"
+                        android:padding="14dp">
 
                         <TextView
-                            android:id="@+id/btn_gider_sekme"
-                            android:layout_width="0dp"
-                            android:layout_height="32dp"
-                            android:layout_weight="1"
-                            android:gravity="center"
-                            android:text="Gider"
-                            android:textSize="12sp"
-                            android:textColor="@color/green_primary"
-                            android:background="@drawable/kategori_item_selected_bg"
-                            android:layout_marginEnd="6dp"
-                            android:clickable="true"
-                            android:focusable="true"/>
+                            android:id="@+id/tvSelectedDayTitle"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:textColor="@color/text_primary"
+                            android:textSize="14sp"
+                            android:textStyle="bold"
+                            android:layout_marginBottom="8dp" />
 
-                        <TextView
-                            android:id="@+id/btn_gelir_sekme"
-                            android:layout_width="0dp"
-                            android:layout_height="32dp"
-                            android:layout_weight="1"
-                            android:gravity="center"
-                            android:text="Gelir"
-                            android:textSize="12sp"
-                            android:textColor="@color/text_secondary"
-                            android:background="@drawable/kategori_item_bg"
-                            android:clickable="true"
-                            android:focusable="true"/>
+                        <androidx.recyclerview.widget.RecyclerView
+                            android:id="@+id/rvSelectedDayTx"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:nestedScrollingEnabled="false" />
                     </LinearLayout>
+                </androidx.cardview.widget.CardView>
 
-                    <androidx.recyclerview.widget.RecyclerView
-                        android:id="@+id/rv_kategoriler"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:nestedScrollingEnabled="false"/>
+                <View android:layout_width="match_parent" android:layout_height="80dp" />
+            </LinearLayout>
+        </androidx.core.widget.NestedScrollView>
 
-                    <androidx.recyclerview.widget.RecyclerView
-                        android:id="@+id/rv_gelir_kategoriler"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:nestedScrollingEnabled="false"
-                        android:visibility="gone"/>
-                </LinearLayout>
-            </androidx.cardview.widget.CardView>
+        <!-- ── TAB 2: TİMELİNE ───────────────────────────────────────────── -->
+        <LinearLayout
+            android:id="@+id/tabTimelineContent"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:orientation="vertical"
+            android:visibility="gone">
 
-            <View android:layout_width="match_parent" android:layout_height="80dp"/>
+            <!-- Dönem + tarih satırı -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:background="@color/card_background"
+                android:elevation="1dp"
+                android:gravity="center_vertical"
+                android:orientation="horizontal"
+                android:paddingHorizontal="10dp"
+                android:paddingVertical="8dp">
 
+                <TextView android:id="@+id/btn_donem_1a"
+                    android:layout_width="wrap_content" android:layout_height="32dp"
+                    android:paddingHorizontal="9dp" android:gravity="center" android:text="1A"
+                    android:textSize="12sp" android:textColor="@color/green_primary"
+                    android:background="@drawable/kategori_item_selected_bg" android:layout_marginEnd="3dp"
+                    android:clickable="true" android:focusable="true"/>
+                <TextView android:id="@+id/btn_donem_3a"
+                    android:layout_width="wrap_content" android:layout_height="32dp"
+                    android:paddingHorizontal="9dp" android:gravity="center" android:text="Önceki"
+                    android:textSize="12sp" android:textColor="@color/text_secondary"
+                    android:background="@drawable/kategori_item_bg" android:layout_marginEnd="3dp"
+                    android:clickable="true" android:focusable="true"/>
+                <TextView android:id="@+id/btn_donem_6a"
+                    android:layout_width="wrap_content" android:layout_height="32dp"
+                    android:paddingHorizontal="9dp" android:gravity="center" android:text="3A"
+                    android:textSize="12sp" android:textColor="@color/text_secondary"
+                    android:background="@drawable/kategori_item_bg" android:layout_marginEnd="3dp"
+                    android:clickable="true" android:focusable="true"/>
+                <TextView android:id="@+id/btn_donem_tumu"
+                    android:layout_width="wrap_content" android:layout_height="32dp"
+                    android:paddingHorizontal="9dp" android:gravity="center" android:text="6A"
+                    android:textSize="12sp" android:textColor="@color/text_secondary"
+                    android:background="@drawable/kategori_item_bg" android:layout_marginEnd="6dp"
+                    android:clickable="true" android:focusable="true"/>
+                <View android:layout_width="1dp" android:layout_height="22dp"
+                    android:background="@color/divider" android:layout_marginEnd="6dp"/>
+                <TextView android:id="@+id/tv_baslangic_tarih"
+                    android:layout_width="0dp" android:layout_height="32dp" android:layout_weight="1"
+                    android:gravity="center" android:textSize="11sp" android:textColor="@color/text_primary"
+                    android:background="@drawable/tarih_chip_bg" android:layout_marginEnd="3dp"
+                    android:clickable="true" android:focusable="true"/>
+                <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                    android:text="→" android:textSize="12sp" android:textColor="@color/text_secondary"
+                    android:layout_marginEnd="3dp"/>
+                <TextView android:id="@+id/tv_bitis_tarih"
+                    android:layout_width="0dp" android:layout_height="32dp" android:layout_weight="1"
+                    android:gravity="center" android:textSize="11sp" android:textColor="@color/text_primary"
+                    android:background="@drawable/tarih_chip_bg"
+                    android:clickable="true" android:focusable="true"/>
+            </LinearLayout>
+
+            <!-- Arama çubuğu -->
+            <com.google.android.material.textfield.TextInputLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
+                android:layout_marginHorizontal="12dp"
+                android:layout_marginTop="8dp"
+                android:layout_marginBottom="4dp"
+                app:boxCornerRadiusTopStart="12dp"
+                app:boxCornerRadiusTopEnd="12dp"
+                app:boxCornerRadiusBottomStart="12dp"
+                app:boxCornerRadiusBottomEnd="12dp"
+                app:startIconDrawable="@android:drawable/ic_menu_search"
+                android:hint="İşlem ara...">
+
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/etTimelineSearch"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:imeOptions="actionSearch"
+                    android:inputType="text"
+                    android:textSize="14sp" />
+            </com.google.android.material.textfield.TextInputLayout>
+
+            <androidx.recyclerview.widget.RecyclerView
+                android:id="@+id/rvTimeline"
+                android:layout_width="match_parent"
+                android:layout_height="0dp"
+                android:layout_weight="1"
+                android:clipToPadding="false"
+                android:paddingHorizontal="12dp"
+                android:paddingBottom="80dp" />
         </LinearLayout>
-    </androidx.core.widget.NestedScrollView>
 
-    </androidx.swiperefreshlayout.widget.SwipeRefreshLayout>
+        <!-- ── TAB 3: KATEGORİ ───────────────────────────────────────────── -->
+        <LinearLayout
+            android:id="@+id/tabKategoriContent"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:orientation="vertical"
+            android:visibility="gone">
+
+            <!-- Gider/Gelir toggle -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:background="@color/card_background"
+                android:elevation="1dp"
+                android:orientation="horizontal"
+                android:padding="10dp">
+
+                <TextView
+                    android:id="@+id/tabKatGider"
+                    android:layout_width="0dp"
+                    android:layout_height="36dp"
+                    android:layout_marginEnd="6dp"
+                    android:layout_weight="1"
+                    android:background="@drawable/kategori_item_selected_bg"
+                    android:gravity="center"
+                    android:text="💸  Gider"
+                    android:textColor="@color/green_primary"
+                    android:textSize="13sp"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:id="@+id/tabKatGelir"
+                    android:layout_width="0dp"
+                    android:layout_height="36dp"
+                    android:layout_marginStart="6dp"
+                    android:layout_weight="1"
+                    android:background="@drawable/kategori_item_bg"
+                    android:gravity="center"
+                    android:text="💰  Gelir"
+                    android:textColor="@color/text_secondary"
+                    android:textSize="13sp"
+                    android:textStyle="bold" />
+            </LinearLayout>
+
+            <!-- Grafik alanı: sağ üstte küçük toggle -->
+            <FrameLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+                android:layout_marginHorizontal="12dp" android:layout_marginTop="6dp"
+                android:layout_marginBottom="4dp">
+
+                <com.example.hesapyonetimi.ui.PieChartView
+                    android:id="@+id/pieChart"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:visibility="visible"/>
+
+                <!-- Küçük sağ üst köşe toggle -->
+                <LinearLayout android:layout_width="wrap_content" android:layout_height="wrap_content"
+                    android:layout_gravity="top|end"
+                    android:background="@drawable/bottom_sheet_bg"
+                    android:orientation="horizontal"
+                    android:padding="4dp"
+                    android:elevation="4dp">
+                    <TextView android:id="@+id/btnChartPie"
+                        android:layout_width="30dp" android:layout_height="26dp"
+                        android:background="@drawable/kategori_item_selected_bg"
+                        android:gravity="center" android:text="🥧" android:textSize="13sp"
+                        android:clickable="true" android:focusable="true"/>
+                    <TextView android:id="@+id/btnChartBar"
+                        android:layout_width="30dp" android:layout_height="26dp"
+                        android:background="@drawable/kategori_item_bg"
+                        android:layout_marginStart="2dp"
+                        android:gravity="center" android:text="📊" android:textSize="13sp"
+                        android:clickable="true" android:focusable="true"/>
+                </LinearLayout>
+            </FrameLayout>
+
+            <!-- Öneri satırı -->
+            <LinearLayout
+                android:id="@+id/katOneriRow"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:background="@color/card_background"
+                android:gravity="center_vertical"
+                android:orientation="horizontal"
+                android:paddingHorizontal="14dp"
+                android:paddingVertical="10dp"
+                android:visibility="gone">
+
+                <TextView android:id="@+id/tv_oneri_emoji"
+                    android:layout_width="wrap_content" android:layout_height="wrap_content"
+                    android:textSize="16sp" android:layout_marginEnd="8dp"/>
+                <TextView android:id="@+id/tv_oneri_metin"
+                    android:layout_width="0dp" android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:textSize="12sp" android:textColor="@color/text_secondary"
+                    android:lineSpacingExtra="2dp"/>
+            </LinearLayout>
+
+            <androidx.recyclerview.widget.RecyclerView
+                android:id="@+id/rvKatAnaliz"
+                android:layout_width="match_parent"
+                android:layout_height="0dp"
+                android:layout_weight="1"
+                android:clipToPadding="false"
+                android:paddingHorizontal="8dp"
+                android:paddingBottom="80dp" />
+        </LinearLayout>
+
+    </FrameLayout>
 
 </LinearLayout>

@@ -20,6 +20,9 @@ import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.example.hesapyonetimi.adapter.CategoryChipAdapter
 import com.example.hesapyonetimi.adapter.TransactionAdapter
+import com.example.hesapyonetimi.adapter.WalletChipAdapter
+import com.example.hesapyonetimi.data.local.dao.WalletDao
+import javax.inject.Inject
 import com.example.hesapyonetimi.domain.model.Category
 import com.example.hesapyonetimi.model.TransactionModel
 import com.example.hesapyonetimi.presentation.common.CurrencyFormatter
@@ -35,11 +38,15 @@ import java.util.*
 @AndroidEntryPoint
 class GunlukFragment : Fragment() {
 
+    @Inject
+    lateinit var walletDao: WalletDao
+
     private val viewModel: TransactionViewModel by viewModels()
     private lateinit var categoryAdapter: CategoryChipAdapter
     private var isGider = true
     private var selectedCategory: Category? = null
     private var selectedDateMillis = System.currentTimeMillis()
+    private var selectedWalletId: Long? = null
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
         return inflater.inflate(R.layout.fragment_gunluk, container, false)
@@ -165,11 +172,27 @@ class GunlukFragment : Fragment() {
                 categoryId = cat.id,
                 description = if (aciklama.isEmpty()) cat.name else aciklama,
                 date = selectedDateMillis,
-                isIncome = !isGider
+                isIncome = !isGider,
+                walletId = selectedWalletId
             )
             etTutar.text?.clear()
             etAciklama.text?.clear()
             toast("✅ İşlem eklendi!")
+        }
+
+        // Cüzdan seçimi
+        val rvWallets = view.findViewById<androidx.recyclerview.widget.RecyclerView>(R.id.rvGunlukWallets)
+        rvWallets.layoutManager = LinearLayoutManager(requireContext(), LinearLayoutManager.HORIZONTAL, false)
+        viewLifecycleOwner.lifecycleScope.launch {
+            walletDao.getAllWallets().collect { wallets ->
+                rvWallets.adapter = WalletChipAdapter(wallets, selectedWalletId) { wallet ->
+                    selectedWalletId = wallet.id
+                    rvWallets.adapter?.notifyDataSetChanged()
+                }
+                if (selectedWalletId == null) {
+                    selectedWalletId = wallets.firstOrNull { it.isDefault }?.id ?: wallets.firstOrNull()?.id
+                }
+            }
         }
 
         // Observe

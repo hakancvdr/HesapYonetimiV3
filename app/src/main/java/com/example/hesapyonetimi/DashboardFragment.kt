@@ -26,9 +26,12 @@ import com.example.hesapyonetimi.model.TransactionModel
 import com.example.hesapyonetimi.presentation.common.AddTransactionDialog
 import com.example.hesapyonetimi.presentation.common.CurrencyFormatter
 import com.example.hesapyonetimi.presentation.dashboard.DashboardViewModel
+import androidx.core.content.ContextCompat
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout
+import com.google.android.material.snackbar.Snackbar
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.combine
 import java.text.SimpleDateFormat
 import java.util.*
 import javax.inject.Inject
@@ -40,6 +43,8 @@ class DashboardFragment : Fragment() {
     private val binding get() = _binding!!
     private val viewModel: DashboardViewModel by viewModels()
     private var selectedDayPosition = -1
+    private var lastKnownExpense = -1.0   // bütçe kontrolü için önceki gider
+    private var budgetWarnShown = false   // oturum içinde bir kez göster
 
     @Inject
     lateinit var userProfileDao: UserProfileDao
@@ -56,6 +61,8 @@ class DashboardFragment : Fragment() {
         setupMonthlyCalendar()
         observeViewModel()
         observeProfile()
+        observeBudgetWarning()
+        observeSuggestions()
         setupClickListeners()
 
         val swipeRefresh = binding.root.findViewById<SwipeRefreshLayout>(R.id.swipe_refresh)
@@ -114,7 +121,12 @@ class DashboardFragment : Fragment() {
         viewLifecycleOwner.lifecycleScope.launch {
             viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
                 userProfileDao.getProfile().collectLatest { profile ->
-                    val name = profile?.displayName?.ifBlank { "Kullanıcı" } ?: "Kullanıcı"
+                    val prefs = requireContext().getSharedPreferences("HesapPrefs", android.content.Context.MODE_PRIVATE)
+                    val name = profile?.displayName
+                        ?.takeIf { it.isNotBlank() && it != "Kullanıcı" }
+                        ?: prefs.getString("user_display_name", null)
+                            ?.takeIf { it.isNotBlank() }
+                        ?: "Kullanıcı"
                     binding.tvDashboardUsername.text = "$name 👋"
                 }
             }
@@ -277,6 +289,68 @@ class DashboardFragment : Fragment() {
             val lm = binding.rvDashboardCalendar.layoutManager as? LinearLayoutManager
             lm?.scrollToPositionWithOffset(selectedDayPosition, 0)
         }, 50)
+    }
+
+    // ── Bütçe %80 uyarısı ─────────────────────────────────────────────────────
+    private fun observeBudgetWarning() {
+        viewLifecycleOwner.lifecycleScope.launch {
+            viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
+                combine(
+                    viewModel.uiState,
+                    userProfileDao.getProfile()
+                ) { state, profile ->
+                    state.totalExpense to (profile?.monthlyBudgetLimit ?: 0.0)
+                }.collect { (expense, limit) ->
+                    checkBudgetThreshold(expense, limit)
+                }
+            }
+        }
+    }
+
+    private fun checkBudgetThreshold(expense: Double, limit: Double) {
+        if (limit <= 0.0) return
+        val ratio = expense / limit
+        // Yeni bir harcama eklenmiş (gider arttı) ve eşik aşıldı
+        if (ratio >= 0.8 && expense > lastKnownExpense && lastKnownExpense >= 0) {
+            if (!budgetWarnShown) {
+                budgetWarnShown = true
+                val percent = (ratio * 100).toInt().coerceAtMost(100)
+                Snackbar.make(
+                    binding.root,
+                    "⚠️ Aylık bütçenizin %$percent'ini harcadınız!",
+                    Snackbar.LENGTH_LONG
+                )
+                    .setAction("Analiz Et") {
+                        (activity as? MainActivity)?.gosterAylik()
+                    }
+                    .setActionTextColor(
+                        ContextCompat.getColor(requireContext(), R.color.warning)
+                    )
+                    .show()
+            }
+        } else if (ratio < 0.8) {
+            // Eşiğin altına düşerse bayrağı sıfırla (bütçe artırıldı veya gider silindi)
+            budgetWarnShown = false
+        }
+        lastKnownExpense = expense
+    }
+
+    // ── Akıllı öneri ─────────────────────────────────────────────────────────
+    private fun observeSuggestions() {
+        viewLifecycleOwner.lifecycleScope.launch {
+            viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
+                viewModel.suggestions.collect { suggestions ->
+                    if (suggestions.isEmpty()) return@collect
+                    val first = suggestions.first()
+                    binding.tvSuggestion.text =
+                        "💡 ${first.categoryIcon} ${first.categoryName} — " +
+                        "her ay yaklaşık ${
+                            com.example.hesapyonetimi.presentation.common.CurrencyFormatter
+                                .format(first.amount)
+                        } harcıyorsunuz"
+                }
+            }
+        }
     }
 
     override fun onDestroyView() {

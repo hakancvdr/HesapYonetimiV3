@@ -149,7 +149,7 @@
 
             <!-- Takvim kartı -->
             <androidx.cardview.widget.CardView
-                app:cardBackgroundColor="#FFFFFF"
+                app:cardBackgroundColor="@color/card_background"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 app:cardCornerRadius="16dp"
@@ -225,7 +225,7 @@
 
             <!-- İşlemler kartı -->
             <androidx.cardview.widget.CardView
-                app:cardBackgroundColor="#FFFFFF"
+                app:cardBackgroundColor="@color/card_background"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 app:cardCornerRadius="16dp"

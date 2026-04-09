@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Arka planlar -->
+    <color name="background">#0F1017</color>
+    <color name="card_background">#1A1C28</color>
+    <color name="surface">#1A1C28</color>
+    <color name="arka_plan">#0F1017</color>
+    <color name="acik_gri">#1A1C28</color>
+
+    <!-- Metin renkleri -->
+    <color name="text_primary">#E8EAF2</color>
+    <color name="text_secondary">#8B92AA</color>
+    <color name="text_tertiary">#5A6075</color>
+    <color name="yazi_ana">#E8EAF2</color>
+    <color name="yazi_koyu">#E8EAF2</color>
+    <color name="yazi_gri">#8B92AA</color>
+    <color name="ana_lacivert">#E8EAF2</color>
+    <color name="text_white">#E8EAF2</color>
+
+    <!-- Kart / yüzey -->
+    <color name="kart_beyaz">#1A1C28</color>
+    <color name="beyaz">#1A1C28</color>
+    <color name="gri_isik">#252738</color>
+    <color name="divider">#252738</color>
+    <color name="border">#303350</color>
+
+    <!-- Bottom nav -->
+    <color name="bottom_nav_active">#6B8FFF</color>
+    <color name="bottom_nav_inactive">#5A6075</color>
+
+    <!-- Primary (dark modda daha açık mavi, okunabilir) -->
+    <color name="green_primary">#6B8FFF</color>
+    <color name="green_light">#4FC3F7</color>
+    <color name="green_dark">#3D5AF1</color>
+    <color name="ana_mavi">#6B8FFF</color>
+    <color name="ana_yesil">#6B8FFF</color>
+    <color name="ikincil_mavi">#4FC3F7</color>
+
+    <!-- Durum renkleri -->
+    <color name="income_green">#4CAF50</color>
+    <color name="expense_red">#EF5350</color>
+    <color name="warning">#F59E0B</color>
+    <color name="success">#10B981</color>
+    <color name="error">#EF4444</color>
+    <color name="gelir_yesil">#4CAF50</color>
+    <color name="gider_kirmizi">#EF5350</color>
+    <color name="mustard">#F59E0B</color>
+</resources>

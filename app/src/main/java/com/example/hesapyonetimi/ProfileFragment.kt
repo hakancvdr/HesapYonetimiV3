@@ -5,10 +5,17 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.*
+import android.widget.GridView
+import android.widget.BaseAdapter
+import android.widget.LinearLayout
+import android.widget.TextView
+import android.widget.Toast
 import androidx.fragment.app.Fragment
+import com.example.hesapyonetimi.util.CsvExporter
 import androidx.fragment.app.viewModels
+import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.repeatOnLifecycle
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.example.hesapyonetimi.domain.model.Category
@@ -17,9 +24,10 @@ import com.example.hesapyonetimi.presentation.profile.ProfileUiEvent
 import com.example.hesapyonetimi.presentation.profile.ProfileViewModel
 import com.google.android.material.progressindicator.LinearProgressIndicator
 import com.google.android.material.snackbar.Snackbar
-import com.google.android.material.tabs.TabLayout
 import dagger.hilt.android.AndroidEntryPoint
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.launch
 import java.text.NumberFormat
 import java.util.*
@@ -45,6 +53,7 @@ class ProfileFragment : Fragment() {
     private lateinit var tvAppVersion: TextView
 
     private val currencyFormat = NumberFormat.getCurrencyInstance(Locale("tr", "TR"))
+    private var categoryDialogJob: Job? = null
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?
@@ -85,50 +94,84 @@ class ProfileFragment : Fragment() {
         v.findViewById<View>(R.id.tvUserName).setOnClickListener { showEditNameDialog() }
         v.findViewById<View>(R.id.btnEditBudget).setOnClickListener { showEditBudgetDialog() }
         v.findViewById<View>(R.id.cardCategories).setOnClickListener { showCategoryDialog() }
+        v.findViewById<View>(R.id.cardWallets).setOnClickListener { showWalletDialog() }
+        setupBiometricSwitch(v)
+        v.findViewById<View>(R.id.cardChangePin).setOnClickListener { showChangePinDialog() }
+        v.findViewById<View>(R.id.cardSecurityQ).setOnClickListener { showChangeSecurityQDialog() }
         v.findViewById<View>(R.id.cardTheme).setOnClickListener { showThemeDialog() }
+        v.findViewById<View>(R.id.cardExportCsv).setOnClickListener { exportCsv() }
+        v.findViewById<View>(R.id.cardCurrency).setOnClickListener { showCurrencyDialog() }
+        // Para birimi altyazısını güncelle
+        updateCurrencySubtitle(v)
     }
 
     private fun observe() {
         viewLifecycleOwner.lifecycleScope.launch {
-            viewModel.profile.collectLatest { profile ->
-                profile ?: return@collectLatest
-                tvAvatar.text = profile.avatarEmoji
-                tvUserName.text = profile.displayName
+            viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
 
-                if (profile.monthlyBudgetLimit > 0) {
-                    tvBudgetLimit.text = currencyFormat.format(profile.monthlyBudgetLimit)
-                    budgetProgressContainer.visibility = View.VISIBLE
-                } else {
-                    tvBudgetLimit.text = "Ayarlanmadı"
-                    budgetProgressContainer.visibility = View.GONE
-                }
+                // Profil + bu ayki gider — bütçe progress birlikte güncellenir
+                launch {
+                    combine(viewModel.profile, viewModel.currentMonthExpense) { profile, expense ->
+                        profile to expense
+                    }.collectLatest { (profile, expense) ->
+                        profile ?: return@collectLatest
+                        tvAvatar.text = profile.avatarEmoji
+                        tvUserName.text = profile.displayName
+                        tvThemeSubtitle.text = when (profile.themeMode) {
+                            "LIGHT" -> "Açık tema"
+                            "DARK"  -> "Koyu tema"
+                            else    -> "Sistem varsayılanı"
+                        }
 
-                tvThemeSubtitle.text = when (profile.themeMode) {
-                    "LIGHT" -> "Açık tema"
-                    "DARK"  -> "Koyu tema"
-                    else    -> "Sistem varsayılanı"
-                }
-            }
-        }
-
-        viewLifecycleOwner.lifecycleScope.launch {
-            viewModel.stats.collectLatest { stats ->
-                tvTotalTransactions.text = stats.totalTransactions.toString()
-                tvCategoryCount.text = stats.categoryCount.toString()
-                tvActiveDays.text = stats.activeDays.toString()
-                tvMemberSince.text = "Üye: ${stats.memberSince}"
-                tvCategorySubtitle.text = "${stats.categoryCount} kategori"
-            }
-        }
-
-        viewLifecycleOwner.lifecycleScope.launch {
-            viewModel.uiEvent.collectLatest { event ->
-                when (event) {
-                    is ProfileUiEvent.ThemeChanged -> {
-                        // ── Tema değişikliğini Activity'e devret (çöküş olmaz) ──
-                        (activity as? MainActivity)?.applyTheme(event.mode)
+                        if (profile.monthlyBudgetLimit > 0) {
+                            tvBudgetLimit.text = currencyFormat.format(profile.monthlyBudgetLimit)
+                            budgetProgressContainer.visibility = View.VISIBLE
+                            tvBudgetUsed.text = "Bu ay: ${currencyFormat.format(expense)}"
+                            val percent = ((expense / profile.monthlyBudgetLimit) * 100)
+                                .coerceIn(0.0, 100.0).toInt()
+                            tvBudgetPercent.text = "%$percent"
+                            budgetProgress.progress = percent
+                        } else {
+                            tvBudgetLimit.text = "Ayarlanmadı"
+                            budgetProgressContainer.visibility = View.GONE
+                        }
                     }
-                    is ProfileUiEvent.ShowMessage -> showSnack(event.message)
+                }
+
+                launch {
+                    viewModel.stats.collectLatest { stats ->
+                        tvTotalTransactions.text = "${stats.totalTransactions} İşlem"
+                        tvCategoryCount.text = "${stats.categoryCount} Kategori"
+                        // Ay özeti alt satırında "Üye: Tarih" yeterli; activeDays buraya gelmez
+                        tvActiveDays.text = if (stats.totalTransactions > 0) "✓ Aktif" else "Yeni"
+                        tvMemberSince.text = "Üye: ${stats.memberSince}"
+                        tvCategorySubtitle.text = "${stats.categoryCount} kategori"
+                    }
+                }
+
+                // Bu ay gelir/gider/net
+                launch {
+                    kotlinx.coroutines.flow.combine(
+                        viewModel.currentMonthIncome,
+                        viewModel.currentMonthExpense
+                    ) { income, expense -> income to expense }.collectLatest { (income, expense) ->
+                        view?.findViewById<TextView>(R.id.tvMonthIncome)?.text = currencyFormat.format(income)
+                        view?.findViewById<TextView>(R.id.tvMonthExpense)?.text = currencyFormat.format(expense)
+                        val net = income - expense
+                        val tvNet = view?.findViewById<TextView>(R.id.tvMonthNet)
+                        tvNet?.text = currencyFormat.format(net)
+                        tvNet?.setTextColor(resources.getColor(if (net >= 0) R.color.income_green else R.color.expense_red, null))
+                    }
+                }
+
+                launch {
+                    viewModel.uiEvent.collectLatest { event ->
+                        when (event) {
+                            is ProfileUiEvent.ThemeChanged ->
+                                (activity as? MainActivity)?.applyTheme(event.mode)
+                            is ProfileUiEvent.ShowMessage -> showSnack(event.message)
+                        }
+                    }
                 }
             }
         }
@@ -175,30 +218,87 @@ class ProfileFragment : Fragment() {
     }
 
     private fun showCategoryDialog() {
-        val dialog = buildDialog(R.layout.dialog_profile_categories, widthRatio = 0.95)
-        val rv = dialog.findViewById<RecyclerView>(R.id.rvCategories)
-        val tabFilter = dialog.findViewById<TabLayout>(R.id.tabFilter)
-        val fabAdd = dialog.findViewById<com.google.android.material.floatingactionbutton.FloatingActionButton>(R.id.fabAddCategory)
+        val dialog = Dialog(requireContext())
+        dialog.setContentView(R.layout.dialog_profile_categories)
+        dialog.window?.setBackgroundDrawableResource(android.R.color.transparent)
+        dialog.window?.setLayout(
+            (resources.displayMetrics.widthPixels * 0.95).toInt(),
+            (resources.displayMetrics.heightPixels * 0.82).toInt()
+        )
 
-        val adapter = ProfileCategoryAdapter { category -> viewModel.deleteCategory(category) }
+        val rv         = dialog.findViewById<RecyclerView>(R.id.rvCategories)
+        val fabAdd     = dialog.findViewById<com.google.android.material.floatingactionbutton.FloatingActionButton>(R.id.fabAddCategory)
+        val btnExpense = dialog.findViewById<TextView>(R.id.btnExpenseTab)
+        val btnIncome  = dialog.findViewById<TextView>(R.id.btnIncomeTab)
+
+        val adapter = ProfileCategoryAdapter(
+            onEdit   = { cat -> dialog.dismiss(); showEditCategoryDialog(cat) },
+            onDelete = { cat -> viewModel.deleteCategory(cat) }
+        )
         rv.layoutManager = LinearLayoutManager(requireContext())
         rv.adapter = adapter
 
-        viewLifecycleOwner.lifecycleScope.launch {
-            viewModel.categories.collectLatest { list ->
-                if (dialog.isShowing) adapter.submitFullList(list)
+        fun selectTab(isIncome: Boolean) {
+            adapter.showIncome = isIncome
+            if (isIncome) {
+                btnIncome.setBackgroundResource(R.drawable.kategori_item_selected_bg)
+                btnIncome.setTextColor(requireContext().getColor(R.color.green_primary))
+                btnExpense.setBackgroundResource(R.drawable.kategori_item_bg)
+                btnExpense.setTextColor(requireContext().getColor(R.color.text_secondary))
+            } else {
+                btnExpense.setBackgroundResource(R.drawable.kategori_item_selected_bg)
+                btnExpense.setTextColor(requireContext().getColor(R.color.green_primary))
+                btnIncome.setBackgroundResource(R.drawable.kategori_item_bg)
+                btnIncome.setTextColor(requireContext().getColor(R.color.text_secondary))
             }
         }
+        btnExpense.setOnClickListener { selectTab(false) }
+        btnIncome.setOnClickListener  { selectTab(true) }
 
-        tabFilter.addOnTabSelectedListener(object : TabLayout.OnTabSelectedListener {
-            override fun onTabSelected(tab: TabLayout.Tab) {
-                adapter.filterType = when (tab.position) { 1 -> "EXPENSE"; 2 -> "INCOME"; else -> "ALL" }
-            }
-            override fun onTabUnselected(tab: TabLayout.Tab?) {}
-            override fun onTabReselected(tab: TabLayout.Tab?) {}
-        })
+        // Anında mevcut veriyi göster (empty bug fix: isShowing kontrolü yok)
+        adapter.submitFullList(viewModel.categories.value)
+
+        categoryDialogJob?.cancel()
+        categoryDialogJob = viewLifecycleOwner.lifecycleScope.launch {
+            viewModel.categories.collect { list -> adapter.submitFullList(list) }
+        }
+        dialog.setOnDismissListener { categoryDialogJob?.cancel() }
 
         fabAdd.setOnClickListener { dialog.dismiss(); showAddCategoryDialog() }
+        dialog.show()
+    }
+
+    private fun showEditCategoryDialog(category: com.example.hesapyonetimi.domain.model.Category) {
+        val dialog = buildDialog(R.layout.dialog_profile_edit_category, widthRatio = 0.92)
+        val emojiOptions = listOf(
+            "📦","🛒","💡","🚗","🍔","🎬","🏥","💼","💰","🏠","👗",
+            "✈️","📚","🎮","🐾","🌿","⚽","🎵","💊","🔧","📱","🎁","☕","🍕"
+        )
+        var selectedEmoji = category.icon
+        val tvSelectedEmoji = dialog.findViewById<TextView>(R.id.tvSelectedEmoji)
+        val emojiContainer  = dialog.findViewById<LinearLayout>(R.id.emojiContainer)
+        tvSelectedEmoji.text = selectedEmoji
+
+        emojiOptions.forEach { emoji ->
+            TextView(requireContext()).apply {
+                text = emoji; textSize = 24f; setPadding(12, 8, 12, 8)
+                setOnClickListener { selectedEmoji = emoji; tvSelectedEmoji.text = emoji }
+            }.also { emojiContainer.addView(it) }
+        }
+
+        val etName  = dialog.findViewById<com.google.android.material.textfield.TextInputEditText>(R.id.etCategoryName)
+        val tilName = dialog.findViewById<com.google.android.material.textfield.TextInputLayout>(R.id.tilCategoryName)
+        etName.setText(category.name)
+        etName.setSelection(etName.text?.length ?: 0)
+
+        dialog.findViewById<View>(R.id.btnCancel).setOnClickListener { dialog.dismiss() }
+        dialog.findViewById<View>(R.id.btnSave).setOnClickListener {
+            val name = etName.text?.toString().orEmpty().trim()
+            if (name.isBlank()) { tilName.error = "Kategori adı girin"; return@setOnClickListener }
+            viewModel.updateCategory(category.copy(name = name, icon = selectedEmoji))
+            dialog.dismiss()
+            showCategoryDialog()
+        }
         dialog.show()
     }
 
@@ -277,6 +377,203 @@ class ProfileFragment : Fragment() {
         dialog.window?.setBackgroundDrawableResource(android.R.color.transparent)
         dialog.window?.setLayout((resources.displayMetrics.widthPixels * widthRatio).toInt(), ViewGroup.LayoutParams.WRAP_CONTENT)
         return dialog
+    }
+
+    private fun showWalletDialog() {
+        com.example.hesapyonetimi.presentation.profile.WalletManagementDialog()
+            .show(childFragmentManager, "WalletDialog")
+    }
+
+    // ── PIN değiştirme ────────────────────────────────────────────────────────
+    private fun setupBiometricSwitch(v: View) {
+        val prefs = requireContext().getSharedPreferences("HesapPrefs", android.content.Context.MODE_PRIVATE)
+        val sw = v.findViewById<androidx.appcompat.widget.SwitchCompat>(R.id.switchBiometric) ?: return
+        val tvSub = v.findViewById<TextView>(R.id.tvBiometricSubtitle)
+
+        // Cihaz biyometrik destekliyor mu?
+        val bioMgr = androidx.biometric.BiometricManager.from(requireContext())
+        val supported = bioMgr.canAuthenticate(
+            androidx.biometric.BiometricManager.Authenticators.BIOMETRIC_STRONG or
+            androidx.biometric.BiometricManager.Authenticators.DEVICE_CREDENTIAL
+        ) == androidx.biometric.BiometricManager.BIOMETRIC_SUCCESS
+
+        if (!supported) {
+            sw.isEnabled = false
+            tvSub?.text = "Cihaz biyometrik desteklemiyor"
+            return
+        }
+
+        sw.isChecked = prefs.getBoolean("biometric_enabled", false)
+        tvSub?.text = if (sw.isChecked) "Aktif — parmak izi / yüz tanıma" else "Parmak izi / yüz ile giriş"
+
+        sw.setOnCheckedChangeListener { _, checked ->
+            prefs.edit().putBoolean("biometric_enabled", checked).apply()
+            tvSub?.text = if (checked) "Aktif — parmak izi / yüz tanıma" else "Parmak izi / yüz ile giriş"
+            if (checked) showSnack("✅ Biyometrik giriş aktifleştirildi")
+        }
+    }
+
+    private fun showChangePinDialog() {
+        val prefs = requireContext().getSharedPreferences("HesapPrefs", android.content.Context.MODE_PRIVATE)
+        val currentPin = prefs.getString("kullanici_pin", null)
+
+        val dialogView = LayoutInflater.from(requireContext())
+            .inflate(R.layout.dialog_change_pin, null)
+        val etCurrent = dialogView.findViewById<com.google.android.material.textfield.TextInputEditText>(R.id.etCurrentPin)
+        val tilCurrent = dialogView.findViewById<com.google.android.material.textfield.TextInputLayout>(R.id.tilCurrentPin)
+        val etNew = dialogView.findViewById<com.google.android.material.textfield.TextInputEditText>(R.id.etNewPin)
+        val tilNew = dialogView.findViewById<com.google.android.material.textfield.TextInputLayout>(R.id.tilNewPin)
+        val etConfirm = dialogView.findViewById<com.google.android.material.textfield.TextInputEditText>(R.id.etConfirmPin)
+        val tilConfirm = dialogView.findViewById<com.google.android.material.textfield.TextInputLayout>(R.id.tilConfirmPin)
+
+        if (currentPin == null) tilCurrent.visibility = View.GONE
+
+        val dialog = buildDialog(R.layout.dialog_change_pin)
+        dialog.setContentView(dialogView)
+        dialog.window?.setBackgroundDrawableResource(android.R.color.transparent)
+        dialog.window?.setLayout((resources.displayMetrics.widthPixels * 0.90).toInt(), ViewGroup.LayoutParams.WRAP_CONTENT)
+
+        dialogView.findViewById<View>(R.id.btnCancel)?.setOnClickListener { dialog.dismiss() }
+        dialogView.findViewById<View>(R.id.btnSavePin)?.setOnClickListener {
+            val current = etCurrent.text?.toString()?.trim() ?: ""
+            val new1 = etNew.text?.toString()?.trim() ?: ""
+            val new2 = etConfirm.text?.toString()?.trim() ?: ""
+
+            if (currentPin != null && current != currentPin) {
+                tilCurrent.error = "Mevcut PIN yanlış"; return@setOnClickListener
+            }
+            if (new1.length != 4 || new1.any { !it.isDigit() }) {
+                tilNew.error = "PIN 4 rakam olmalı"; return@setOnClickListener
+            }
+            if (new1 != new2) {
+                tilConfirm.error = "PIN'ler eşleşmiyor"; return@setOnClickListener
+            }
+            prefs.edit().putString("kullanici_pin", new1).apply()
+            showSnack("✅ PIN güncellendi")
+            dialog.dismiss()
+        }
+        dialog.show()
+    }
+
+    // ── Güvenlik sorusu değiştirme ─────────────────────────────────────────────
+    private fun showChangeSecurityQDialog() {
+        val prefs = requireContext().getSharedPreferences("HesapPrefs", android.content.Context.MODE_PRIVATE)
+        val sorular = listOf(
+            "İlk evcil hayvanınızın adı nedir?",
+            "Annenizin kız soyadı nedir?",
+            "Doğduğunuz şehir neresidir?",
+            "En sevdiğiniz film nedir?"
+        )
+        val currentIdx = prefs.getInt("security_question_index", 0)
+
+        val dialogView = LayoutInflater.from(requireContext())
+            .inflate(R.layout.dialog_change_security_q, null)
+
+        // Soru butonları
+        val qButtons = listOf(
+            dialogView.findViewById<TextView>(R.id.btnQ0),
+            dialogView.findViewById<TextView>(R.id.btnQ1),
+            dialogView.findViewById<TextView>(R.id.btnQ2),
+            dialogView.findViewById<TextView>(R.id.btnQ3)
+        )
+        var selectedIdx = currentIdx
+        fun refreshQButtons() {
+            qButtons.forEachIndexed { i, btn ->
+                btn.setBackgroundResource(if (i == selectedIdx) R.drawable.kategori_item_selected_bg else R.drawable.kategori_item_bg)
+                btn.setTextColor(resources.getColor(if (i == selectedIdx) R.color.green_primary else R.color.text_secondary, null))
+            }
+        }
+        qButtons.forEachIndexed { i, btn ->
+            btn.text = sorular[i]
+            btn.setOnClickListener { selectedIdx = i; refreshQButtons() }
+        }
+        refreshQButtons()
+
+        val etAnswer = dialogView.findViewById<com.google.android.material.textfield.TextInputEditText>(R.id.etNewSecurityAnswer)
+        val tilAnswer = dialogView.findViewById<com.google.android.material.textfield.TextInputLayout>(R.id.tilNewSecurityAnswer)
+
+        val dialog = buildDialog(R.layout.dialog_change_security_q)
+        dialog.setContentView(dialogView)
+        dialog.window?.setBackgroundDrawableResource(android.R.color.transparent)
+        dialog.window?.setLayout((resources.displayMetrics.widthPixels * 0.92).toInt(), ViewGroup.LayoutParams.WRAP_CONTENT)
+
+        dialogView.findViewById<View>(R.id.btnCancelSecQ)?.setOnClickListener { dialog.dismiss() }
+        dialogView.findViewById<View>(R.id.btnSaveSecQ)?.setOnClickListener {
+            val answer = etAnswer.text?.toString()?.trim() ?: ""
+            if (answer.isBlank()) { tilAnswer.error = "Cevap boş olamaz"; return@setOnClickListener }
+            prefs.edit()
+                .putInt("security_question_index", selectedIdx)
+                .putString("security_answer", answer.lowercase())
+                .apply()
+            showSnack("✅ Güvenlik sorusu güncellendi")
+            dialog.dismiss()
+        }
+        dialog.show()
+    }
+
+    private fun updateCurrencySubtitle(v: View) {
+        val prefs = requireContext().getSharedPreferences("HesapPrefs", android.content.Context.MODE_PRIVATE)
+        val code = prefs.getString("currency_code", "TRY") ?: "TRY"
+        val sym = com.example.hesapyonetimi.presentation.common.CurrencyFormatter.currencies[code]?.symbol ?: "₺"
+        v.findViewById<TextView>(R.id.tvCurrencySubtitle)?.text = "$code ($sym)"
+    }
+
+    private fun showCurrencyDialog() {
+        val dialog = Dialog(requireContext())
+        dialog.setContentView(R.layout.dialog_currency)
+        dialog.window?.setBackgroundDrawableResource(android.R.color.transparent)
+        dialog.window?.setLayout((resources.displayMetrics.widthPixels * 0.88).toInt(), ViewGroup.LayoutParams.WRAP_CONTENT)
+
+        val rv = dialog.findViewById<androidx.recyclerview.widget.RecyclerView>(R.id.rvCurrencies)
+        rv.layoutManager = LinearLayoutManager(requireContext())
+
+        val prefs = requireContext().getSharedPreferences("HesapPrefs", android.content.Context.MODE_PRIVATE)
+        var selected = prefs.getString("currency_code", "TRY") ?: "TRY"
+        val entries = com.example.hesapyonetimi.presentation.common.CurrencyFormatter.currencies.entries.toList()
+
+        val currencyNames = mapOf(
+            "TRY" to "Türk Lirası", "USD" to "US Dollar", "EUR" to "Euro",
+            "GBP" to "British Pound", "JPY" to "Japanese Yen", "BTC" to "Bitcoin",
+            "ETH" to "Ethereum", "CHF" to "Swiss Franc", "CAD" to "Canadian Dollar", "AUD" to "Australian Dollar"
+        )
+
+        rv.adapter = object : androidx.recyclerview.widget.RecyclerView.Adapter<androidx.recyclerview.widget.RecyclerView.ViewHolder>() {
+            inner class VH(v: View) : androidx.recyclerview.widget.RecyclerView.ViewHolder(v)
+            override fun getItemCount() = entries.size
+            override fun onCreateViewHolder(parent: ViewGroup, vt: Int): VH {
+                val row = LayoutInflater.from(parent.context).inflate(R.layout.item_currency_row, parent, false)
+                return VH(row)
+            }
+            override fun onBindViewHolder(h: androidx.recyclerview.widget.RecyclerView.ViewHolder, pos: Int) {
+                val (code, def) = entries[pos]
+                h.itemView.findViewById<TextView>(R.id.tvCurrencyCode)?.text = "${def.symbol}  $code"
+                h.itemView.findViewById<TextView>(R.id.tvCurrencyName)?.text = currencyNames[code] ?: code
+                val isSelected = code == selected
+                h.itemView.setBackgroundResource(if (isSelected) R.drawable.kategori_item_selected_bg else android.R.color.transparent)
+                h.itemView.setOnClickListener {
+                    selected = code
+                    com.example.hesapyonetimi.presentation.common.CurrencyFormatter.setCode(requireContext(), code)
+                    notifyDataSetChanged()
+                    view?.let { updateCurrencySubtitle(it) }
+                    dialog.dismiss()
+                    showSnack("Para birimi: $code")
+                }
+            }
+        }
+        dialog.show()
+    }
+
+    private fun exportCsv() {
+        viewLifecycleOwner.lifecycleScope.launch {
+            try {
+                val txList = viewModel.getAllTransactionsOnce()
+                if (txList.isEmpty()) { showSnack("Dışa aktarılacak işlem yok"); return@launch }
+                val intent = CsvExporter.export(requireContext(), txList)
+                startActivity(android.content.Intent.createChooser(intent, "CSV olarak paylaş"))
+            } catch (e: Exception) {
+                showSnack("Dışa aktarma hatası: ${e.message}")
+            }
+        }
     }
 
     private fun showSnack(message: String) {
