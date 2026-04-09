@@ -1,11 +1,18 @@
 package com.example.hesapyonetimi
 
+import android.graphics.Color
+import android.graphics.drawable.GradientDrawable
 import android.os.Bundle
+import android.view.Gravity
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.FrameLayout
+import android.widget.GridLayout
+import android.widget.ImageButton
 import android.widget.LinearLayout
 import android.widget.TextView
+import android.widget.Toast
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.fragment.app.Fragment
@@ -13,11 +20,13 @@ import androidx.fragment.app.viewModels
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
+import androidx.core.content.ContextCompat
 import androidx.recyclerview.widget.ItemTouchHelper
 import com.google.android.material.snackbar.Snackbar
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout
+import com.example.hesapyonetimi.MainActivity
 import com.example.hesapyonetimi.adapter.HatirlaticiAdapter
 import com.example.hesapyonetimi.domain.model.Reminder
 import com.example.hesapyonetimi.presentation.common.CurrencyFormatter
@@ -25,7 +34,9 @@ import com.example.hesapyonetimi.presentation.common.HizliOneri
 import com.example.hesapyonetimi.presentation.reminders.HatirlaticiEkleSheet
 import com.example.hesapyonetimi.presentation.reminders.ReminderViewModel
 import dagger.hilt.android.AndroidEntryPoint
+import androidx.swiperefreshlayout.widget.SwipeRefreshLayout
 import kotlinx.coroutines.launch
+import java.text.SimpleDateFormat
 import java.util.*
 
 @AndroidEntryPoint
@@ -36,6 +47,9 @@ class YaklasanFragment : Fragment() {
     private lateinit var adapterSonraki: HatirlaticiAdapter
     private var tumReminders: List<Reminder> = emptyList()
     private var aktifFiltre = 0
+    private var reminderCalOffset = 0
+    private var yaklasanGorunumListe = true
+    private val ayYilTr = SimpleDateFormat("MMMM yyyy", Locale("tr"))
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
         return inflater.inflate(R.layout.fragment_yaklasan, container, false)
@@ -87,7 +101,15 @@ class YaklasanFragment : Fragment() {
             HatirlaticiEkleSheet.newInstance().show(childFragmentManager, "HatirlaticiEkle")
         }
 
+        view.findViewById<android.widget.TextView>(R.id.iv_profile_yaklasan)?.apply {
+            val name = requireContext().getSharedPreferences("HesapPrefs", android.content.Context.MODE_PRIVATE)
+                .getString("user_display_name", "K") ?: "K"
+            text = name.firstOrNull()?.uppercaseChar()?.toString() ?: "K"
+            setOnClickListener { (activity as? MainActivity)?.gosterProfil() }
+        }
+
         setupFiltre(view)
+        setupYaklasanViewMode(view)
 
         view.findViewById<SwipeRefreshLayout>(R.id.swipe_refresh).apply {
             setColorSchemeResources(R.color.green_primary)
@@ -132,10 +154,19 @@ class YaklasanFragment : Fragment() {
                 "Son ${oneri.eslesmeSkoru} ayda benzer ödeme"
 
             oneriView.findViewById<View>(R.id.btn_oneri_ekle).setOnClickListener {
-                // Hatırlatıcı sheet'i aç, bilgileri önceden doldur
-                HatirlaticiEkleSheet.newInstance().also { sheet ->
-                    sheet.show(childFragmentManager, "HatirlaticiEkle")
+                if (oneri.isIncome) {
+                    Toast.makeText(
+                        requireContext(),
+                        "Hatırlatıcılar gider ödemeleri içindir.",
+                        Toast.LENGTH_SHORT
+                    ).show()
+                    return@setOnClickListener
                 }
+                HatirlaticiEkleSheet.newInstanceFromQuickFill(
+                    oneri.description,
+                    oneri.amount,
+                    oneri.categoryId
+                ).show(childFragmentManager, "HatirlaticiEkle")
             }
 
             oneriView.findViewById<View>(R.id.btn_oneri_kapat).setOnClickListener {
@@ -151,16 +182,33 @@ class YaklasanFragment : Fragment() {
         val bekleyen = reminders.filter { !it.isPaid && !it.isOverdue }
         val gecikmus = reminders.filter { it.isOverdue }
 
+        val todayStart = Calendar.getInstance().apply {
+            set(Calendar.HOUR_OF_DAY, 0); set(Calendar.MINUTE, 0)
+            set(Calendar.SECOND, 0); set(Calendar.MILLISECOND, 0)
+        }.timeInMillis
+        val windowEnd = todayStart + 30L * 24 * 60 * 60 * 1000
+        val bekleyen30Gun = bekleyen.filter { it.dueDate in todayStart..windowEnd }
+
         view.findViewById<TextView>(R.id.tv_bekleyen_sayi).text = "${bekleyen.size} adet"
         view.findViewById<TextView>(R.id.tv_bekleyen_toplam).text =
-            CurrencyFormatter.format(bekleyen.sumOf { it.amount })
-        view.findViewById<TextView>(R.id.tv_gecikmus_sayi).text = "${gecikmus.size} adet"
+            CurrencyFormatter.format(bekleyen30Gun.sumOf { it.amount })
 
-        val filtrelenmis = when (aktifFiltre) {
+        val layoutGecikmis = view.findViewById<View>(R.id.layout_gecikmis_ozet)
+        val tvGecikmus = view.findViewById<TextView>(R.id.tv_gecikmus_sayi)
+        if (gecikmus.isEmpty()) {
+            layoutGecikmis?.visibility = View.GONE
+        } else {
+            layoutGecikmis?.visibility = View.VISIBLE
+            tvGecikmus.text = "${gecikmus.size} adet"
+            tvGecikmus.setTextColor(0xFFFF6B6B.toInt())
+        }
+
+        val filtrelenmisRaw = when (aktifFiltre) {
             1 -> reminders.filter { it.isOverdue }
             2 -> reminders // Tümü — ödenenler dahil
             else -> reminders.filter { !it.isPaid } // Bekleyen — sadece ödenmemiş
         }
+        val filtrelenmis = sortRemindersForDisplay(filtrelenmisRaw)
 
         val ayBitis = Calendar.getInstance().apply {
             set(Calendar.DAY_OF_MONTH, getActualMaximum(Calendar.DAY_OF_MONTH))
@@ -179,6 +227,137 @@ class YaklasanFragment : Fragment() {
             if (sonraki.isNotEmpty()) View.VISIBLE else View.GONE
         view.findViewById<View>(R.id.empty_state).visibility =
             if (filtrelenmis.isEmpty()) View.VISIBLE else View.GONE
+
+        if (!yaklasanGorunumListe) buildReminderCalendar(view)
+    }
+
+    private fun setupYaklasanViewMode(root: View) {
+        val btnListe = root.findViewById<TextView>(R.id.btn_yaklasan_liste)
+        val btnTakvim = root.findViewById<TextView>(R.id.btn_yaklasan_takvim)
+        val swipe = root.findViewById<SwipeRefreshLayout>(R.id.swipe_refresh)
+        val nestedCal = root.findViewById<View>(R.id.nested_yaklasan_takvim)
+        val grn = ContextCompat.getColor(requireContext(), R.color.green_primary)
+        val sec = ContextCompat.getColor(requireContext(), R.color.text_secondary)
+
+        fun styleListe(secili: Boolean) {
+            btnListe.setBackgroundResource(if (secili) R.drawable.kategori_item_selected_bg else R.drawable.kategori_item_bg)
+            btnListe.setTextColor(if (secili) grn else sec)
+            btnTakvim.setBackgroundResource(if (!secili) R.drawable.kategori_item_selected_bg else R.drawable.kategori_item_bg)
+            btnTakvim.setTextColor(if (!secili) grn else sec)
+        }
+
+        btnListe.setOnClickListener {
+            yaklasanGorunumListe = true
+            swipe.visibility = View.VISIBLE
+            nestedCal.visibility = View.GONE
+            styleListe(true)
+        }
+        btnTakvim.setOnClickListener {
+            yaklasanGorunumListe = false
+            swipe.visibility = View.GONE
+            nestedCal.visibility = View.VISIBLE
+            styleListe(false)
+            buildReminderCalendar(root)
+        }
+
+        root.findViewById<ImageButton>(R.id.btnReminderCalPrev).setOnClickListener {
+            reminderCalOffset--
+            buildReminderCalendar(root)
+        }
+        root.findViewById<ImageButton>(R.id.btnReminderCalNext).setOnClickListener {
+            reminderCalOffset++
+            buildReminderCalendar(root)
+        }
+        styleListe(true)
+    }
+
+    private fun buildReminderCalendar(root: View) {
+        val grid = root.findViewById<GridLayout>(R.id.reminderCalendarGrid) ?: return
+        grid.removeAllViews()
+        val cal = Calendar.getInstance().apply { add(Calendar.MONTH, reminderCalOffset) }
+        root.findViewById<TextView>(R.id.tvReminderCalMonth)?.text = ayYilTr.format(cal.time)
+
+        val cellW = ((resources.displayMetrics.widthPixels - dpPx(64)) / 7).coerceAtLeast(dpPx(32))
+        val headers = listOf("Pt", "Sa", "Ça", "Pe", "Cu", "Ct", "Pz")
+        headers.forEach { h ->
+            val tv = TextView(requireContext()).apply {
+                text = h
+                gravity = Gravity.CENTER
+                textSize = 10f
+                setTextColor(ContextCompat.getColor(requireContext(), R.color.text_secondary))
+            }
+            grid.addView(tv, GridLayout.LayoutParams().apply {
+                width = 0
+                height = GridLayout.LayoutParams.WRAP_CONTENT
+                columnSpec = GridLayout.spec(GridLayout.UNDEFINED, 1f)
+            })
+        }
+
+        val y = cal.get(Calendar.YEAR)
+        val m = cal.get(Calendar.MONTH)
+        cal.set(Calendar.DAY_OF_MONTH, 1)
+        val firstDow = cal.get(Calendar.DAY_OF_WEEK)
+        val offset7 = (firstDow - 2 + 7) % 7
+        val daysInMonth = cal.getActualMaximum(Calendar.DAY_OF_MONTH)
+
+        val hasOnDay = (1..daysInMonth).associateWith { day ->
+            tumReminders.any { r ->
+                val c = Calendar.getInstance().apply { timeInMillis = r.dueDate }
+                c.get(Calendar.YEAR) == y && c.get(Calendar.MONTH) == m && c.get(Calendar.DAY_OF_MONTH) == day
+            }
+        }
+
+        repeat(offset7) {
+            val v = View(requireContext())
+            grid.addView(v, GridLayout.LayoutParams().apply {
+                width = 0
+                height = cellW
+                columnSpec = GridLayout.spec(GridLayout.UNDEFINED, 1f)
+            })
+        }
+        for (day in 1..daysInMonth) {
+            val cell = FrameLayout(requireContext()).apply {
+                layoutParams = GridLayout.LayoutParams().apply {
+                    width = 0
+                    height = cellW
+                    columnSpec = GridLayout.spec(GridLayout.UNDEFINED, 1f)
+                }
+            }
+            val tv = TextView(requireContext()).apply {
+                text = day.toString()
+                gravity = Gravity.CENTER
+                textSize = 12f
+                setTextColor(ContextCompat.getColor(requireContext(), R.color.text_primary))
+            }
+            cell.addView(tv, FrameLayout.LayoutParams(
+                FrameLayout.LayoutParams.MATCH_PARENT,
+                FrameLayout.LayoutParams.MATCH_PARENT
+            ))
+            if (hasOnDay[day] == true) {
+                val dot = View(requireContext()).apply {
+                    val s = dpPx(5)
+                    background = GradientDrawable().apply {
+                        shape = GradientDrawable.OVAL
+                        setColor(Color.parseColor("#2979FF"))
+                    }
+                    layoutParams = FrameLayout.LayoutParams(s, s).apply {
+                        gravity = Gravity.BOTTOM or Gravity.CENTER_HORIZONTAL
+                        bottomMargin = dpPx(4)
+                    }
+                }
+                cell.addView(dot)
+            }
+            grid.addView(cell)
+        }
+    }
+
+    private fun dpPx(dp: Int) = (dp * resources.displayMetrics.density).toInt()
+
+    /** Ödenmemişler üstte; ödenenler altta, soluk + üstü çizili (adapter ile birlikte) */
+    private fun sortRemindersForDisplay(list: List<Reminder>): List<Reminder> {
+        val unpaid = list.filter { !it.isPaid }.sortedBy { it.dueDate }
+        val paid = list.filter { it.isPaid }.sortedBy { it.dueDate }
+        return unpaid + paid
     }
 
     private fun silWithUndo(reminder: com.example.hesapyonetimi.domain.model.Reminder) {

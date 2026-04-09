@@ -11,8 +11,8 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="🎨  Tema Seçimi"
-        android:textColor="#212121"
-        android:textSize="17sp"
+        android:textColor="@color/text_primary"
+        android:textSize="18sp"
         android:textStyle="bold" />
 
     <TextView
@@ -20,10 +20,9 @@
         android:layout_height="wrap_content"
         android:layout_marginTop="4dp"
         android:text="Uygulama görünümünü seçin"
-        android:textColor="#9E9E9E"
+        android:textColor="@color/text_secondary"
         android:textSize="13sp" />
 
-    <!-- Açık tema -->
     <androidx.cardview.widget.CardView
         android:id="@+id/cardLight"
         android:layout_width="match_parent"
@@ -32,8 +31,8 @@
         android:clickable="true"
         android:focusable="true"
         android:foreground="?attr/selectableItemBackground"
-        app:cardBackgroundColor="#F5F5F5"
-        app:cardCornerRadius="12dp"
+        app:cardBackgroundColor="@color/card_background"
+        app:cardCornerRadius="14dp"
         app:cardElevation="0dp">
 
         <LinearLayout
@@ -61,7 +60,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="Açık Tema"
-                    android:textColor="#212121"
+                    android:textColor="@color/text_primary"
                     android:textSize="14sp"
                     android:textStyle="bold" />
 
@@ -69,7 +68,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="Her zaman açık görünüm"
-                    android:textColor="#9E9E9E"
+                    android:textColor="@color/text_secondary"
                     android:textSize="12sp" />
             </LinearLayout>
 
@@ -78,14 +77,13 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="✓"
-                android:textColor="#0099CC"
+                android:textColor="@color/green_primary"
                 android:textSize="18sp"
                 android:textStyle="bold"
                 android:visibility="gone" />
         </LinearLayout>
     </androidx.cardview.widget.CardView>
 
-    <!-- Koyu tema -->
     <androidx.cardview.widget.CardView
         android:id="@+id/cardDark"
         android:layout_width="match_parent"
@@ -94,8 +92,8 @@
         android:clickable="true"
         android:focusable="true"
         android:foreground="?attr/selectableItemBackground"
-        app:cardBackgroundColor="#F5F5F5"
-        app:cardCornerRadius="12dp"
+        app:cardBackgroundColor="@color/card_background"
+        app:cardCornerRadius="14dp"
         app:cardElevation="0dp">
 
         <LinearLayout
@@ -123,7 +121,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="Koyu Tema"
-                    android:textColor="#212121"
+                    android:textColor="@color/text_primary"
                     android:textSize="14sp"
                     android:textStyle="bold" />
 
@@ -131,7 +129,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="Her zaman koyu görünüm"
-                    android:textColor="#9E9E9E"
+                    android:textColor="@color/text_secondary"
                     android:textSize="12sp" />
             </LinearLayout>
 
@@ -140,24 +138,24 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="✓"
-                android:textColor="#0099CC"
+                android:textColor="@color/green_primary"
                 android:textSize="18sp"
                 android:textStyle="bold"
                 android:visibility="gone" />
         </LinearLayout>
     </androidx.cardview.widget.CardView>
 
-    <!-- Sistem varsayılanı -->
     <androidx.cardview.widget.CardView
         android:id="@+id/cardSystem"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginTop="8dp"
+        android:layout_marginBottom="8dp"
         android:clickable="true"
         android:focusable="true"
         android:foreground="?attr/selectableItemBackground"
-        app:cardBackgroundColor="#F5F5F5"
-        app:cardCornerRadius="12dp"
+        app:cardBackgroundColor="@color/card_background"
+        app:cardCornerRadius="14dp"
         app:cardElevation="0dp">
 
         <LinearLayout
@@ -185,7 +183,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="Sistem Varsayılanı"
-                    android:textColor="#212121"
+                    android:textColor="@color/text_primary"
                     android:textSize="14sp"
                     android:textStyle="bold" />
 
@@ -193,7 +191,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="Cihaz ayarına göre otomatik"
-                    android:textColor="#9E9E9E"
+                    android:textColor="@color/text_secondary"
                     android:textSize="12sp" />
             </LinearLayout>
 
@@ -202,7 +200,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="✓"
-                android:textColor="#0099CC"
+                android:textColor="@color/green_primary"
                 android:textSize="18sp"
                 android:textStyle="bold"
                 android:visibility="visible" />

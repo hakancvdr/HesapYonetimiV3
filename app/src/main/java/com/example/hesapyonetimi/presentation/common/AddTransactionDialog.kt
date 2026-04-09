@@ -21,6 +21,8 @@ import javax.inject.Inject
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment
 import com.google.android.material.button.MaterialButton
 import com.google.android.material.button.MaterialButtonToggleGroup
+import com.google.android.material.chip.Chip
+import com.google.android.material.chip.ChipGroup
 import com.google.android.material.textfield.TextInputEditText
 import androidx.fragment.app.viewModels
 import androidx.lifecycle.Lifecycle
@@ -41,6 +43,7 @@ class AddTransactionDialog : BottomSheetDialogFragment() {
     private var preSelectedType: Boolean? = null
     private lateinit var categoryAdapter: CategoryChipAdapter
     private var selectedWalletId: Long? = null
+    private var isRecurring: Boolean = false
 
     companion object {
         private const val ARG_IS_INCOME = "arg_is_income"
@@ -175,6 +178,32 @@ class AddTransactionDialog : BottomSheetDialogFragment() {
             }
         }
 
+        // Etiket chip'leri
+        val chipGroupTags = view.findViewById<ChipGroup>(R.id.chipGroupTags)
+        val predefinedTags = listOf("Fatura", "Market", "Yemek", "Ulaşım", "Kira", "Abonelik", "Sağlık", "Eğlence")
+        predefinedTags.forEach { tag ->
+            val chip = Chip(requireContext()).apply {
+                text = tag
+                isCheckable = true
+                isChecked = false
+            }
+            chipGroupTags.addView(chip)
+        }
+
+        // Tekrarlayan toggle
+        val switchRecurring = view.findViewById<androidx.appcompat.widget.SwitchCompat>(R.id.switchRecurring)
+        val tilRecurringDays = view.findViewById<com.google.android.material.textfield.TextInputLayout>(R.id.tilRecurringDays)
+        val etRecurringDays = view.findViewById<com.google.android.material.textfield.TextInputEditText>(R.id.etRecurringDays)
+        switchRecurring.setOnCheckedChangeListener { _, checked ->
+            isRecurring = checked
+            tilRecurringDays.visibility = if (checked) View.VISIBLE else View.GONE
+            tilRecurringDays.post {
+                tilRecurringDays.requestLayout()
+                view.requestLayout()
+                (view.parent as? View)?.requestLayout()
+            }
+        }
+
         etAmount.setOnEditorActionListener { _, _, _ -> hideKeyboard(); true }
         etDescription.setOnEditorActionListener { _, _, _ -> hideKeyboard(); true }
         btnCancel.setOnClickListener { dismiss() }
@@ -189,13 +218,21 @@ class AddTransactionDialog : BottomSheetDialogFragment() {
                 toast("Diğer kategorisinde açıklama zorunlu"); return@setOnClickListener
             }
             val amount = amountStr.toDoubleOrNull() ?: 0.0
+            val recurringDays = etRecurringDays.text?.toString()?.toIntOrNull() ?: 30
+            val selectedTags = (0 until chipGroupTags.childCount)
+                .map { chipGroupTags.getChildAt(it) as Chip }
+                .filter { it.isChecked }
+                .joinToString(",") { it.text.toString() }
             viewModel.addTransaction(
                 amount = amount,
                 categoryId = cat.id,
                 description = if (description.isEmpty()) cat.name else description,
                 date = System.currentTimeMillis(),
                 isIncome = isIncome,
-                walletId = selectedWalletId
+                walletId = selectedWalletId,
+                isRecurring = isRecurring,
+                recurringDays = recurringDays,
+                tags = selectedTags
             )
             toast("✅ İşlem eklendi!")
             dismiss()

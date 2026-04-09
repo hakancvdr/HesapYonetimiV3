@@ -8,6 +8,7 @@ import android.view.View
 import android.view.ViewGroup
 import android.view.inputmethod.InputMethodManager
 import android.widget.Toast
+import com.google.android.material.snackbar.Snackbar
 import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
@@ -190,17 +191,16 @@ class EditTransactionSheet : BottomSheetDialogFragment() {
 
         etAmount.setOnEditorActionListener { _, _, _ -> hideKeyboard(); true }
 
-        // Sil
+        // Sil — Geri Al Snackbar ile
         btnDelete.setOnClickListener {
-            AlertDialog.Builder(requireContext())
-                .setTitle("İşlemi Sil")
-                .setMessage("Bu işlemi silmek istediğinden emin misin?")
-                .setPositiveButton("Sil") { _, _ ->
-                    viewModel.deleteTransaction(transaction)
-                    Toast.makeText(requireContext(), "İşlem silindi", Toast.LENGTH_SHORT).show()
-                    dismiss()
+            val deletedTransaction = transaction
+            viewModel.deleteTransaction(deletedTransaction)
+            dismiss()
+            val rootView = requireActivity().window.decorView.rootView
+            Snackbar.make(rootView, "İşlem silindi", Snackbar.LENGTH_LONG)
+                .setAction("Geri Al") {
+                    viewModel.addTransaction(deletedTransaction)
                 }
-                .setNegativeButton("İptal", null)
                 .show()
         }
 

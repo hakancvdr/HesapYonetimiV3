@@ -25,10 +25,11 @@ class TransactionAdapter(
         val islem = transactionList[position]
 
         holder.binding.tvIslemAciklama.text = islem.title
+        val recurringTag = if (islem.transaction?.isRecurring == true) " 🔁" else ""
         holder.binding.tvIslemKategori.text = if (islem.time.isNotEmpty())
-            "${islem.category} · ${islem.time}"
+            "${islem.category} · ${islem.time}$recurringTag"
         else
-            islem.category
+            "${islem.category}$recurringTag"
 
         holder.binding.tvIslemTutar.text = islem.amount
         holder.binding.tvIslemTutar.setTextColor(
@@ -55,4 +56,6 @@ class TransactionAdapter(
     }
 
     override fun getItemCount(): Int = transactionList.size
+
+    fun getItem(position: Int): TransactionModel = transactionList[position]
 }

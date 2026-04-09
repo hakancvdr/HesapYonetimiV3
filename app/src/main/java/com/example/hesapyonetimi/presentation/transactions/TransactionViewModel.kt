@@ -63,7 +63,10 @@ class TransactionViewModel @Inject constructor(
         description: String,
         date: Long,
         isIncome: Boolean,
-        walletId: Long? = null
+        walletId: Long? = null,
+        isRecurring: Boolean = false,
+        recurringDays: Int = 30,
+        tags: String = ""
     ) {
         viewModelScope.launch {
             try {
@@ -73,7 +76,10 @@ class TransactionViewModel @Inject constructor(
                     description = description,
                     date = date,
                     isIncome = isIncome,
-                    walletId = walletId
+                    walletId = walletId,
+                    isRecurring = isRecurring,
+                    recurringDays = recurringDays,
+                    tags = tags
                 )
                 
                 transactionRepository.insertTransaction(transaction)
@@ -89,6 +95,16 @@ class TransactionViewModel @Inject constructor(
         }
     }
     
+    fun addTransaction(transaction: Transaction) {
+        viewModelScope.launch {
+            try {
+                transactionRepository.insertTransaction(transaction.copy(id = 0))
+            } catch (e: Exception) {
+                _uiState.value = _uiState.value.copy(error = e.message ?: "Geri alma hatası")
+            }
+        }
+    }
+
     fun updateTransaction(transaction: Transaction) {
         viewModelScope.launch {
             try {

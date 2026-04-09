@@ -12,6 +12,7 @@ import androidx.core.view.ViewCompat
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.lifecycle.lifecycleScope
+import android.widget.ScrollView
 import com.example.hesapyonetimi.data.local.dao.UserProfileDao
 import com.example.hesapyonetimi.data.local.entity.UserProfileEntity
 import com.google.android.material.textfield.TextInputEditText
@@ -67,6 +68,27 @@ class RegistrationActivity : AppCompatActivity() {
         ViewCompat.setOnApplyWindowInsetsListener(bottomBar) { v, insets ->
             val navBarHeight = insets.getInsets(WindowInsetsCompat.Type.navigationBars()).bottom
             v.setPadding(dp16, dp16, dp16, navBarHeight + dp16)
+            insets
+        }
+
+        // Klavye açıldığında ScrollView'ı keyboard yüksekliği kadar kaydır
+        val scrollView = findViewById<ScrollView>(R.id.regScrollView)
+        ViewCompat.setOnApplyWindowInsetsListener(scrollView) { v, insets ->
+            val imeBottom = insets.getInsets(WindowInsetsCompat.Type.ime()).bottom
+            v.setPadding(0, 0, 0, imeBottom)
+            // Klavye açıkken odaklanan alana kaydır
+            if (imeBottom > 0) {
+                val focused = currentFocus
+                if (focused != null) {
+                    scrollView.postDelayed({
+                        scrollView.requestChildRectangleOnScreen(
+                            focused,
+                            android.graphics.Rect(0, 0, focused.width, focused.height),
+                            false
+                        )
+                    }, 100)
+                }
+            }
             insets
         }
 

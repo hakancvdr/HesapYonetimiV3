@@ -2,6 +2,7 @@ package com.example.hesapyonetimi.presentation.dashboard
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.hesapyonetimi.data.local.dao.TransactionDao
 import com.example.hesapyonetimi.domain.model.Reminder
 import com.example.hesapyonetimi.domain.model.Transaction
 import com.example.hesapyonetimi.domain.repository.ReminderRepository
@@ -31,7 +32,8 @@ data class DashboardUiState(
 class DashboardViewModel @Inject constructor(
     private val transactionRepository: TransactionRepository,
     private val reminderRepository: ReminderRepository,
-    private val akilliOneriService: AkilliOneriService
+    private val akilliOneriService: AkilliOneriService,
+    private val transactionDao: TransactionDao
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(DashboardUiState(isLoading = true))
@@ -39,6 +41,13 @@ class DashboardViewModel @Inject constructor(
 
     private val _suggestions = MutableStateFlow<List<HizliOneri>>(emptyList())
     val suggestions: StateFlow<List<HizliOneri>> = _suggestions.asStateFlow()
+
+    // Tüm zamanlara ait kümülatif net bakiye (devreden)
+    val netBakiye: StateFlow<Double> = combine(
+        transactionDao.getTotalIncomeAllTime(),
+        transactionDao.getTotalExpenseAllTime()
+    ) { income, expense -> (income ?: 0.0) - (expense ?: 0.0) }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), 0.0)
 
     // Seçili tarih — başlangıçta bugün
     private val _selectedDate = MutableStateFlow(System.currentTimeMillis())

@@ -16,7 +16,10 @@ fun TransactionEntity.toDomain(category: CategoryEntity? = null): Transaction {
         date = date,
         isIncome = isIncome,
         createdAt = createdAt,
-        walletId = walletId
+        walletId = walletId,
+        tags = tags,
+        isRecurring = isRecurring,
+        recurringDays = recurringDays
     )
 }
 
@@ -30,7 +33,10 @@ fun Transaction.toEntity(): TransactionEntity {
         isIncome = isIncome,
         createdAt = createdAt,
         updatedAt = System.currentTimeMillis(),
-        walletId = walletId
+        walletId = walletId,
+        tags = tags,
+        isRecurring = isRecurring,
+        recurringDays = recurringDays
     )
 }
 

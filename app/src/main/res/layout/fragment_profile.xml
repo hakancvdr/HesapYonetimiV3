@@ -469,9 +469,13 @@
                         <TextView
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:text="›"
-                            android:textColor="@color/text_secondary"
-                            android:textSize="26sp" />
+                            android:text="PRO"
+                            android:textColor="#FFFFFF"
+                            android:textSize="10sp"
+                            android:textStyle="bold"
+                            android:background="@drawable/pro_badge_bg"
+                            android:paddingHorizontal="8dp"
+                            android:paddingVertical="3dp" />
                     </LinearLayout>
 
                     <!-- Ayraç -->
@@ -498,9 +502,20 @@
                                 android:layout_marginTop="2dp" android:text="Parmak izi / yüz ile giriş"
                                 android:textColor="@color/text_secondary" android:textSize="12sp" />
                         </LinearLayout>
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="PRO"
+                            android:textColor="#FFFFFF"
+                            android:textSize="10sp"
+                            android:textStyle="bold"
+                            android:background="@drawable/pro_badge_bg"
+                            android:paddingHorizontal="8dp"
+                            android:paddingVertical="3dp" />
                         <androidx.appcompat.widget.SwitchCompat
                             android:id="@+id/switchBiometric"
-                            android:layout_width="wrap_content" android:layout_height="wrap_content"/>
+                            android:layout_width="wrap_content" android:layout_height="wrap_content"
+                            android:visibility="gone"/>
                     </LinearLayout>
 
                     <!-- Ayraç -->
@@ -583,7 +598,13 @@
                                 android:textColor="@color/text_secondary" android:textSize="12sp" />
                         </LinearLayout>
                         <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
-                            android:text="›" android:textColor="@color/text_secondary" android:textSize="26sp" />
+                            android:text="PRO"
+                            android:textColor="#FFFFFF"
+                            android:textSize="10sp"
+                            android:textStyle="bold"
+                            android:background="@drawable/pro_badge_bg"
+                            android:paddingHorizontal="8dp"
+                            android:paddingVertical="3dp" />
                     </LinearLayout>
 
                     <!-- Ayraç -->
@@ -744,7 +765,13 @@
                                 android:textColor="@color/text_secondary" android:textSize="12sp" />
                         </LinearLayout>
                         <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
-                            android:text="›" android:textColor="@color/text_secondary" android:textSize="26sp" />
+                            android:text="PRO"
+                            android:textColor="#FFFFFF"
+                            android:textSize="10sp"
+                            android:textStyle="bold"
+                            android:background="@drawable/pro_badge_bg"
+                            android:paddingHorizontal="8dp"
+                            android:paddingVertical="3dp" />
                     </LinearLayout>
 
                 </LinearLayout>

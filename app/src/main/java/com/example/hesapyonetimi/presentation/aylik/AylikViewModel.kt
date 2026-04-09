@@ -1,5 +1,6 @@
 package com.example.hesapyonetimi.presentation.aylik
 
+import android.os.Parcelable
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.hesapyonetimi.domain.model.Transaction
@@ -7,9 +8,11 @@ import com.example.hesapyonetimi.domain.repository.TransactionRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
+import kotlinx.parcelize.Parcelize
 import java.util.*
 import javax.inject.Inject
 
+@Parcelize
 data class KategoriOzet(
     val isIncome: Boolean = false,
     val kategoriId: Long,
@@ -21,7 +24,7 @@ data class KategoriOzet(
     val islemler: List<Transaction>,
     val gecenAyToplam: Double = 0.0,
     val degisimYuzde: Float = 0f
-)
+) : Parcelable
 
 data class AylikUiState(
     val transactions: List<Transaction> = emptyList(),

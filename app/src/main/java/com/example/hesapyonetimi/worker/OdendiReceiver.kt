@@ -4,6 +4,7 @@ import android.app.NotificationManager
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
+import androidx.work.WorkManager
 import com.example.hesapyonetimi.domain.repository.ReminderRepository
 import com.example.hesapyonetimi.domain.repository.TransactionRepository
 import com.example.hesapyonetimi.domain.model.Transaction
@@ -43,9 +44,14 @@ class OdendiReceiver : BroadcastReceiver() {
             )
             transactionRepository.insertTransaction(transaction)
 
-            // Bildirimi kapat
+            // AlarmManager + WorkManager temizle
+            ReminderScheduler.cancel(context, reminderId)
+
+            // 5 aşamanın tüm bildirimlerini kapat
             val nm = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-            nm.cancel(reminderId.toInt())
+            for (stage in 1..5) {
+                nm.cancel((reminderId * 10 + stage).toInt())
+            }
         }
     }
 }

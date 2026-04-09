@@ -5,19 +5,21 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.GridView
-import android.widget.BaseAdapter
 import android.widget.LinearLayout
 import android.widget.TextView
 import android.widget.Toast
 import androidx.fragment.app.Fragment
+import androidx.navigation.fragment.findNavController
 import com.example.hesapyonetimi.util.CsvExporter
 import androidx.fragment.app.viewModels
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
+import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
+import com.example.hesapyonetimi.ui.AvatarIconAdapter
+import com.example.hesapyonetimi.ui.IconPickerHelper
 import com.example.hesapyonetimi.domain.model.Category
 import com.example.hesapyonetimi.presentation.profile.ProfileCategoryAdapter
 import com.example.hesapyonetimi.presentation.profile.ProfileUiEvent
@@ -36,6 +38,13 @@ import java.util.*
 class ProfileFragment : Fragment() {
 
     private val viewModel: ProfileViewModel by viewModels()
+
+    /** Kategori ekle/düzenle diyaloglarında gösterilen modern emoji seti */
+    private val categoryIconPresets = listOf(
+        "💳", "🏠", "🛒", "🍽️", "🚗", "✈️", "📱", "💊", "🎓", "🎮", "☕", "🎁",
+        "📚", "🐾", "⚡", "🌿", "🎵", "🔧", "👔", "🏥", "🎬", "🍕", "🥤", "💡",
+        "🧾", "🅿️", "🚌", "🎫", "🏦", "🔋", "☂️", "🛍️", "💼", "🧴", "🎯"
+    )
 
     private lateinit var tvAvatar: TextView
     private lateinit var tvUserName: TextView
@@ -94,13 +103,13 @@ class ProfileFragment : Fragment() {
         v.findViewById<View>(R.id.tvUserName).setOnClickListener { showEditNameDialog() }
         v.findViewById<View>(R.id.btnEditBudget).setOnClickListener { showEditBudgetDialog() }
         v.findViewById<View>(R.id.cardCategories).setOnClickListener { showCategoryDialog() }
-        v.findViewById<View>(R.id.cardWallets).setOnClickListener { showWalletDialog() }
-        setupBiometricSwitch(v)
+        v.findViewById<View>(R.id.cardWallets).setOnClickListener { showProDialog() }
+        v.findViewById<View>(R.id.cardBiometric).setOnClickListener { showProDialog() }
         v.findViewById<View>(R.id.cardChangePin).setOnClickListener { showChangePinDialog() }
         v.findViewById<View>(R.id.cardSecurityQ).setOnClickListener { showChangeSecurityQDialog() }
         v.findViewById<View>(R.id.cardTheme).setOnClickListener { showThemeDialog() }
-        v.findViewById<View>(R.id.cardExportCsv).setOnClickListener { exportCsv() }
-        v.findViewById<View>(R.id.cardCurrency).setOnClickListener { showCurrencyDialog() }
+        v.findViewById<View>(R.id.cardExportCsv).setOnClickListener { showProDialog() }
+        v.findViewById<View>(R.id.cardCurrency).setOnClickListener { showProDialog() }
         // Para birimi altyazısını güncelle
         updateCurrencySubtitle(v)
     }
@@ -270,20 +279,16 @@ class ProfileFragment : Fragment() {
 
     private fun showEditCategoryDialog(category: com.example.hesapyonetimi.domain.model.Category) {
         val dialog = buildDialog(R.layout.dialog_profile_edit_category, widthRatio = 0.92)
-        val emojiOptions = listOf(
-            "📦","🛒","💡","🚗","🍔","🎬","🏥","💼","💰","🏠","👗",
-            "✈️","📚","🎮","🐾","🌿","⚽","🎵","💊","🔧","📱","🎁","☕","🍕"
-        )
         var selectedEmoji = category.icon
         val tvSelectedEmoji = dialog.findViewById<TextView>(R.id.tvSelectedEmoji)
         val emojiContainer  = dialog.findViewById<LinearLayout>(R.id.emojiContainer)
         tvSelectedEmoji.text = selectedEmoji
-
-        emojiOptions.forEach { emoji ->
-            TextView(requireContext()).apply {
-                text = emoji; textSize = 24f; setPadding(12, 8, 12, 8)
-                setOnClickListener { selectedEmoji = emoji; tvSelectedEmoji.text = emoji }
-            }.also { emojiContainer.addView(it) }
+        val iconList =
+            if (category.icon !in categoryIconPresets) listOf(category.icon) + categoryIconPresets
+            else categoryIconPresets
+        IconPickerHelper.bindHorizontalChips(emojiContainer, iconList, category.icon) { e ->
+            selectedEmoji = e
+            tvSelectedEmoji.text = e
         }
 
         val etName  = dialog.findViewById<com.google.android.material.textfield.TextInputEditText>(R.id.etCategoryName)
@@ -304,19 +309,13 @@ class ProfileFragment : Fragment() {
 
     private fun showAddCategoryDialog() {
         val dialog = buildDialog(R.layout.dialog_profile_add_category, widthRatio = 0.92)
-        val emojiOptions = listOf(
-            "📦","🛒","💡","🚗","🍔","🎬","🏥","💼","💰","🏠","👗",
-            "✈️","📚","🎮","🐾","🌿","⚽","🎵","💊","🔧","📱","🎁","☕","🍕"
-        )
-        var selectedEmoji = "📦"
+        var selectedEmoji = "💳"
         val tvSelectedEmoji = dialog.findViewById<TextView>(R.id.tvSelectedEmoji)
         val emojiContainer = dialog.findViewById<LinearLayout>(R.id.emojiContainer)
-
-        emojiOptions.forEach { emoji ->
-            TextView(requireContext()).apply {
-                text = emoji; textSize = 24f; setPadding(12, 8, 12, 8)
-                setOnClickListener { selectedEmoji = emoji; tvSelectedEmoji.text = emoji }
-            }.also { emojiContainer.addView(it) }
+        tvSelectedEmoji.text = selectedEmoji
+        IconPickerHelper.bindHorizontalChips(emojiContainer, categoryIconPresets, selectedEmoji) { e ->
+            selectedEmoji = e
+            tvSelectedEmoji.text = e
         }
 
         val etName = dialog.findViewById<com.google.android.material.textfield.TextInputEditText>(R.id.etCategoryName)
@@ -350,24 +349,26 @@ class ProfileFragment : Fragment() {
     }
 
     private fun showAvatarPicker() {
-        val avatars = listOf("👤","😊","🧑","👨","👩","🧔","👱","🧒","🐶","🐱","🦊","🐻","🐼","🦁","🐯","🐸","🌟","🔥","💎","🌈","🚀","🎯","🍀","⚡")
+        val avatars = listOf(
+            "👤", "😊", "🧑", "👨", "👩", "🧔", "🦊", "🐼", "🦁", "🐯", "🐸",
+            "🌟", "✨", "💎", "🔥", "🌈", "🚀", "🎯", "🍀", "⚡", "🌙", "☀️",
+            "🎨", "🎵", "🏆", "💼", "🧘", "🐶", "🐱", "🦉", "🌿", "🍕", "☕"
+        )
         val dialog = Dialog(requireContext())
-        val grid = GridView(requireContext()).apply {
-            numColumns = 6; setPadding(24, 24, 24, 24)
-            adapter = object : BaseAdapter() {
-                override fun getCount() = avatars.size
-                override fun getItem(p: Int) = avatars[p]
-                override fun getItemId(p: Int) = p.toLong()
-                override fun getView(p: Int, cv: View?, parent: ViewGroup) =
-                    ((cv as? TextView) ?: TextView(requireContext()).apply {
-                        textSize = 28f; gravity = android.view.Gravity.CENTER; setPadding(8,8,8,8)
-                    }).also { (it as TextView).text = avatars[p] }
-            }
-            setOnItemClickListener { _, _, pos, _ -> viewModel.updateAvatar(avatars[pos]); dialog.dismiss() }
+        dialog.setContentView(R.layout.dialog_avatar_picker)
+        dialog.window?.setBackgroundDrawableResource(android.R.color.transparent)
+        dialog.window?.setLayout(
+            (resources.displayMetrics.widthPixels * 0.90).toInt(),
+            ViewGroup.LayoutParams.WRAP_CONTENT
+        )
+        val current = viewModel.profile.value?.avatarEmoji ?: "👤"
+        val rv = dialog.findViewById<RecyclerView>(R.id.rvAvatarIcons)
+        rv.layoutManager = GridLayoutManager(requireContext(), 5)
+        rv.adapter = AvatarIconAdapter(avatars, current) { emoji ->
+            viewModel.updateAvatar(emoji)
+            dialog.dismiss()
         }
-        dialog.setContentView(grid)
-        dialog.window?.setBackgroundDrawableResource(R.drawable.bottom_sheet_bg)
-        dialog.window?.setLayout((resources.displayMetrics.widthPixels * 0.85).toInt(), ViewGroup.LayoutParams.WRAP_CONTENT)
+        dialog.findViewById<View>(R.id.btnAvatarCancel).setOnClickListener { dialog.dismiss() }
         dialog.show()
     }
 
@@ -380,8 +381,15 @@ class ProfileFragment : Fragment() {
     }
 
     private fun showWalletDialog() {
-        com.example.hesapyonetimi.presentation.profile.WalletManagementDialog()
-            .show(childFragmentManager, "WalletDialog")
+        findNavController().navigate(R.id.action_profil_to_wallet)
+    }
+
+    private fun showProDialog() {
+        com.google.android.material.dialog.MaterialAlertDialogBuilder(requireContext())
+            .setTitle("⭐ Pro Özellik")
+            .setMessage("Bu özellik Pro sürümde kullanılabilecek.\n\nYakında geliyor — takipte kalın!")
+            .setPositiveButton("Tamam", null)
+            .show()
     }
 
     // ── PIN değiştirme ────────────────────────────────────────────────────────
@@ -554,9 +562,8 @@ class ProfileFragment : Fragment() {
                     selected = code
                     com.example.hesapyonetimi.presentation.common.CurrencyFormatter.setCode(requireContext(), code)
                     notifyDataSetChanged()
-                    view?.let { updateCurrencySubtitle(it) }
                     dialog.dismiss()
-                    showSnack("Para birimi: $code")
+                    requireActivity().recreate()
                 }
             }
         }

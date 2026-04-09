@@ -3,6 +3,8 @@
         <item name="android:statusBarColor">#2C3E8C</item>
         <item name="android:windowLightStatusBar">false</item>
         <item name="android:windowDrawsSystemBarBackgrounds">true</item>
+        <item name="materialAlertDialogTheme">@style/App.MaterialAlertDialog</item>
+        <item name="bottomSheetDialogTheme">@style/App.BottomSheetDialog</item>
     </style>
 
     <style name="Theme.HesapYonetimi" parent="Base.Theme.HesapYonetimi" />
@@ -13,6 +15,33 @@
 
     <style name="CircleImage">
         <item name="cornerSize">50%</item>
+    </style>
+
+    <!-- MaterialAlertDialog — yumuşatılmış köşeler -->
+    <style name="App.MaterialAlertDialog" parent="ThemeOverlay.Material3.MaterialAlertDialog">
+        <item name="shapeAppearanceOverlay">@style/ShapeAppearance.App.AlertDialog</item>
+        <item name="android:backgroundDimAmount">0.5</item>
+    </style>
+    <style name="ShapeAppearance.App.AlertDialog" parent="">
+        <item name="cornerFamily">rounded</item>
+        <item name="cornerSize">20dp</item>
+    </style>
+
+    <!-- BottomSheetDialog — daha belirgin yuvarlak üst köşe + dim overlay -->
+    <style name="App.BottomSheetDialog" parent="Theme.Material3.Light.BottomSheetDialog">
+        <item name="bottomSheetStyle">@style/App.BottomSheet</item>
+        <item name="android:backgroundDimAmount">0.45</item>
+    </style>
+    <style name="App.BottomSheet" parent="Widget.Material3.BottomSheet.Modal">
+        <item name="shapeAppearance">@style/ShapeAppearance.App.BottomSheet</item>
+        <item name="android:backgroundTint">@color/card_background</item>
+    </style>
+    <style name="ShapeAppearance.App.BottomSheet" parent="">
+        <item name="cornerFamily">rounded</item>
+        <item name="cornerSizeTopLeft">28dp</item>
+        <item name="cornerSizeTopRight">28dp</item>
+        <item name="cornerSizeBottomLeft">0dp</item>
+        <item name="cornerSizeBottomRight">0dp</item>
     </style>
 
     <style name="PinButtonStyle" parent="Widget.MaterialComponents.Button.UnelevatedButton">

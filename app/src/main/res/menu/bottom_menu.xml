@@ -16,7 +16,9 @@
         android:icon="@drawable/notifications_active_24px"
         android:title="Yaklaşan" />
     <item
-        android:id="@+id/nav_profil"
-        android:icon="@drawable/ic_person"
-        android:title="Profil" />
+        android:id="@+id/nav_hedefler"
+        android:icon="@drawable/ic_goals"
+        android:title="Hedefler" />
+    <!-- nav_profil alt bardan kaldırıldı (max 5 limit).
+         Profil erişimi: her sayfanın header'ındaki avatar ikonuyla. -->
 </menu>

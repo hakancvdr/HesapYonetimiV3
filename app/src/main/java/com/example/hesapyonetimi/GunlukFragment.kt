@@ -2,6 +2,8 @@ package com.example.hesapyonetimi
 
 import android.app.DatePickerDialog
 import android.content.Context
+import android.graphics.Canvas
+import android.graphics.drawable.ColorDrawable
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
@@ -9,6 +11,7 @@ import android.view.ViewGroup
 import android.view.inputmethod.InputMethodManager
 import android.widget.TextView
 import android.widget.Toast
+import androidx.core.content.ContextCompat
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.fragment.app.Fragment
@@ -17,18 +20,23 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import androidx.recyclerview.widget.GridLayoutManager
+import androidx.recyclerview.widget.ItemTouchHelper
 import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.recyclerview.widget.RecyclerView
 import com.example.hesapyonetimi.adapter.CategoryChipAdapter
 import com.example.hesapyonetimi.adapter.TransactionAdapter
 import com.example.hesapyonetimi.adapter.WalletChipAdapter
 import com.example.hesapyonetimi.data.local.dao.WalletDao
 import javax.inject.Inject
 import com.example.hesapyonetimi.domain.model.Category
+import com.example.hesapyonetimi.domain.model.Transaction
 import com.example.hesapyonetimi.model.TransactionModel
 import com.example.hesapyonetimi.presentation.common.CurrencyFormatter
 import com.example.hesapyonetimi.presentation.transactions.TransactionViewModel
+import com.google.android.material.chip.Chip
+import com.google.android.material.chip.ChipGroup
+import com.google.android.material.snackbar.Snackbar
 import com.google.android.material.textfield.TextInputEditText
-import com.google.android.material.textfield.TextInputLayout
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.launch
@@ -47,6 +55,13 @@ class GunlukFragment : Fragment() {
     private var selectedCategory: Category? = null
     private var selectedDateMillis = System.currentTimeMillis()
     private var selectedWalletId: Long? = null
+    private val selectedTagFilters = mutableSetOf<String>()
+    private var isFormExpanded = false
+    private var currentDayTransactions: List<Transaction> = emptyList()
+
+    private val inputTagPresets = listOf(
+        "Fatura", "Market", "Yemek", "Ulaşım", "Kira", "Abonelik", "Sağlık", "Eğlence"
+    )
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
         return inflater.inflate(R.layout.fragment_gunluk, container, false)
@@ -55,13 +70,18 @@ class GunlukFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
-        // Pull-to-refresh
         view.findViewById<SwipeRefreshLayout>(R.id.swipe_refresh)?.apply {
             setColorSchemeResources(R.color.green_primary)
             setOnRefreshListener { isRefreshing = false }
         }
 
-        // Status bar inset
+        view.findViewById<TextView>(R.id.iv_profile_gunluk)?.apply {
+            val name = requireContext().getSharedPreferences("HesapPrefs", android.content.Context.MODE_PRIVATE)
+                .getString("user_display_name", "K") ?: "K"
+            text = name.firstOrNull()?.uppercaseChar()?.toString() ?: "K"
+            setOnClickListener { (activity as? MainActivity)?.gosterProfil() }
+        }
+
         ViewCompat.setOnApplyWindowInsetsListener(view.findViewById(R.id.gunluk_header)) { v, insets ->
             val sb = insets.getInsets(WindowInsetsCompat.Type.statusBars()).top
             val dp = { n: Int -> (n * resources.displayMetrics.density).toInt() }
@@ -69,28 +89,71 @@ class GunlukFragment : Fragment() {
             insets
         }
 
-        val tarihFormat   = SimpleDateFormat("d MMMM yyyy", Locale("tr"))
+        val tarihFormat = SimpleDateFormat("d MMMM yyyy", Locale("tr"))
         val tarihFormatUzun = SimpleDateFormat("d MMMM yyyy, EEEE", Locale("tr"))
-
-        // Header tarih
-        // tarih, et_tarih içinde gösteriliyor
+        val tarihFormatKisa = SimpleDateFormat("d MMMM", Locale("tr"))
 
         val btnGider  = view.findViewById<TextView>(R.id.btn_gider)
         val btnGelir  = view.findViewById<TextView>(R.id.btn_gelir)
         val btnKaydet = view.findViewById<com.google.android.material.button.MaterialButton>(R.id.btn_kaydet)
         val tvIslemlerBaslik = view.findViewById<TextView>(R.id.tv_islemler_baslik)
+        val tvSelectedDayLabel = view.findViewById<TextView>(R.id.tv_selected_day_label)
+        val formHeaderRow = view.findViewById<View>(R.id.form_header_row)
+        val formContent = view.findViewById<View>(R.id.form_content)
+        val ivFormExpand = view.findViewById<TextView>(R.id.iv_form_expand)
 
-        // Kategori chip
-        val rvKategoriler = view.findViewById<androidx.recyclerview.widget.RecyclerView>(R.id.rv_kategoriler)
+        // ── Katlanabilir form ──────────────────────────────────────────────
+        fun updateFormExpanded() {
+            formContent.visibility = if (isFormExpanded) View.VISIBLE else View.GONE
+            ivFormExpand.text = if (isFormExpanded) "▲" else "▼"
+        }
+        updateFormExpanded()
+        formHeaderRow.setOnClickListener {
+            isFormExpanded = !isFormExpanded
+            updateFormExpanded()
+        }
+
+        val chipGroupInputTags = view.findViewById<ChipGroup>(R.id.chipGroupInputTags)
+        inputTagPresets.forEach { tag ->
+            val chip = Chip(requireContext()).apply {
+                text = tag
+                isCheckable = true
+                isChecked = false
+                textSize = 12f
+            }
+            chipGroupInputTags.addView(chip)
+        }
+
+        // Hızlı ekle (+) → formu aç
+        view.findViewById<TextView>(R.id.btn_quick_add)?.setOnClickListener {
+            if (!isFormExpanded) {
+                isFormExpanded = true
+                updateFormExpanded()
+            }
+            view.findViewById<View>(R.id.form_header_row)?.requestFocus()
+        }
+
+        // ── Seçili tarih etiketi (header) ─────────────────────────────────
+        fun updateDayLabel() {
+            val today = Calendar.getInstance()
+            val sel = Calendar.getInstance().apply { timeInMillis = selectedDateMillis }
+            tvSelectedDayLabel.text = when {
+                sel.get(Calendar.DAY_OF_YEAR) == today.get(Calendar.DAY_OF_YEAR) &&
+                sel.get(Calendar.YEAR) == today.get(Calendar.YEAR) -> "Bugün · ${tarihFormatKisa.format(Date(selectedDateMillis))}"
+                else -> tarihFormatKisa.format(Date(selectedDateMillis))
+            }
+        }
+        updateDayLabel()
+
+        // ── Kategori chip ──────────────────────────────────────────────────
+        val rvKategoriler = view.findViewById<RecyclerView>(R.id.rv_kategoriler)
         categoryAdapter = CategoryChipAdapter(emptyList()) { cat -> selectedCategory = cat }
         rvKategoriler.layoutManager = GridLayoutManager(requireContext(), 2)
         rvKategoriler.adapter = categoryAdapter
 
         fun updateToggle() {
-            val greenColor = androidx.core.content.ContextCompat.getColor(requireContext(), R.color.green_primary)
-            val whiteColor = 0xFFFFFFFF.toInt()
-            val dimWhite   = 0x80FFFFFF.toInt()
-
+            val greenColor = ContextCompat.getColor(requireContext(), R.color.green_primary)
+            val dimWhite = 0x80FFFFFF.toInt()
             if (isGider) {
                 btnGider.setBackgroundResource(R.drawable.toggle_pill_selected)
                 btnGider.setTextColor(greenColor)
@@ -111,7 +174,7 @@ class GunlukFragment : Fragment() {
         btnGider.setOnClickListener { isGider = true; updateToggle() }
         btnGelir.setOnClickListener { isGider = false; updateToggle() }
 
-        // Tarih seçici
+        // ── Tarih seçici ───────────────────────────────────────────────────
         val etTarih = view.findViewById<TextView>(R.id.et_tarih)
         etTarih.text = tarihFormatUzun.format(Date(selectedDateMillis))
 
@@ -122,40 +185,30 @@ class GunlukFragment : Fragment() {
                 cal.set(y, m, d)
                 cal.set(Calendar.HOUR_OF_DAY, now.get(Calendar.HOUR_OF_DAY))
                 cal.set(Calendar.MINUTE, now.get(Calendar.MINUTE))
-                cal.set(Calendar.SECOND, now.get(Calendar.SECOND))
                 selectedDateMillis = cal.timeInMillis
                 etTarih.text = tarihFormatUzun.format(Date(selectedDateMillis))
-
-                // Başlığı güncelle
+                updateDayLabel()
                 val today = Calendar.getInstance()
                 val isBugün = cal.get(Calendar.DAY_OF_YEAR) == today.get(Calendar.DAY_OF_YEAR) &&
                               cal.get(Calendar.YEAR) == today.get(Calendar.YEAR)
                 tvIslemlerBaslik.text = if (isBugün) "Bugünün işlemleri"
                                         else tarihFormat.format(Date(selectedDateMillis)) + " işlemleri"
-
-                // Listeyi yenile
                 refreshIslemler(view, viewModel.uiState.value.transactions)
             }, cal.get(Calendar.YEAR), cal.get(Calendar.MONTH), cal.get(Calendar.DAY_OF_MONTH)).show()
         }
         etTarih.setOnClickListener(tarihClick)
         view.findViewById<View>(R.id.tarih_row).setOnClickListener(tarihClick)
 
-        // İşlem listesi
-        val rvIslemler   = view.findViewById<androidx.recyclerview.widget.RecyclerView>(R.id.rv_gunluk_islemler)
-        val emptyState   = view.findViewById<View>(R.id.empty_state_gunluk)
+        // ── İşlem listesi ──────────────────────────────────────────────────
+        val rvIslemler = view.findViewById<RecyclerView>(R.id.rv_gunluk_islemler)
         rvIslemler.layoutManager = LinearLayoutManager(requireContext())
 
         // Kaydet
         val etTutar    = view.findViewById<TextInputEditText>(R.id.et_tutar)
         val etAciklama = view.findViewById<TextInputEditText>(R.id.et_aciklama)
 
-        etAciklama.setOnEditorActionListener { _, _, _ ->
-            hideKeyboard(view); true
-        }
-
-        etTutar.setOnEditorActionListener { _, _, _ ->
-            hideKeyboard(view); true
-        }
+        etAciklama.setOnEditorActionListener { _, _, _ -> hideKeyboard(view); true }
+        etTutar.setOnEditorActionListener    { _, _, _ -> hideKeyboard(view); true }
 
         btnKaydet.setOnClickListener {
             hideKeyboard(view)
@@ -167,21 +220,32 @@ class GunlukFragment : Fragment() {
                 toast("Diğer kategorisinde açıklama zorunlu"); return@setOnClickListener
             }
             val tutar = tutarStr.toDoubleOrNull() ?: 0.0
+            val tags = (0 until chipGroupInputTags.childCount)
+                .map { chipGroupInputTags.getChildAt(it) as Chip }
+                .filter { it.isChecked }
+                .joinToString(",") { it.text.toString() }
             viewModel.addTransaction(
                 amount = tutar,
                 categoryId = cat.id,
                 description = if (aciklama.isEmpty()) cat.name else aciklama,
                 date = selectedDateMillis,
                 isIncome = !isGider,
-                walletId = selectedWalletId
+                walletId = selectedWalletId,
+                tags = tags
             )
             etTutar.text?.clear()
             etAciklama.text?.clear()
-            toast("✅ İşlem eklendi!")
+            (0 until chipGroupInputTags.childCount).forEach { i ->
+                (chipGroupInputTags.getChildAt(i) as? Chip)?.isChecked = false
+            }
+            // Formu kapat ve başarı mesajı göster
+            isFormExpanded = false
+            updateFormExpanded()
+            Snackbar.make(view, "✅ İşlem eklendi!", Snackbar.LENGTH_SHORT).show()
         }
 
-        // Cüzdan seçimi
-        val rvWallets = view.findViewById<androidx.recyclerview.widget.RecyclerView>(R.id.rvGunlukWallets)
+        // ── Cüzdan seçimi ──────────────────────────────────────────────────
+        val rvWallets = view.findViewById<RecyclerView>(R.id.rvGunlukWallets)
         rvWallets.layoutManager = LinearLayoutManager(requireContext(), LinearLayoutManager.HORIZONTAL, false)
         viewLifecycleOwner.lifecycleScope.launch {
             walletDao.getAllWallets().collect { wallets ->
@@ -195,28 +259,160 @@ class GunlukFragment : Fragment() {
             }
         }
 
-        // Observe
+        // ── Tag filter ─────────────────────────────────────────────────────
+        val chipGroupTagFilter = view.findViewById<ChipGroup>(R.id.chipGroupTagFilter)
+        val tvFilterHint = view.findViewById<TextView>(R.id.tv_filter_hint)
+
+        // ── Observe ────────────────────────────────────────────────────────
         viewLifecycleOwner.lifecycleScope.launch {
             viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
                 viewModel.uiState.collect { state ->
                     if (state.categories.isNotEmpty() && categoryAdapter.itemCount == 0) updateToggle()
+
+                    val secilen = Calendar.getInstance().apply { timeInMillis = selectedDateMillis }
+                    val todayTxs = state.transactions.filter { t ->
+                        val cal = Calendar.getInstance().apply { timeInMillis = t.date }
+                        cal.get(Calendar.DAY_OF_YEAR) == secilen.get(Calendar.DAY_OF_YEAR) &&
+                        cal.get(Calendar.YEAR) == secilen.get(Calendar.YEAR)
+                    }
+
+                    // Günlük özet
+                    updateDailySummary(view, todayTxs)
+
+                    // Tag filtre chips
+                    val allTags = todayTxs.flatMap { it.tags.split(",").filter { tag -> tag.isNotBlank() } }.toSet()
+                    if (allTags.isEmpty()) {
+                        chipGroupTagFilter.visibility = View.GONE
+                        tvFilterHint.visibility = View.GONE
+                    } else {
+                        tvFilterHint.visibility = View.VISIBLE
+                        chipGroupTagFilter.visibility = View.VISIBLE
+                        chipGroupTagFilter.removeAllViews()
+                        allTags.forEach { tag ->
+                            val chip = Chip(requireContext()).apply {
+                                text = "#$tag"
+                                isCheckable = true
+                                isChecked = tag in selectedTagFilters
+                                setOnCheckedChangeListener { _, checked ->
+                                    if (checked) selectedTagFilters.add(tag)
+                                    else selectedTagFilters.remove(tag)
+                                    refreshIslemler(view, state.transactions)
+                                }
+                            }
+                            chipGroupTagFilter.addView(chip)
+                        }
+                    }
+
                     refreshIslemler(view, state.transactions)
                 }
             }
         }
+
+        // ── Swipe to delete ────────────────────────────────────────────────
+        setupSwipeToDelete(view, rvIslemler)
     }
 
-    private fun refreshIslemler(view: View, allTransactions: List<com.example.hesapyonetimi.domain.model.Transaction>) {
-        val rvIslemler = view.findViewById<androidx.recyclerview.widget.RecyclerView>(R.id.rv_gunluk_islemler)
+    private fun updateDailySummary(view: View, dayTransactions: List<Transaction>) {
+        currentDayTransactions = dayTransactions
+        val income  = dayTransactions.filter {  it.isIncome }.sumOf { it.amount }
+        val expense = dayTransactions.filter { !it.isIncome }.sumOf { it.amount }
+        val net = income - expense
+
+        view.findViewById<TextView>(R.id.tv_daily_income)?.text  = "+${CurrencyFormatter.format(income)}"
+        view.findViewById<TextView>(R.id.tv_daily_expense)?.text = "-${CurrencyFormatter.format(expense)}"
+
+        val tvNet = view.findViewById<TextView>(R.id.tv_daily_net) ?: return
+        tvNet.text = "= ${CurrencyFormatter.format(net)}"
+        val netColor = when {
+            net > 0  -> ContextCompat.getColor(requireContext(), R.color.income_green)
+            net < 0  -> ContextCompat.getColor(requireContext(), R.color.expense_red)
+            else     -> 0xFFFFFFFF.toInt()
+        }
+        tvNet.setTextColor(netColor)
+    }
+
+    private fun setupSwipeToDelete(rootView: View, rvIslemler: RecyclerView) {
+        val deleteBackground = ColorDrawable(ContextCompat.getColor(requireContext(), R.color.expense_red))
+        val deleteIcon = ContextCompat.getDrawable(requireContext(), android.R.drawable.ic_menu_delete)
+
+        val callback = object : ItemTouchHelper.SimpleCallback(0, ItemTouchHelper.LEFT or ItemTouchHelper.RIGHT) {
+            override fun onMove(rv: RecyclerView, vh: RecyclerView.ViewHolder, target: RecyclerView.ViewHolder) = false
+
+            override fun onSwiped(viewHolder: RecyclerView.ViewHolder, direction: Int) {
+                val adapter = rvIslemler.adapter as? TransactionAdapter ?: return
+                val position = viewHolder.adapterPosition
+                val deletedModel = adapter.getItem(position)
+                val deletedTransaction = deletedModel.transaction ?: run {
+                    adapter.notifyItemChanged(position)
+                    return
+                }
+
+                viewModel.deleteTransaction(deletedTransaction)
+
+                Snackbar.make(rootView, "İşlem silindi", Snackbar.LENGTH_LONG)
+                    .setAction("Geri Al") {
+                        viewModel.addTransaction(deletedTransaction.copy(id = 0L))
+                    }
+                    .setActionTextColor(ContextCompat.getColor(requireContext(), R.color.green_primary))
+                    .show()
+            }
+
+            override fun onChildDraw(
+                c: Canvas, recyclerView: RecyclerView, viewHolder: RecyclerView.ViewHolder,
+                dX: Float, dY: Float, actionState: Int, isCurrentlyActive: Boolean
+            ) {
+                val itemView = viewHolder.itemView
+                val iconMargin = (itemView.height - (deleteIcon?.intrinsicHeight ?: 0)) / 2
+
+                if (dX < 0) {
+                    deleteBackground.setBounds(itemView.right + dX.toInt(), itemView.top, itemView.right, itemView.bottom)
+                    deleteBackground.draw(c)
+                    val iconLeft  = itemView.right - iconMargin - (deleteIcon?.intrinsicWidth ?: 0)
+                    val iconRight = itemView.right - iconMargin
+                    val iconTop   = itemView.top + iconMargin
+                    val iconBottom = itemView.bottom - iconMargin
+                    deleteIcon?.setBounds(iconLeft, iconTop, iconRight, iconBottom)
+                    deleteIcon?.draw(c)
+                } else if (dX > 0) {
+                    deleteBackground.setBounds(itemView.left, itemView.top, itemView.left + dX.toInt(), itemView.bottom)
+                    deleteBackground.draw(c)
+                    val iconLeft  = itemView.left + iconMargin
+                    val iconRight = itemView.left + iconMargin + (deleteIcon?.intrinsicWidth ?: 0)
+                    val iconTop   = itemView.top + iconMargin
+                    val iconBottom = itemView.bottom - iconMargin
+                    deleteIcon?.setBounds(iconLeft, iconTop, iconRight, iconBottom)
+                    deleteIcon?.draw(c)
+                }
+                super.onChildDraw(c, recyclerView, viewHolder, dX, dY, actionState, isCurrentlyActive)
+            }
+        }
+        ItemTouchHelper(callback).attachToRecyclerView(rvIslemler)
+    }
+
+    private fun refreshIslemler(view: View, allTransactions: List<Transaction>) {
+        val rvIslemler = view.findViewById<RecyclerView>(R.id.rv_gunluk_islemler)
         val emptyState = view.findViewById<View>(R.id.empty_state_gunluk)
-        val timeFormat = SimpleDateFormat("HH:mm", Locale.getDefault())
+        val tvIslemlerBaslik = view.findViewById<TextView>(R.id.tv_islemler_baslik)
+        val tarihFormat = SimpleDateFormat("d MMMM yyyy", Locale("tr"))
+        val timeFormat  = SimpleDateFormat("HH:mm", Locale.getDefault())
 
         val secilen = Calendar.getInstance().apply { timeInMillis = selectedDateMillis }
         val filtered = allTransactions.filter { t ->
             val cal = Calendar.getInstance().apply { timeInMillis = t.date }
-            cal.get(Calendar.DAY_OF_YEAR) == secilen.get(Calendar.DAY_OF_YEAR) &&
-            cal.get(Calendar.YEAR) == secilen.get(Calendar.YEAR)
+            val isToday = cal.get(Calendar.DAY_OF_YEAR) == secilen.get(Calendar.DAY_OF_YEAR) &&
+                          cal.get(Calendar.YEAR) == secilen.get(Calendar.YEAR)
+            if (!isToday) return@filter false
+            if (selectedTagFilters.isEmpty()) return@filter true
+            val txTags = t.tags.split(",").filter { it.isNotBlank() }.toSet()
+            selectedTagFilters.any { it in txTags }
         }
+
+        // Başlık
+        val today = Calendar.getInstance()
+        val isBugün = secilen.get(Calendar.DAY_OF_YEAR) == today.get(Calendar.DAY_OF_YEAR) &&
+                      secilen.get(Calendar.YEAR) == today.get(Calendar.YEAR)
+        tvIslemlerBaslik?.text = if (isBugün) "Bugünün işlemleri"
+                                 else tarihFormat.format(Date(selectedDateMillis)) + " işlemleri"
 
         if (filtered.isEmpty()) {
             emptyState.visibility = View.VISIBLE

@@ -21,9 +21,12 @@ import androidx.fragment.app.viewModels
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
+import androidx.core.os.bundleOf
+import androidx.navigation.fragment.findNavController
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout
+import com.example.hesapyonetimi.MainActivity
 import com.example.hesapyonetimi.adapter.KategoriAnalizAdapter
 import com.example.hesapyonetimi.adapter.TimelineAdapter
 import com.example.hesapyonetimi.domain.model.Transaction
@@ -31,7 +34,6 @@ import com.example.hesapyonetimi.presentation.common.EditTransactionSheet
 import com.example.hesapyonetimi.ui.PieChartView
 import com.example.hesapyonetimi.presentation.aylik.AylikUiState
 import com.example.hesapyonetimi.presentation.aylik.AylikViewModel
-import com.example.hesapyonetimi.presentation.aylik.KategoriDetayFragment
 import com.example.hesapyonetimi.presentation.common.CurrencyFormatter
 import com.google.android.material.textfield.TextInputEditText
 import dagger.hilt.android.AndroidEntryPoint
@@ -58,8 +60,24 @@ class AylikFragment : Fragment() {
             EditTransactionSheet.newInstance(tx).show(childFragmentManager, "EditTx")
         }
     )
-    private var selectedTab = 0  // 0=Takvim, 1=Timeline, 2=Kategori
+    private var selectedTab = 0  // 0=İşlem Geçmişi, 1=Takvim, 2=Kategori
     private var showPieChart = true
+
+    // Calendar selected day tracking
+    private var selectedCalDay = -1
+    private var lastCalTransactions: List<Transaction> = emptyList()
+    private var lastCalOffset: Int = 0
+
+    companion object {
+        private const val STATE_SELECTED_TAB = "aylik_selected_tab"
+        private const val STATE_SHOW_PIE = "aylik_show_pie"
+    }
+
+    override fun onSaveInstanceState(outState: Bundle) {
+        super.onSaveInstanceState(outState)
+        outState.putInt(STATE_SELECTED_TAB, selectedTab)
+        outState.putBoolean(STATE_SHOW_PIE, showPieChart)
+    }
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? =
         inflater.inflate(R.layout.fragment_aylik, container, false)
@@ -72,6 +90,13 @@ class AylikFragment : Fragment() {
             val dp = { n: Int -> (n * resources.displayMetrics.density).toInt() }
             v.setPadding(dp(20), sb + dp(12), dp(20), dp(16))
             insets
+        }
+
+        view.findViewById<android.widget.TextView>(R.id.iv_profile_aylik)?.apply {
+            val name = requireContext().getSharedPreferences("HesapPrefs", android.content.Context.MODE_PRIVATE)
+                .getString("user_display_name", "K") ?: "K"
+            text = name.firstOrNull()?.uppercaseChar()?.toString() ?: "K"
+            setOnClickListener { (activity as? MainActivity)?.gosterProfil() }
         }
 
         view.findViewById<SwipeRefreshLayout>(R.id.swipe_refresh)?.apply {
@@ -92,8 +117,14 @@ class AylikFragment : Fragment() {
             adapter = timelineAdapter
         }
 
+        savedInstanceState?.let {
+            selectedTab = it.getInt(STATE_SELECTED_TAB, 0).coerceIn(0, 2)
+            showPieChart = it.getBoolean(STATE_SHOW_PIE, true)
+        }
+
         observeViewModel(view)
-        showTab(0)
+        showTab(selectedTab)
+        updateChartToggle(view)
     }
 
     // ── Tab yönetimi ─────────────────────────────────────────────────────────
@@ -108,18 +139,19 @@ class AylikFragment : Fragment() {
     }
 
     private fun setupTabListeners() {
-        tabCalendar.setOnClickListener { showTab(0) }
-        tabTimeline.setOnClickListener { showTab(1) }
+        tabTimeline.setOnClickListener { showTab(0) }
+        tabCalendar.setOnClickListener { showTab(1) }
         tabKategori.setOnClickListener { showTab(2) }
     }
 
     private fun showTab(index: Int) {
         selectedTab = index
-        tabCalendarContent.visibility = if (index == 0) View.VISIBLE else View.GONE
-        tabTimelineContent.visibility = if (index == 1) View.VISIBLE else View.GONE
+        // Tab 0 = İşlem Geçmişi, Tab 1 = Takvim, Tab 2 = Kategori
+        tabTimelineContent.visibility = if (index == 0) View.VISIBLE else View.GONE
+        tabCalendarContent.visibility = if (index == 1) View.VISIBLE else View.GONE
         tabKategoriContent.visibility = if (index == 2) View.VISIBLE else View.GONE
 
-        val tabs = listOf(tabCalendar, tabTimeline, tabKategori)
+        val tabs = listOf(tabTimeline, tabCalendar, tabKategori)
         tabs.forEachIndexed { i, tv ->
             tv.setBackgroundResource(if (i == index) R.drawable.kategori_item_selected_bg else R.drawable.kategori_item_bg)
             tv.setTextColor(ContextCompat.getColor(requireContext(),
@@ -139,6 +171,9 @@ class AylikFragment : Fragment() {
     }
 
     private fun buildCalendar(v: View, transactions: List<Transaction>, offset: Int) {
+        lastCalTransactions = transactions
+        lastCalOffset = offset
+
         val cal = Calendar.getInstance().apply { add(Calendar.MONTH, offset) }
         v.findViewById<TextView>(R.id.tvCalendarMonth).text = ayYilFormat.format(cal.time)
 
@@ -170,11 +205,14 @@ class AylikFragment : Fragment() {
 
         // Gün hücreleri
         for (day in 1..daysInMonth) {
-            val hasTx    = txByDay.containsKey(day)
-            val expense  = expenseByDay[day] ?: 0.0
+            val hasTx     = txByDay.containsKey(day)
+            val expense   = expenseByDay[day] ?: 0.0
             val intensity = (expense / maxExpense).toFloat().coerceIn(0f, 1f)
-            val isToday  = isThisMonth && day == today
-            val cell     = makeDayCell(day, hasTx, intensity, isToday) {
+            val isToday   = isThisMonth && day == today
+            val isSelected = day == selectedCalDay
+            val cell = makeDayCell(day, hasTx, intensity, isToday, isSelected) {
+                selectedCalDay = day
+                buildCalendar(v, lastCalTransactions, lastCalOffset)
                 showSelectedDay(v, day, txByDay[day] ?: emptyList())
             }
             grid.addView(cell)
@@ -189,7 +227,7 @@ class AylikFragment : Fragment() {
     }
 
     private fun makeDayCell(
-        day: Int, hasTx: Boolean, intensity: Float, isToday: Boolean,
+        day: Int, hasTx: Boolean, intensity: Float, isToday: Boolean, isSelected: Boolean,
         onClick: () -> Unit
     ): FrameLayout {
         val sizePx = ((resources.displayMetrics.widthPixels - dpToPx(32)) / 7).coerceAtLeast(dpToPx(36))
@@ -199,14 +237,22 @@ class AylikFragment : Fragment() {
                 width = sizePx; height = sizePx
                 columnSpec = GridLayout.spec(GridLayout.UNDEFINED, 1, 1f)
             }
-            if (hasTx) setOnClickListener { onClick() }
+            setOnClickListener { onClick() }
         }
 
-        if (isToday) {
-            cell.background = GradientDrawable().apply {
-                shape = GradientDrawable.OVAL
-                setColor(ContextCompat.getColor(requireContext(), R.color.green_primary))
-                alpha = 40
+        when {
+            isSelected -> {
+                cell.background = GradientDrawable().apply {
+                    shape = GradientDrawable.OVAL
+                    setColor(Color.parseColor("#2979FF"))
+                }
+            }
+            isToday -> {
+                cell.background = GradientDrawable().apply {
+                    shape = GradientDrawable.OVAL
+                    setColor(ContextCompat.getColor(requireContext(), R.color.green_primary))
+                    alpha = 40
+                }
             }
         }
 
@@ -215,11 +261,12 @@ class AylikFragment : Fragment() {
             gravity = android.view.Gravity.CENTER
             textSize = 13f
             setTextColor(when {
-                isToday  -> ContextCompat.getColor(requireContext(), R.color.green_primary)
-                hasTx    -> ContextCompat.getColor(requireContext(), R.color.text_primary)
-                else     -> ContextCompat.getColor(requireContext(), R.color.text_secondary)
+                isSelected -> Color.WHITE
+                isToday    -> ContextCompat.getColor(requireContext(), R.color.green_primary)
+                hasTx      -> ContextCompat.getColor(requireContext(), R.color.text_primary)
+                else       -> ContextCompat.getColor(requireContext(), R.color.text_secondary)
             })
-            if (isToday) setTypeface(null, android.graphics.Typeface.BOLD)
+            if (isToday || isSelected) setTypeface(null, android.graphics.Typeface.BOLD)
         }
         cell.addView(tvDay, FrameLayout.LayoutParams(
             FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.MATCH_PARENT))
@@ -328,8 +375,10 @@ class AylikFragment : Fragment() {
         val list  = if (showIncome) state.gelirKategoriler else state.kategoriler
         v.findViewById<RecyclerView>(R.id.rvKatAnaliz).adapter =
             KategoriAnalizAdapter(list) { kat ->
-                val detay = KategoriDetayFragment.newInstance(kat, state.ayOffset)
-                (requireActivity() as MainActivity).showKategoriDetay(detay)
+                findNavController().navigate(
+                    R.id.action_aylik_to_kategoriDetay,
+                    bundleOf("kat" to kat, "ayOffset" to state.ayOffset)
+                )
             }
         updatePieChart(v, list)
     }
@@ -357,9 +406,10 @@ class AylikFragment : Fragment() {
         // Dilime tıklandığında kategori detay aç
         chart.onSliceTap = sliceTap@{ entry ->
             val kat = list.find { it.ad == entry.label } ?: return@sliceTap
-            val detay = com.example.hesapyonetimi.presentation.aylik.KategoriDetayFragment
-                .newInstance(kat, viewModel.uiState.value.ayOffset)
-            (requireActivity() as MainActivity).showKategoriDetay(detay)
+            findNavController().navigate(
+                R.id.action_aylik_to_kategoriDetay,
+                bundleOf("kat" to kat, "ayOffset" to viewModel.uiState.value.ayOffset)
+            )
         }
     }
 
@@ -380,10 +430,12 @@ class AylikFragment : Fragment() {
                 }
 
                 launch {
+                    var prevOffset = Int.MIN_VALUE
                     kotlinx.coroutines.flow.combine(
                         viewModel.calendarTransactions,
                         viewModel.calendarOffset
                     ) { txs, offset -> txs to offset }.collect { (txs, offset) ->
+                        if (offset != prevOffset) { selectedCalDay = -1; prevOffset = offset }
                         buildCalendar(view, txs, offset)
                     }
                 }
@@ -412,8 +464,10 @@ class AylikFragment : Fragment() {
             ContextCompat.getDrawable(requireContext(), R.drawable.kategori_item_bg)?.constantState
         val list = if (showIncome) state.gelirKategoriler else state.kategoriler
         rv.adapter = KategoriAnalizAdapter(list) { kat ->
-            val detay = KategoriDetayFragment.newInstance(kat, state.ayOffset)
-            (requireActivity() as MainActivity).showKategoriDetay(detay)
+            findNavController().navigate(
+                R.id.action_aylik_to_kategoriDetay,
+                bundleOf("kat" to kat, "ayOffset" to state.ayOffset)
+            )
         }
         updatePieChart(v, list)
     }

@@ -22,9 +22,10 @@ import kotlinx.coroutines.launch
         BudgetEntity::class,
         ReminderEntity::class,
         UserProfileEntity::class,
-        WalletEntity::class
+        WalletEntity::class,
+        GoalEntity::class
     ],
-    version = 7,
+    version = 8,
     exportSchema = false
 )
 @TypeConverters(Converters::class)
@@ -36,10 +37,32 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun reminderDao(): ReminderDao
     abstract fun userProfileDao(): UserProfileDao
     abstract fun walletDao(): WalletDao
+    abstract fun goalDao(): GoalDao
 
     companion object {
         @Volatile
         private var INSTANCE: AppDatabase? = null
+
+        val MIGRATION_7_8 = object : Migration(7, 8) {
+            override fun migrate(db: MigSQLiteDatabase) {
+                // Yeni kolonlar: transactions tablosuna tags, isRecurring, recurringDays
+                db.execSQL("ALTER TABLE `transactions` ADD COLUMN `tags` TEXT NOT NULL DEFAULT ''")
+                db.execSQL("ALTER TABLE `transactions` ADD COLUMN `isRecurring` INTEGER NOT NULL DEFAULT 0")
+                db.execSQL("ALTER TABLE `transactions` ADD COLUMN `recurringDays` INTEGER NOT NULL DEFAULT 30")
+                // Yeni tablo: goals
+                db.execSQL("""
+                    CREATE TABLE IF NOT EXISTS `goals` (
+                        `id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                        `title` TEXT NOT NULL,
+                        `icon` TEXT NOT NULL DEFAULT '🎯',
+                        `targetAmount` REAL NOT NULL,
+                        `currentAmount` REAL NOT NULL DEFAULT 0.0,
+                        `deadline` INTEGER DEFAULT NULL,
+                        `createdAt` INTEGER NOT NULL
+                    )
+                """.trimIndent())
+            }
+        }
 
         val MIGRATION_6_7 = object : Migration(6, 7) {
             override fun migrate(db: MigSQLiteDatabase) {
@@ -70,8 +93,7 @@ abstract class AppDatabase : RoomDatabase() {
                     AppDatabase::class.java,
                     "hesap_yonetimi_database"
                 )
-                    .addMigrations(MIGRATION_6_7)
-                    .fallbackToDestructiveMigration()
+                    .addMigrations(MIGRATION_6_7, MIGRATION_7_8)
                     .addCallback(DatabaseCallback())
                     .build()
                 INSTANCE = instance

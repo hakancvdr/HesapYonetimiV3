@@ -1,6 +1,7 @@
 package com.example.hesapyonetimi.presentation.reminders
 
 import android.app.DatePickerDialog
+import android.app.TimePickerDialog
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
@@ -27,17 +28,34 @@ class HatirlaticiEkleSheet : BottomSheetDialogFragment() {
 
     private val viewModel: ReminderViewModel by viewModels()
     private var selectedDateMillis: Long = 0L
+    private var selectedHour: Int = 9
+    private var selectedMinute: Int = 0
     private var selectedRecurring: RecurringType? = null
     private var selectedDonem: Int = 1
     private var selectedCategoryId: Long = 0L
     private val dateFormat = SimpleDateFormat("d MMMM yyyy", Locale("tr"))
 
-    // Düzenleme modu için
+    // Düzenleme modu için (Reminder Parcelable olmadığından instance alanı)
     var editReminder: Reminder? = null
 
     companion object {
+        private const val ARG_Q_TITLE = "quick_title"
+        private const val ARG_Q_AMOUNT = "quick_amount"
+        private const val ARG_Q_CATEGORY = "quick_category_id"
+
         fun newInstance(reminder: Reminder? = null): HatirlaticiEkleSheet {
             return HatirlaticiEkleSheet().apply { editReminder = reminder }
+        }
+
+        /** Hızlı öneri kartından: açıklama, tutar ve kategori önceden doldurulur */
+        fun newInstanceFromQuickFill(title: String, amount: Double, categoryId: Long): HatirlaticiEkleSheet {
+            return HatirlaticiEkleSheet().apply {
+                arguments = Bundle().apply {
+                    putString(ARG_Q_TITLE, title)
+                    putDouble(ARG_Q_AMOUNT, amount)
+                    putLong(ARG_Q_CATEGORY, categoryId)
+                }
+            }
         }
     }
 
@@ -81,6 +99,15 @@ class HatirlaticiEkleSheet : BottomSheetDialogFragment() {
             // Varsayılan: 1 ay sonra
             selectedDateMillis = Calendar.getInstance().apply { add(Calendar.MONTH, 1) }.timeInMillis
             etTarih.setText(dateFormat.format(Date(selectedDateMillis)))
+            arguments?.getString(ARG_Q_TITLE)?.takeIf { it.isNotBlank() }?.let { etAciklama.setText(it) }
+            arguments?.let { b ->
+                if (b.containsKey(ARG_Q_AMOUNT)) {
+                    val a = b.getDouble(ARG_Q_AMOUNT, 0.0)
+                    if (a > 0) etTutar.setText(a.toBigDecimal().stripTrailingZeros().toPlainString())
+                }
+                val cid = b.getLong(ARG_Q_CATEGORY, 0L)
+                if (cid > 0) selectedCategoryId = cid
+            }
         }
 
         // Kategori seçim
@@ -96,6 +123,33 @@ class HatirlaticiEkleSheet : BottomSheetDialogFragment() {
             val filtered = categories.filter { !it.isIncome }
             categoryAdapter.setCategories(filtered, "")
             editReminder?.let { categoryAdapter.setSelected(it.categoryId) }
+                ?: arguments?.getLong(ARG_Q_CATEGORY, 0L)?.takeIf { it > 0 }
+                    ?.let { categoryAdapter.setSelected(it) }
+        }
+
+        // Saat seçici
+        val tvSelectedTime = view.findViewById<TextView>(R.id.tvSelectedTime)
+        fun updateTimeLabelAndDate() {
+            tvSelectedTime.text = String.format("%02d:%02d", selectedHour, selectedMinute)
+            // dueDate içindeki saati güncelle
+            val c = Calendar.getInstance().apply { timeInMillis = selectedDateMillis }
+            c.set(Calendar.HOUR_OF_DAY, selectedHour)
+            c.set(Calendar.MINUTE, selectedMinute)
+            c.set(Calendar.SECOND, 0)
+            selectedDateMillis = c.timeInMillis
+        }
+        // Düzenleme modunda mevcut saati yükle
+        editReminder?.let {
+            val c = Calendar.getInstance().apply { timeInMillis = it.dueDate }
+            selectedHour = c.get(Calendar.HOUR_OF_DAY)
+            selectedMinute = c.get(Calendar.MINUTE)
+            updateTimeLabelAndDate()
+        }
+        tvSelectedTime.setOnClickListener {
+            TimePickerDialog(requireContext(), { _, h, min ->
+                selectedHour = h; selectedMinute = min
+                updateTimeLabelAndDate()
+            }, selectedHour, selectedMinute, true).show()
         }
 
         // Tarih seçici
@@ -103,6 +157,9 @@ class HatirlaticiEkleSheet : BottomSheetDialogFragment() {
             val c = Calendar.getInstance().apply { timeInMillis = selectedDateMillis }
             DatePickerDialog(requireContext(), { _, y, m, d ->
                 c.set(y, m, d)
+                c.set(Calendar.HOUR_OF_DAY, selectedHour)
+                c.set(Calendar.MINUTE, selectedMinute)
+                c.set(Calendar.SECOND, 0)
                 selectedDateMillis = c.timeInMillis
                 etTarih.setText(dateFormat.format(c.time))
             }, c.get(Calendar.YEAR), c.get(Calendar.MONTH), c.get(Calendar.DAY_OF_MONTH)).show()

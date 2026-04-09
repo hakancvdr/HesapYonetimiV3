@@ -4,6 +4,8 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.LinearLayout
+import android.widget.TextView
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
 import androidx.lifecycle.Lifecycle
@@ -12,6 +14,7 @@ import androidx.lifecycle.repeatOnLifecycle
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
+import androidx.navigation.fragment.findNavController
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
@@ -43,8 +46,8 @@ class DashboardFragment : Fragment() {
     private val binding get() = _binding!!
     private val viewModel: DashboardViewModel by viewModels()
     private var selectedDayPosition = -1
-    private var lastKnownExpense = -1.0   // bütçe kontrolü için önceki gider
-    private var budgetWarnShown = false   // oturum içinde bir kez göster
+    private var lastKnownExpense = 0.0
+    private var budgetWarnShown = false
 
     @Inject
     lateinit var userProfileDao: UserProfileDao
@@ -63,6 +66,7 @@ class DashboardFragment : Fragment() {
         observeProfile()
         observeBudgetWarning()
         observeSuggestions()
+        observeNetBakiye()
         setupClickListeners()
 
         val swipeRefresh = binding.root.findViewById<SwipeRefreshLayout>(R.id.swipe_refresh)
@@ -97,6 +101,11 @@ class DashboardFragment : Fragment() {
                 if (act is MainActivity) act.gosterYaklasan()
             }
         }
+
+        // Gecikmiş ödeme banner tıklama → Yaklaşan sayfasına git
+        binding.root.findViewById<View>(R.id.overdue_banner)?.setOnClickListener {
+            (activity as? MainActivity)?.gosterYaklasan()
+        }
     }
 
     private fun showAddTransactionDialog(isIncome: Boolean?) {
@@ -128,6 +137,10 @@ class DashboardFragment : Fragment() {
                             ?.takeIf { it.isNotBlank() }
                         ?: "Kullanıcı"
                     binding.tvDashboardUsername.text = "$name 👋"
+
+                    // Profil avatarı — baş harf
+                    val initial = name.firstOrNull()?.uppercaseChar()?.toString() ?: "K"
+                    binding.ivProfile.text = initial
                 }
             }
         }
@@ -167,21 +180,38 @@ class DashboardFragment : Fragment() {
         val monthName = SimpleDateFormat("MMMM yyyy", Locale("tr")).format(Date())
         binding.tvMonthTitle.text = "Bu ay — $monthName"
 
-        val suggestionContainer = binding.root.findViewById<android.view.View>(R.id.suggestion_container)
+        val suggestionContainer = binding.root.findViewById<View>(R.id.suggestion_container)
         if (state.totalIncome == 0.0 && state.totalExpense == 0.0) {
             suggestionContainer?.visibility = View.GONE
         } else {
             suggestionContainer?.visibility = View.VISIBLE
+            // Bütçe/denge durum metni — tv_suggestion'a (akıllı öneri tvSmartTip'e)
             binding.tvSuggestion.text = when {
                 state.totalExpense > state.totalIncome ->
                     "Bu ay giderleriniz gelirinizi aştı ⚠️"
                 state.totalIncome > 0 && state.totalExpense > state.totalIncome * 0.8 ->
                     "Harcamalarınız gelirinizin %${((state.totalExpense / state.totalIncome) * 100).toInt()}'ine ulaştı"
-                else -> "Harika! Bu ay bütçeni dengeli tutuyorsun 👍"
+                else -> "Bu ay bütçeni dengeli tutuyorsun 👍"
             }
             binding.tvHighestCategory.text = state.highestCategory.ifEmpty { "—" }
         }
 
+        // Gecikmiş ödemeler banner
+        val now = System.currentTimeMillis()
+        val gecikmisler = state.upcomingReminders.filter { !it.isPaid && it.dueDate < now }
+        val overdueBanner = binding.root.findViewById<LinearLayout>(R.id.overdue_banner)
+        val overdueTitle = binding.root.findViewById<TextView>(R.id.tv_overdue_title)
+        val overdueSubtitle = binding.root.findViewById<TextView>(R.id.tv_overdue_subtitle)
+        if (gecikmisler.isEmpty()) {
+            overdueBanner?.visibility = View.GONE
+        } else {
+            overdueBanner?.visibility = View.VISIBLE
+            overdueTitle?.text = if (gecikmisler.size == 1) "Gecikmiş ödemen var!" else "${gecikmisler.size} gecikmiş ödemen var!"
+            val totalOverdue = gecikmisler.sumOf { it.amount }
+            overdueSubtitle?.text = "Toplam: ${CurrencyFormatter.format(totalOverdue)} · Detay için dokun"
+        }
+
+        // Yaklaşan ödemeler (sadece bugün ve sonrası, gecikmişler ayrı bannerda)
         val bugun = Calendar.getInstance().apply {
             set(Calendar.HOUR_OF_DAY, 0); set(Calendar.MINUTE, 0)
             set(Calendar.SECOND, 0); set(Calendar.MILLISECOND, 0)
@@ -220,9 +250,12 @@ class DashboardFragment : Fragment() {
     }
 
     private fun updateTransactionList(transactions: List<com.example.hesapyonetimi.domain.model.Transaction>) {
+        val selectedDateLabel = binding.root.findViewById<TextView>(R.id.tv_selected_date_label)
+
         if (transactions.isEmpty()) {
             binding.tvEmptyState.visibility = View.VISIBLE
             binding.rvRecentTransactions.visibility = View.GONE
+            binding.tvAllTransactions.visibility = View.GONE
         } else {
             binding.tvEmptyState.visibility = View.GONE
             binding.rvRecentTransactions.visibility = View.VISIBLE
@@ -243,6 +276,10 @@ class DashboardFragment : Fragment() {
                     .newInstance(transaction)
                     .show(childFragmentManager, "EditTransaction")
             }
+            binding.tvAllTransactions.visibility = View.VISIBLE
+            binding.tvAllTransactions.setOnClickListener {
+                (activity as? MainActivity)?.gosterGunluk()
+            }
         }
     }
 
@@ -260,11 +297,13 @@ class DashboardFragment : Fragment() {
             val c = Calendar.getInstance().also { it.set(Calendar.DAY_OF_MONTH, pos + 1); it.set(Calendar.HOUR_OF_DAY, 12) }
             viewModel.getTransactionsByDate(c.timeInMillis)
             binding.rvDashboardCalendar.adapter?.notifyDataSetChanged()
+            updateSelectedDateLabel(pos + 1)
         }
         binding.rvDashboardCalendar.postDelayed({
             val lm = binding.rvDashboardCalendar.layoutManager as? LinearLayoutManager
             lm?.scrollToPositionWithOffset(selectedDayPosition, 0)
         }, 50)
+        updateSelectedDateLabel(selectedDayPosition + 1)
     }
 
     private fun setupMonthlyCalendar() {
@@ -284,11 +323,28 @@ class DashboardFragment : Fragment() {
             val c = Calendar.getInstance().also { it.set(Calendar.DAY_OF_MONTH, pos + 1); it.set(Calendar.HOUR_OF_DAY, 12) }
             viewModel.getTransactionsByDate(c.timeInMillis)
             binding.rvDashboardCalendar.adapter?.notifyDataSetChanged()
+            updateSelectedDateLabel(pos + 1)
         }
         binding.rvDashboardCalendar.postDelayed({
             val lm = binding.rvDashboardCalendar.layoutManager as? LinearLayoutManager
             lm?.scrollToPositionWithOffset(selectedDayPosition, 0)
         }, 50)
+        updateSelectedDateLabel(currentDay)
+    }
+
+    private fun updateSelectedDateLabel(day: Int) {
+        val selectedDateLabel = binding.root.findViewById<TextView>(R.id.tv_selected_date_label) ?: return
+        val today = Calendar.getInstance().get(Calendar.DAY_OF_MONTH)
+        val monthName = SimpleDateFormat("d MMMM", Locale("tr")).format(
+            Calendar.getInstance().apply { set(Calendar.DAY_OF_MONTH, day) }.time
+        )
+        selectedDateLabel.visibility = View.VISIBLE
+        selectedDateLabel.text = when (day) {
+            today -> "Bugün ($monthName) işlemleri"
+            today - 1 -> "Dün ($monthName) işlemleri"
+            today + 1 -> "Yarın ($monthName)"
+            else -> "$monthName işlemleri"
+        }
     }
 
     // ── Bütçe %80 uyarısı ─────────────────────────────────────────────────────
@@ -310,8 +366,7 @@ class DashboardFragment : Fragment() {
     private fun checkBudgetThreshold(expense: Double, limit: Double) {
         if (limit <= 0.0) return
         val ratio = expense / limit
-        // Yeni bir harcama eklenmiş (gider arttı) ve eşik aşıldı
-        if (ratio >= 0.8 && expense > lastKnownExpense && lastKnownExpense >= 0) {
+        if (ratio >= 0.8 && expense > lastKnownExpense) {
             if (!budgetWarnShown) {
                 budgetWarnShown = true
                 val percent = (ratio * 100).toInt().coerceAtMost(100)
@@ -329,25 +384,48 @@ class DashboardFragment : Fragment() {
                     .show()
             }
         } else if (ratio < 0.8) {
-            // Eşiğin altına düşerse bayrağı sıfırla (bütçe artırıldı veya gider silindi)
             budgetWarnShown = false
         }
         lastKnownExpense = expense
     }
 
-    // ── Akıllı öneri ─────────────────────────────────────────────────────────
+    // ── Kümülatif net bakiye (devreden) ──────────────────────────────────────
+    private fun observeNetBakiye() {
+        viewLifecycleOwner.lifecycleScope.launch {
+            viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
+                viewModel.netBakiye.collect { net ->
+                    val tvNetBakiye = binding.root.findViewById<TextView>(R.id.tv_net_bakiye)
+                    tvNetBakiye?.text = CurrencyFormatter.format(net)
+                    tvNetBakiye?.setTextColor(
+                        if (net >= 0) 0xFFAAFFCC.toInt() else 0xFFFF8888.toInt()
+                    )
+                }
+            }
+        }
+    }
+
+    // ── Akıllı öneri — tv_smart_tip'e yaz (tv_suggestion'dan ayrı) ──────────
     private fun observeSuggestions() {
         viewLifecycleOwner.lifecycleScope.launch {
             viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
                 viewModel.suggestions.collect { suggestions ->
-                    if (suggestions.isEmpty()) return@collect
+                    val tvSmartTip = binding.root.findViewById<TextView>(R.id.tv_smart_tip)
+                    val smartTipRow = binding.root.findViewById<View>(R.id.smart_tip_row)
+                    val smartTipDivider = binding.root.findViewById<View>(R.id.smart_tip_divider)
+                    if (suggestions.isEmpty()) {
+                        tvSmartTip?.visibility = View.GONE
+                        smartTipRow?.visibility = View.GONE
+                        smartTipDivider?.visibility = View.GONE
+                        return@collect
+                    }
                     val first = suggestions.first()
-                    binding.tvSuggestion.text =
-                        "💡 ${first.categoryIcon} ${first.categoryName} — " +
-                        "her ay yaklaşık ${
-                            com.example.hesapyonetimi.presentation.common.CurrencyFormatter
-                                .format(first.amount)
-                        } harcıyorsunuz"
+                    val tipText = "💡 ${first.categoryIcon} ${first.categoryName} — her ay yaklaşık ${
+                        CurrencyFormatter.format(first.amount)
+                    } harcıyorsunuz"
+                    tvSmartTip?.text = tipText
+                    tvSmartTip?.visibility = View.VISIBLE
+                    smartTipRow?.visibility = View.VISIBLE
+                    smartTipDivider?.visibility = View.VISIBLE
                 }
             }
         }

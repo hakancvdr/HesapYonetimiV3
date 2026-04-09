@@ -33,6 +33,7 @@
 
     <!-- UI Elements -->
     <color name="divider">#E5E7EB</color>
+    <color name="icon_chip_selected_fill">#142C3E8C</color>
     <color name="border">#D1D5DB</color>
     <color name="overlay">#80000000</color>
 

@@ -56,4 +56,14 @@ interface TransactionDao {
 
     @Query("SELECT SUM(amount) FROM transactions WHERE isIncome = 1 AND date >= :startDate AND date <= :endDate")
     fun getTotalIncomeFlow(startDate: Long, endDate: Long): Flow<Double?>
+
+    @Query("SELECT * FROM transactions WHERE isRecurring = 1 ORDER BY date DESC")
+    suspend fun getRecurringTransactions(): List<TransactionEntity>
+
+    // ── Devreden (tüm zamanlara ait) net bakiye ───────────────────────────────
+    @Query("SELECT SUM(amount) FROM transactions WHERE isIncome = 1")
+    fun getTotalIncomeAllTime(): Flow<Double?>
+
+    @Query("SELECT SUM(amount) FROM transactions WHERE isIncome = 0")
+    fun getTotalExpenseAllTime(): Flow<Double?>
 }

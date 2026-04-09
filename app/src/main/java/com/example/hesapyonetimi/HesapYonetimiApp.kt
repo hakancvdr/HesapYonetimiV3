@@ -2,9 +2,14 @@ package com.example.hesapyonetimi
 
 import android.app.Application
 import androidx.hilt.work.HiltWorkerFactory
-import androidx.work.Configuration
+import androidx.work.*
 import com.example.hesapyonetimi.presentation.common.CurrencyFormatter
+import com.example.hesapyonetimi.worker.BudgetAlertWorker
+import com.example.hesapyonetimi.worker.RecurringTransactionWorker
+import com.example.hesapyonetimi.worker.WeeklySummaryWorker
 import dagger.hilt.android.HiltAndroidApp
+import java.util.Calendar
+import java.util.concurrent.TimeUnit
 import javax.inject.Inject
 
 @HiltAndroidApp
@@ -16,6 +21,69 @@ class HesapYonetimiApp : Application(), Configuration.Provider {
     override fun onCreate() {
         super.onCreate()
         CurrencyFormatter.init(this)
+        schedulePeriodic()
+    }
+
+    private fun schedulePeriodic() {
+        val wm = WorkManager.getInstance(this)
+
+        // Günlük bütçe kontrolü — her gün 14:00
+        val budgetDelay = calcDelayToHour(14)
+        val budgetRequest = PeriodicWorkRequestBuilder<BudgetAlertWorker>(1, TimeUnit.DAYS)
+            .setInitialDelay(budgetDelay, TimeUnit.MILLISECONDS)
+            .setConstraints(Constraints.Builder()
+                .setRequiredNetworkType(NetworkType.NOT_REQUIRED).build())
+            .build()
+        wm.enqueueUniquePeriodicWork(
+            "budget_alert", ExistingPeriodicWorkPolicy.UPDATE, budgetRequest
+        )
+
+        // Haftalık özet — her 7 günde bir, Pazartesi 14:00
+        val weeklyDelay = calcDelayToNextMonday(14)
+        val weeklyRequest = PeriodicWorkRequestBuilder<WeeklySummaryWorker>(7, TimeUnit.DAYS)
+            .setInitialDelay(weeklyDelay, TimeUnit.MILLISECONDS)
+            .setConstraints(Constraints.Builder()
+                .setRequiredNetworkType(NetworkType.NOT_REQUIRED).build())
+            .build()
+        wm.enqueueUniquePeriodicWork(
+            "weekly_summary", ExistingPeriodicWorkPolicy.UPDATE, weeklyRequest
+        )
+
+        // Tekrarlayan işlem kontrolü — her gün
+        val recurringRequest = PeriodicWorkRequestBuilder<RecurringTransactionWorker>(1, TimeUnit.DAYS)
+            .setConstraints(Constraints.Builder()
+                .setRequiredNetworkType(NetworkType.NOT_REQUIRED).build())
+            .build()
+        wm.enqueueUniquePeriodicWork(
+            "recurring_transactions", ExistingPeriodicWorkPolicy.KEEP, recurringRequest
+        )
+    }
+
+    private fun calcDelayToHour(hour: Int): Long {
+        val now = Calendar.getInstance()
+        val target = Calendar.getInstance().apply {
+            set(Calendar.HOUR_OF_DAY, hour)
+            set(Calendar.MINUTE, 0)
+            set(Calendar.SECOND, 0)
+            set(Calendar.MILLISECOND, 0)
+            if (before(now)) add(Calendar.DAY_OF_YEAR, 1)
+        }
+        return target.timeInMillis - now.timeInMillis
+    }
+
+    private fun calcDelayToNextMonday(hour: Int): Long {
+        val now = Calendar.getInstance()
+        val target = Calendar.getInstance().apply {
+            set(Calendar.HOUR_OF_DAY, hour)
+            set(Calendar.MINUTE, 0)
+            set(Calendar.SECOND, 0)
+            set(Calendar.MILLISECOND, 0)
+            // Advance to next Monday
+            while (get(Calendar.DAY_OF_WEEK) != Calendar.MONDAY || !after(now)) {
+                add(Calendar.DAY_OF_YEAR, 1)
+            }
+        }
+        return target.timeInMillis - now.timeInMillis
     }
 
     override val workManagerConfiguration: Configuration

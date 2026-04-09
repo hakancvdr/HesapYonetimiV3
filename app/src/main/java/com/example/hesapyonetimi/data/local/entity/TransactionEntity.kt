@@ -39,5 +39,12 @@ data class TransactionEntity(
     val recurringTransactionId: Long? = null,
 
     // Cüzdan bağlantısı (null = varsayılan)
-    val walletId: Long? = null
+    val walletId: Long? = null,
+
+    // İşlem etiketleri (virgülle ayrılmış)
+    val tags: String = "",
+
+    // Tekrarlayan işlem bilgileri
+    val isRecurring: Boolean = false,
+    val recurringDays: Int = 30
 )

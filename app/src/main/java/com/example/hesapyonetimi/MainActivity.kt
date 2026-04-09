@@ -1,30 +1,25 @@
 package com.example.hesapyonetimi
 
 import android.content.Context
-import android.content.Intent
 import android.graphics.Color
 import android.os.Bundle
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.app.AppCompatDelegate
 import androidx.core.view.WindowInsetsControllerCompat
-import androidx.fragment.app.Fragment
+import androidx.navigation.NavController
+import androidx.navigation.NavOptions
+import androidx.navigation.fragment.NavHostFragment
+import androidx.navigation.ui.setupWithNavController
 import com.google.android.material.bottomnavigation.BottomNavigationView
 import dagger.hilt.android.AndroidEntryPoint
 
 @AndroidEntryPoint
 class MainActivity : AppCompatActivity() {
 
-    private lateinit var dashboardFragment: DashboardFragment
-    private lateinit var gunlukFragment: GunlukFragment
-    private lateinit var aylikFragment: AylikFragment
-    private lateinit var yaklasanFragment: YaklasanFragment
-    private lateinit var profileFragment: ProfileFragment
-    private lateinit var activeFragment: Fragment
+    private lateinit var navController: NavController
 
     override fun onCreate(savedInstanceState: Bundle?) {
-        // ── Tema: SharedPreferences'tan oku, Activity oluşmadan önce uygula ─
         applyThemeFromPrefs()
-
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
@@ -33,66 +28,36 @@ class MainActivity : AppCompatActivity() {
             isAppearanceLightStatusBars = false
         }
 
-        if (savedInstanceState == null) {
-            dashboardFragment = DashboardFragment()
-            gunlukFragment    = GunlukFragment()
-            aylikFragment     = AylikFragment()
-            yaklasanFragment  = YaklasanFragment()
-            profileFragment   = ProfileFragment()
-            activeFragment    = dashboardFragment
+        val navHostFragment = supportFragmentManager
+            .findFragmentById(R.id.nav_host_fragment) as NavHostFragment
+        navController = navHostFragment.navController
 
-            supportFragmentManager.beginTransaction().apply {
-                add(R.id.fragment_container, yaklasanFragment,  "yaklasan").hide(yaklasanFragment)
-                add(R.id.fragment_container, aylikFragment,     "aylik").hide(aylikFragment)
-                add(R.id.fragment_container, gunlukFragment,    "gunluk").hide(gunlukFragment)
-                add(R.id.fragment_container, profileFragment,   "profil").hide(profileFragment)
-                add(R.id.fragment_container, dashboardFragment, "dashboard")
-            }.commit()
-        } else {
-            // Tema değişikliği gibi Activity yeniden oluşturulunca fragment referanslarını geri yükle
-            dashboardFragment = (supportFragmentManager.findFragmentByTag("dashboard") as? DashboardFragment)
-                ?: DashboardFragment()
-            gunlukFragment    = (supportFragmentManager.findFragmentByTag("gunluk") as? GunlukFragment)
-                ?: GunlukFragment()
-            aylikFragment     = (supportFragmentManager.findFragmentByTag("aylik") as? AylikFragment)
-                ?: AylikFragment()
-            yaklasanFragment  = (supportFragmentManager.findFragmentByTag("yaklasan") as? YaklasanFragment)
-                ?: YaklasanFragment()
-            profileFragment   = (supportFragmentManager.findFragmentByTag("profil") as? ProfileFragment)
-                ?: ProfileFragment()
+        val bottomNav = findViewById<BottomNavigationView>(R.id.bottom_navigation)
+        bottomNav.setupWithNavController(navController)
 
-            val activeTag = savedInstanceState.getString("active_fragment", "dashboard")
-            activeFragment = when (activeTag) {
-                "gunluk"   -> gunlukFragment
-                "aylik"    -> aylikFragment
-                "yaklasan" -> yaklasanFragment
-                "profil"   -> profileFragment
-                else       -> dashboardFragment
+        // Bottom nav dışındaki destinasyonlarda (KategoriDetay, Wallet) BottomNav gizle
+        navController.addOnDestinationChangedListener { _, destination, _ ->
+            val topLevelIds = setOf(
+                R.id.nav_ozet, R.id.nav_gunluk, R.id.nav_aylik,
+                R.id.nav_yaklasan, R.id.nav_hedefler, R.id.nav_profil
+            )
+            bottomNav.visibility = if (destination.id in topLevelIds)
+                android.view.View.VISIBLE else android.view.View.GONE
+            // Profil sayfasında hiçbir tab seçili görünmesin
+            if (destination.id == R.id.nav_profil) {
+                bottomNav.menu.setGroupCheckable(0, true, false)
+                for (i in 0 until bottomNav.menu.size()) bottomNav.menu.getItem(i).isChecked = false
+                bottomNav.menu.setGroupCheckable(0, true, true)
             }
-        }
-
-        setupNavigation()
-    }
-
-    override fun onSaveInstanceState(outState: Bundle) {
-        super.onSaveInstanceState(outState)
-        if (::activeFragment.isInitialized) {
-            val tag = when (activeFragment) {
-                gunlukFragment   -> "gunluk"
-                aylikFragment    -> "aylik"
-                yaklasanFragment -> "yaklasan"
-                profileFragment  -> "profil"
-                else             -> "dashboard"
-            }
-            outState.putString("active_fragment", tag)
         }
     }
 
     override fun onStart() {
         super.onStart()
         if (pinGerekliMi()) {
-            val intent = Intent(this, PinActivity::class.java)
-            intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+            val intent = android.content.Intent(this, PinActivity::class.java)
+            intent.flags = android.content.Intent.FLAG_ACTIVITY_NEW_TASK or
+                    android.content.Intent.FLAG_ACTIVITY_CLEAR_TASK
             startActivity(intent)
         } else {
             getSharedPreferences("HesapPrefs", Context.MODE_PRIVATE)
@@ -107,24 +72,6 @@ class MainActivity : AppCompatActivity() {
         return (System.currentTimeMillis() - sonGiris) > 30 * 60 * 1000
     }
 
-    private fun setupNavigation() {
-        val bottomNav = findViewById<BottomNavigationView>(R.id.bottom_navigation)
-        bottomNav.setOnItemSelectedListener { item ->
-            val target = when (item.itemId) {
-                R.id.nav_gunluk   -> gunlukFragment
-                R.id.nav_aylik    -> aylikFragment
-                R.id.nav_yaklasan -> yaklasanFragment
-                R.id.nav_profil   -> profileFragment
-                else              -> dashboardFragment
-            }
-            goster(target)
-            true
-        }
-    }
-
-    // ── Tema uygulama ─────────────────────────────────────────────────────────
-    // AppCompatDelegate.setDefaultNightMode, gerektiğinde Activity'i otomatik
-    // yeniden oluşturur; ayrıca recreate() çağırmak gerekmez.
     fun applyTheme(mode: String) {
         getSharedPreferences("HesapPrefs", Context.MODE_PRIVATE)
             .edit().putString("theme_mode", mode).apply()
@@ -147,62 +94,25 @@ class MainActivity : AppCompatActivity() {
         AppCompatDelegate.setDefaultNightMode(nightMode)
     }
 
-    // ── Navigasyon yardımcıları ───────────────────────────────────────────────
-    fun gosterYaklasan() {
-        goster(yaklasanFragment)
-        findViewById<BottomNavigationView>(R.id.bottom_navigation).selectedItemId = R.id.nav_yaklasan
-    }
+    // setupWithNavController zaten navigasyonu yönetiyor.
+    // selectedItemId set etmek YETERLİ — navController.navigate() ayrıca çağrılırsa
+    // back stack iki kez işlenir ve home butonu çalışmaz.
+    private fun bottomNav() = findViewById<BottomNavigationView>(R.id.bottom_navigation)
 
-    fun gosterAylik() {
-        goster(aylikFragment)
-        findViewById<BottomNavigationView>(R.id.bottom_navigation).selectedItemId = R.id.nav_aylik
-    }
+    fun gosterYaklasan() { bottomNav().selectedItemId = R.id.nav_yaklasan }
+
+    fun gosterAylik() { bottomNav().selectedItemId = R.id.nav_aylik }
+
+    fun gosterGunluk() { bottomNav().selectedItemId = R.id.nav_gunluk }
+
+    fun gosterHedefler() { bottomNav().selectedItemId = R.id.nav_hedefler }
 
     fun gosterProfil() {
-        goster(profileFragment)
-        findViewById<BottomNavigationView>(R.id.bottom_navigation).selectedItemId = R.id.nav_profil
-    }
-
-    fun showKategoriDetay(detay: Fragment) {
-        supportFragmentManager.beginTransaction()
-            .hide(activeFragment)
-            .add(R.id.fragment_container, detay, "detay")
-            .addToBackStack("detay")
-            .commit()
-    }
-
-    @Deprecated("Deprecated in Java")
-    override fun onBackPressed() {
-        if (supportFragmentManager.backStackEntryCount > 0) {
-            supportFragmentManager.popBackStack()
-            supportFragmentManager.addOnBackStackChangedListener(object :
-                androidx.fragment.app.FragmentManager.OnBackStackChangedListener {
-                override fun onBackStackChanged() {
-                    if (supportFragmentManager.backStackEntryCount == 0) {
-                        supportFragmentManager.beginTransaction().show(activeFragment).commit()
-                        supportFragmentManager.removeOnBackStackChangedListener(this)
-                    }
-                }
-            })
-        } else {
-            super.onBackPressed()
-        }
-    }
-
-    private fun goster(hedef: Fragment) {
-        if (supportFragmentManager.backStackEntryCount > 0) {
-            supportFragmentManager.popBackStack(
-                null, androidx.fragment.app.FragmentManager.POP_BACK_STACK_INCLUSIVE
-            )
-        }
-        if (hedef == activeFragment) {
-            supportFragmentManager.beginTransaction().show(hedef).commit()
-            return
-        }
-        supportFragmentManager.beginTransaction()
-            .hide(activeFragment)
-            .show(hedef)
-            .commit()
-        activeFragment = hedef
+        // nav_profil menüde yok, doğrudan navigate
+        val opts = NavOptions.Builder()
+            .setPopUpTo(R.id.nav_ozet, false)
+            .setLaunchSingleTop(true)
+            .build()
+        navController.navigate(R.id.nav_profil, null, opts)
     }
 }

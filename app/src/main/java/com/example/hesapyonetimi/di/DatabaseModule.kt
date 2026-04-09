@@ -55,4 +55,10 @@ object DatabaseModule {
     fun provideWalletDao(database: AppDatabase): WalletDao {
         return database.walletDao()
     }
+
+    @Provides
+    @Singleton
+    fun provideGoalDao(database: AppDatabase): GoalDao {
+        return database.goalDao()
+    }
 }

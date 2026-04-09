@@ -9,6 +9,7 @@ import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.fragment.app.Fragment
 import androidx.gridlayout.widget.GridLayout
+import androidx.navigation.fragment.findNavController
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.example.hesapyonetimi.R
@@ -26,14 +27,12 @@ class KategoriDetayFragment : Fragment() {
     private var ayOffset: Int = 0
     private var calOffset: Int = 0
 
-    companion object {
-        fun newInstance(kat: KategoriOzet, ayOffset: Int): KategoriDetayFragment {
-            return KategoriDetayFragment().apply {
-                this.kat = kat
-                this.ayOffset = ayOffset
-                this.calOffset = ayOffset
-            }
-        }
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        kat = arguments?.getParcelable("kat")
+            ?: throw IllegalStateException("KategoriDetayFragment: 'kat' argümanı eksik")
+        ayOffset = arguments?.getInt("ayOffset", 0) ?: 0
+        calOffset = ayOffset
     }
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
@@ -50,20 +49,16 @@ class KategoriDetayFragment : Fragment() {
             insets
         }
 
-        // Geri
         view.findViewById<TextView>(R.id.btn_geri).setOnClickListener {
-            parentFragmentManager.popBackStack()
+            findNavController().popBackStack()
         }
 
-        // Başlık
         view.findViewById<TextView>(R.id.tv_detay_baslik).text = "${kat.icon} ${kat.ad}"
 
-        // İstatistikler
         view.findViewById<TextView>(R.id.tv_stat_toplam).text = CurrencyFormatter.format(kat.toplam)
         view.findViewById<TextView>(R.id.tv_stat_pay).text = "%${kat.yuzde.toInt()}"
         view.findViewById<TextView>(R.id.tv_stat_islem).text = "${kat.islemSayisi} adet"
 
-        // Analiz
         val tvEmoji = view.findViewById<TextView>(R.id.tv_analiz_emoji)
         val tvAnaliz = view.findViewById<TextView>(R.id.tv_analiz_metin)
         when {
@@ -89,7 +84,6 @@ class KategoriDetayFragment : Fragment() {
             }
         }
 
-        // Takvim navigasyonu
         view.findViewById<TextView>(R.id.btn_prev_month).setOnClickListener {
             calOffset--; drawCalendar(view)
         }
@@ -99,7 +93,6 @@ class KategoriDetayFragment : Fragment() {
 
         drawCalendar(view)
 
-        // İşlemler
         val timeFormat = SimpleDateFormat("d MMM · HH:mm", Locale("tr"))
         val rv = view.findViewById<RecyclerView>(R.id.rv_detay_islemler)
         rv.layoutManager = LinearLayoutManager(requireContext())

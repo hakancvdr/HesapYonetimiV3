@@ -14,7 +14,7 @@
         <!-- Sürükleme çubuğu -->
         <View
             android:layout_width="40dp" android:layout_height="4dp"
-            android:background="#DDDDDD"
+            android:background="@color/divider"
             android:layout_gravity="center_horizontal"
             android:layout_marginTop="12dp" android:layout_marginBottom="16dp"/>
 
