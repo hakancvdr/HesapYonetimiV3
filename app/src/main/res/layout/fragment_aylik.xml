@@ -22,6 +22,7 @@
             android:id="@+id/tv_aylik_baslik"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
+            android:minHeight="34dp"
             android:text="Analiz"
             android:textColor="#FFFFFF"
             android:textSize="20sp"
@@ -32,10 +33,12 @@
 
         <TextView
             android:id="@+id/iv_profile_aylik"
-            android:layout_width="36dp"
-            android:layout_height="36dp"
+            android:layout_width="34dp"
+            android:layout_height="34dp"
             android:layout_marginStart="8dp"
             android:gravity="center"
+            android:includeFontPadding="false"
+            android:padding="0dp"
             android:textColor="#FFFFFF"
             android:textSize="15sp"
             android:textStyle="bold"
@@ -276,7 +279,7 @@
             android:orientation="vertical"
             android:visibility="gone">
 
-            <!-- Dönem + tarih satırı -->
+            <!-- Filtre özeti + aç/kapat -->
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -284,48 +287,153 @@
                 android:elevation="1dp"
                 android:gravity="center_vertical"
                 android:orientation="horizontal"
-                android:paddingHorizontal="10dp"
-                android:paddingVertical="8dp">
+                android:paddingHorizontal="12dp"
+                android:paddingVertical="10dp">
 
-                <TextView android:id="@+id/btn_donem_1a"
-                    android:layout_width="wrap_content" android:layout_height="32dp"
-                    android:paddingHorizontal="9dp" android:gravity="center" android:text="1A"
-                    android:textSize="12sp" android:textColor="@color/green_primary"
-                    android:background="@drawable/kategori_item_selected_bg" android:layout_marginEnd="3dp"
-                    android:clickable="true" android:focusable="true"/>
-                <TextView android:id="@+id/btn_donem_3a"
-                    android:layout_width="wrap_content" android:layout_height="32dp"
-                    android:paddingHorizontal="9dp" android:gravity="center" android:text="Önceki"
-                    android:textSize="12sp" android:textColor="@color/text_secondary"
-                    android:background="@drawable/kategori_item_bg" android:layout_marginEnd="3dp"
-                    android:clickable="true" android:focusable="true"/>
-                <TextView android:id="@+id/btn_donem_6a"
-                    android:layout_width="wrap_content" android:layout_height="32dp"
-                    android:paddingHorizontal="9dp" android:gravity="center" android:text="3A"
-                    android:textSize="12sp" android:textColor="@color/text_secondary"
-                    android:background="@drawable/kategori_item_bg" android:layout_marginEnd="3dp"
-                    android:clickable="true" android:focusable="true"/>
-                <TextView android:id="@+id/btn_donem_tumu"
-                    android:layout_width="wrap_content" android:layout_height="32dp"
-                    android:paddingHorizontal="9dp" android:gravity="center" android:text="6A"
-                    android:textSize="12sp" android:textColor="@color/text_secondary"
-                    android:background="@drawable/kategori_item_bg" android:layout_marginEnd="6dp"
-                    android:clickable="true" android:focusable="true"/>
-                <View android:layout_width="1dp" android:layout_height="22dp"
-                    android:background="@color/divider" android:layout_marginEnd="6dp"/>
-                <TextView android:id="@+id/tv_baslangic_tarih"
-                    android:layout_width="0dp" android:layout_height="32dp" android:layout_weight="1"
-                    android:gravity="center" android:textSize="11sp" android:textColor="@color/text_primary"
-                    android:background="@drawable/tarih_chip_bg" android:layout_marginEnd="3dp"
-                    android:clickable="true" android:focusable="true"/>
-                <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
-                    android:text="→" android:textSize="12sp" android:textColor="@color/text_secondary"
-                    android:layout_marginEnd="3dp"/>
-                <TextView android:id="@+id/tv_bitis_tarih"
-                    android:layout_width="0dp" android:layout_height="32dp" android:layout_weight="1"
-                    android:gravity="center" android:textSize="11sp" android:textColor="@color/text_primary"
-                    android:background="@drawable/tarih_chip_bg"
-                    android:clickable="true" android:focusable="true"/>
+                <TextView
+                    android:id="@+id/tvTimelineFilterSummary"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="Bu Ay · Tarih aralığı"
+                    android:textColor="@color/text_secondary"
+                    android:textSize="12sp" />
+
+                <TextView
+                    android:id="@+id/btnToggleTimelineFilters"
+                    android:layout_width="wrap_content"
+                    android:layout_height="32dp"
+                    android:background="@drawable/kategori_item_bg"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:gravity="center"
+                    android:paddingHorizontal="10dp"
+                    android:text="Filtre"
+                    android:textColor="@color/text_primary"
+                    android:textSize="12sp"
+                    android:textStyle="bold" />
+            </LinearLayout>
+
+            <!-- Dönem + tarih satırı (kompakt) -->
+            <LinearLayout
+                android:id="@+id/timelineFiltersContainer"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:background="@color/card_background"
+                android:elevation="1dp"
+                android:orientation="vertical"
+                android:paddingHorizontal="10dp"
+                android:paddingVertical="8dp"
+                android:visibility="gone">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal">
+
+                    <TextView
+                        android:id="@+id/btn_donem_1a"
+                        android:layout_width="0dp"
+                        android:layout_height="32dp"
+                        android:layout_weight="1"
+                        android:layout_marginEnd="6dp"
+                        android:background="@drawable/kategori_item_selected_bg"
+                        android:clickable="true"
+                        android:focusable="true"
+                        android:gravity="center"
+                        android:paddingHorizontal="8dp"
+                        android:text="Bu Ay"
+                        android:textColor="@color/green_primary"
+                        android:textSize="12sp" />
+
+                    <TextView
+                        android:id="@+id/btn_donem_3a"
+                        android:layout_width="0dp"
+                        android:layout_height="32dp"
+                        android:layout_weight="1"
+                        android:layout_marginEnd="6dp"
+                        android:background="@drawable/kategori_item_bg"
+                        android:clickable="true"
+                        android:focusable="true"
+                        android:gravity="center"
+                        android:paddingHorizontal="8dp"
+                        android:text="Önceki"
+                        android:textColor="@color/text_secondary"
+                        android:textSize="12sp" />
+
+                    <TextView
+                        android:id="@+id/btn_donem_6a"
+                        android:layout_width="0dp"
+                        android:layout_height="32dp"
+                        android:layout_weight="1"
+                        android:layout_marginEnd="6dp"
+                        android:background="@drawable/kategori_item_bg"
+                        android:clickable="true"
+                        android:focusable="true"
+                        android:gravity="center"
+                        android:paddingHorizontal="8dp"
+                        android:text="3 Ay"
+                        android:textColor="@color/text_secondary"
+                        android:textSize="12sp" />
+
+                    <TextView
+                        android:id="@+id/btn_donem_tumu"
+                        android:layout_width="0dp"
+                        android:layout_height="32dp"
+                        android:layout_weight="1"
+                        android:background="@drawable/kategori_item_bg"
+                        android:clickable="true"
+                        android:focusable="true"
+                        android:gravity="center"
+                        android:paddingHorizontal="8dp"
+                        android:text="6 Ay+"
+                        android:textColor="@color/text_secondary"
+                        android:textSize="12sp" />
+                </LinearLayout>
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal">
+
+                    <TextView
+                        android:id="@+id/tv_baslangic_tarih"
+                        android:layout_width="0dp"
+                        android:layout_height="32dp"
+                        android:layout_weight="1"
+                        android:background="@drawable/tarih_chip_bg"
+                        android:clickable="true"
+                        android:focusable="true"
+                        android:gravity="center"
+                        android:minWidth="96dp"
+                        android:paddingHorizontal="6dp"
+                        android:textColor="@color/text_primary"
+                        android:textSize="11sp" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginHorizontal="8dp"
+                        android:text="→"
+                        android:textColor="@color/text_secondary"
+                        android:textSize="12sp" />
+
+                    <TextView
+                        android:id="@+id/tv_bitis_tarih"
+                        android:layout_width="0dp"
+                        android:layout_height="32dp"
+                        android:layout_weight="1"
+                        android:background="@drawable/tarih_chip_bg"
+                        android:clickable="true"
+                        android:focusable="true"
+                        android:gravity="center"
+                        android:minWidth="96dp"
+                        android:paddingHorizontal="6dp"
+                        android:textColor="@color/text_primary"
+                        android:textSize="11sp" />
+                </LinearLayout>
             </LinearLayout>
 
             <!-- Arama çubuğu -->
@@ -352,14 +460,54 @@
                     android:textSize="14sp" />
             </com.google.android.material.textfield.TextInputLayout>
 
-            <androidx.recyclerview.widget.RecyclerView
-                android:id="@+id/rvTimeline"
+            <FrameLayout
                 android:layout_width="match_parent"
                 android:layout_height="0dp"
-                android:layout_weight="1"
-                android:clipToPadding="false"
-                android:paddingHorizontal="12dp"
-                android:paddingBottom="80dp" />
+                android:layout_weight="1">
+
+                <androidx.recyclerview.widget.RecyclerView
+                    android:id="@+id/rvTimeline"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:clipToPadding="false"
+                    android:paddingHorizontal="12dp"
+                    android:paddingBottom="80dp" />
+
+                <LinearLayout
+                    android:id="@+id/timeline_empty_state"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:gravity="center"
+                    android:orientation="vertical"
+                    android:padding="24dp"
+                    android:visibility="gone">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Sonuç bulunamadı 🔍"
+                        android:textColor="@color/text_primary"
+                        android:textSize="16sp"
+                        android:textStyle="bold" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="6dp"
+                        android:gravity="center"
+                        android:text="Farklı bir arama deneyin veya filtreyi temizleyin."
+                        android:textColor="@color/text_secondary"
+                        android:textSize="13sp" />
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btnTimelineClearSearch"
+                        style="@style/Widget.Material3.Button.TonalButton"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="16dp"
+                        android:text="Aramayı temizle" />
+                </LinearLayout>
+            </FrameLayout>
         </LinearLayout>
 
         <!-- ── TAB 3: KATEGORİ ───────────────────────────────────────────── -->
@@ -417,25 +565,40 @@
                     android:layout_height="wrap_content"
                     android:visibility="visible"/>
 
-                <!-- Küçük sağ üst köşe toggle -->
-                <LinearLayout android:layout_width="wrap_content" android:layout_height="wrap_content"
+                <com.google.android.material.button.MaterialButtonToggleGroup
+                    android:id="@+id/chartTypeToggle"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
                     android:layout_gravity="top|end"
-                    android:background="@drawable/bottom_sheet_bg"
-                    android:orientation="horizontal"
+                    android:layout_marginTop="4dp"
+                    android:layout_marginEnd="4dp"
+                    android:elevation="4dp"
                     android:padding="4dp"
-                    android:elevation="4dp">
-                    <TextView android:id="@+id/btnChartPie"
-                        android:layout_width="30dp" android:layout_height="26dp"
-                        android:background="@drawable/kategori_item_selected_bg"
-                        android:gravity="center" android:text="🥧" android:textSize="13sp"
-                        android:clickable="true" android:focusable="true"/>
-                    <TextView android:id="@+id/btnChartBar"
-                        android:layout_width="30dp" android:layout_height="26dp"
-                        android:background="@drawable/kategori_item_bg"
-                        android:layout_marginStart="2dp"
-                        android:gravity="center" android:text="📊" android:textSize="13sp"
-                        android:clickable="true" android:focusable="true"/>
-                </LinearLayout>
+                    app:checkedButton="@+id/btnChartPie"
+                    app:singleSelection="true">
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btnChartPie"
+                        style="@style/Widget.Material3.Button.OutlinedButton"
+                        android:layout_width="wrap_content"
+                        android:layout_height="36dp"
+                        android:minWidth="0dp"
+                        android:paddingHorizontal="12dp"
+                        android:text="Pasta"
+                        android:textSize="11sp"
+                        app:cornerRadius="10dp" />
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btnChartBar"
+                        style="@style/Widget.Material3.Button.OutlinedButton"
+                        android:layout_width="wrap_content"
+                        android:layout_height="36dp"
+                        android:minWidth="0dp"
+                        android:paddingHorizontal="12dp"
+                        android:text="Sütun"
+                        android:textSize="11sp"
+                        app:cornerRadius="10dp" />
+                </com.google.android.material.button.MaterialButtonToggleGroup>
             </FrameLayout>
 
             <!-- Öneri satırı -->

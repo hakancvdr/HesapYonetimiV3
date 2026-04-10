@@ -33,8 +33,8 @@ import com.example.hesapyonetimi.presentation.common.CurrencyFormatter
 import com.example.hesapyonetimi.presentation.common.HizliOneri
 import com.example.hesapyonetimi.presentation.reminders.HatirlaticiEkleSheet
 import com.example.hesapyonetimi.presentation.reminders.ReminderViewModel
+import com.example.hesapyonetimi.presentation.reminders.ReminderUiColors
 import dagger.hilt.android.AndroidEntryPoint
-import androidx.swiperefreshlayout.widget.SwipeRefreshLayout
 import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.*
@@ -49,6 +49,7 @@ class YaklasanFragment : Fragment() {
     private var aktifFiltre = 0
     private var reminderCalOffset = 0
     private var yaklasanGorunumListe = true
+    private var selectedCalDay: Int? = null
     private val ayYilTr = SimpleDateFormat("MMMM yyyy", Locale("tr"))
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
@@ -228,7 +229,22 @@ class YaklasanFragment : Fragment() {
         view.findViewById<View>(R.id.empty_state).visibility =
             if (filtrelenmis.isEmpty()) View.VISIBLE else View.GONE
 
-        if (!yaklasanGorunumListe) buildReminderCalendar(view)
+        // Takvim görünümünde gecikmiş uyarısı + takvimi yenile
+        if (!yaklasanGorunumListe) {
+            val banner = view.findViewById<View>(R.id.overdue_calendar_banner)
+            val tv = view.findViewById<TextView>(R.id.tv_overdue_calendar_text)
+            if (gecikmus.isEmpty()) {
+                banner?.visibility = View.GONE
+            } else {
+                banner?.visibility = View.VISIBLE
+                tv?.text = "${gecikmus.size} gecikmiş ödeme var · Dokun"
+                banner?.setOnClickListener {
+                    com.example.hesapyonetimi.presentation.reminders.DayRemindersSheet
+                        .show(childFragmentManager, Calendar.getInstance().get(Calendar.YEAR), Calendar.getInstance().get(Calendar.MONTH), Calendar.getInstance().get(Calendar.DAY_OF_MONTH), gecikmus)
+                }
+            }
+            buildReminderCalendar(view)
+        }
     }
 
     private fun setupYaklasanViewMode(root: View) {
@@ -300,11 +316,15 @@ class YaklasanFragment : Fragment() {
         val offset7 = (firstDow - 2 + 7) % 7
         val daysInMonth = cal.getActualMaximum(Calendar.DAY_OF_MONTH)
 
-        val hasOnDay = (1..daysInMonth).associateWith { day ->
-            tumReminders.any { r ->
-                val c = Calendar.getInstance().apply { timeInMillis = r.dueDate }
-                c.get(Calendar.YEAR) == y && c.get(Calendar.MONTH) == m && c.get(Calendar.DAY_OF_MONTH) == day
-            }
+        val filteredForCalendar = when (aktifFiltre) {
+            1 -> tumReminders.filter { it.isOverdue }          // Gecikmiş
+            2 -> tumReminders                                  // Tümü
+            else -> tumReminders.filter { !it.isPaid }         // Bekleyen
+        }
+
+        fun remindersForDay(day: Int): List<Reminder> = filteredForCalendar.filter { r ->
+            val c = Calendar.getInstance().apply { timeInMillis = r.calendarDisplayDate }
+            c.get(Calendar.YEAR) == y && c.get(Calendar.MONTH) == m && c.get(Calendar.DAY_OF_MONTH) == day
         }
 
         repeat(offset7) {
@@ -316,6 +336,7 @@ class YaklasanFragment : Fragment() {
             })
         }
         for (day in 1..daysInMonth) {
+            val dayReminders = remindersForDay(day)
             val cell = FrameLayout(requireContext()).apply {
                 layoutParams = GridLayout.LayoutParams().apply {
                     width = 0
@@ -333,12 +354,23 @@ class YaklasanFragment : Fragment() {
                 FrameLayout.LayoutParams.MATCH_PARENT,
                 FrameLayout.LayoutParams.MATCH_PARENT
             ))
-            if (hasOnDay[day] == true) {
+            if (selectedCalDay == day) {
+                cell.background = GradientDrawable().apply {
+                    shape = GradientDrawable.OVAL
+                    setColor(ContextCompat.getColor(requireContext(), R.color.border))
+                    alpha = 80
+                }
+            }
+
+            if (dayReminders.isNotEmpty()) {
+                val top = dayReminders.minWithOrNull(compareBy<Reminder> { it.isPaid }.thenBy { it.dueDate })
+                val dotColor = if (top != null) ReminderUiColors.statusColor(requireContext(), top)
+                else ContextCompat.getColor(requireContext(), R.color.green_primary)
                 val dot = View(requireContext()).apply {
                     val s = dpPx(5)
                     background = GradientDrawable().apply {
                         shape = GradientDrawable.OVAL
-                        setColor(Color.parseColor("#2979FF"))
+                        setColor(dotColor)
                     }
                     layoutParams = FrameLayout.LayoutParams(s, s).apply {
                         gravity = Gravity.BOTTOM or Gravity.CENTER_HORIZONTAL
@@ -346,6 +378,17 @@ class YaklasanFragment : Fragment() {
                     }
                 }
                 cell.addView(dot)
+            }
+
+            cell.isClickable = true
+            cell.isFocusable = true
+            cell.setOnClickListener {
+                selectedCalDay = day
+                if (dayReminders.isNotEmpty()) {
+                    com.example.hesapyonetimi.presentation.reminders.DayRemindersSheet
+                        .show(childFragmentManager, y, m, day, dayReminders)
+                }
+                buildReminderCalendar(root)
             }
             grid.addView(cell)
         }
@@ -398,6 +441,7 @@ class YaklasanFragment : Fragment() {
                     androidx.core.content.ContextCompat.getColor(requireContext(), R.color.text_secondary))
             }
             updateUI(view, tumReminders)
+            if (!yaklasanGorunumListe) buildReminderCalendar(view)
         }
 
         butonlar[0].setOnClickListener { sec(0) }

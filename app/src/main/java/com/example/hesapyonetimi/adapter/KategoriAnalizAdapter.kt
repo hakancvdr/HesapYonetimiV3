@@ -46,12 +46,15 @@ class KategoriAnalizAdapter(
             androidx.core.content.ContextCompat.getColor(holder.itemView.context, R.color.green_primary)
         holder.bar.setBackgroundColor(barColor)
 
-        val degisimText = when {
-            kat.degisimYuzde > 0f  -> " ▲${kat.degisimYuzde.toInt()}%"
-            kat.degisimYuzde < 0f  -> " ▼${(-kat.degisimYuzde).toInt()}%"
-            else -> ""
+        val deltaLine = when {
+            kat.degisimYuzde > 0f -> "Geçen aya göre ▲${kat.degisimYuzde.toInt()}%"
+            kat.degisimYuzde < 0f -> "Geçen aya göre ▼${(-kat.degisimYuzde).toInt()}%"
+            else -> null
         }
-        holder.pct.text = "%${kat.yuzde.toInt()} · ${kat.islemSayisi} işlem$degisimText"
+        holder.pct.text = listOfNotNull(
+            "%${kat.yuzde.toInt()} · ${kat.islemSayisi} işlem",
+            deltaLine
+        ).joinToString("\n")
 
         holder.bar.post {
             val parent = holder.bar.parent as View

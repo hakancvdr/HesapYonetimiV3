@@ -58,4 +58,8 @@
     <color name="gider_kirmizi">#EF5350</color>
     <color name="gider_kkirmizi">#B91C1C</color>
     <color name="mustard">#F59E0B</color>
+
+    <!-- Goals -->
+    <color name="goal_icon_bg">#E8F5E9</color>
+    <color name="goal_completed_card_bg">#E8F5E9</color>
 </resources>

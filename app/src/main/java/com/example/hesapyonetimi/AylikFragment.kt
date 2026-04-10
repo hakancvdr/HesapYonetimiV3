@@ -21,8 +21,9 @@ import androidx.fragment.app.viewModels
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
-import androidx.core.os.bundleOf
-import androidx.navigation.fragment.findNavController
+import com.example.hesapyonetimi.presentation.aylik.KategoriIslemleriSheet
+import com.google.android.material.button.MaterialButton
+import com.google.android.material.button.MaterialButtonToggleGroup
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout
@@ -62,6 +63,7 @@ class AylikFragment : Fragment() {
     )
     private var selectedTab = 0  // 0=İşlem Geçmişi, 1=Takvim, 2=Kategori
     private var showPieChart = true
+    private var timelineFiltersExpanded = false
 
     // Calendar selected day tracking
     private var selectedCalDay = -1
@@ -111,6 +113,7 @@ class AylikFragment : Fragment() {
         setupDatePickers(view)
         setupDonemButonlari(view)
         setupKategoriTabs(view)
+        setupTimelineFiltersToggle(view)
 
         view.findViewById<RecyclerView>(R.id.rvTimeline).apply {
             layoutManager = LinearLayoutManager(requireContext())
@@ -125,6 +128,28 @@ class AylikFragment : Fragment() {
         observeViewModel(view)
         showTab(selectedTab)
         updateChartToggle(view)
+    }
+
+    private fun setupTimelineFiltersToggle(v: View) {
+        val container = v.findViewById<View>(R.id.timelineFiltersContainer)
+        val btn = v.findViewById<TextView>(R.id.btnToggleTimelineFilters)
+        val summary = v.findViewById<TextView>(R.id.tvTimelineFilterSummary)
+
+        fun refresh() {
+            container?.visibility = if (timelineFiltersExpanded) View.VISIBLE else View.GONE
+            btn?.text = if (timelineFiltersExpanded) "Kapat" else "Filtre"
+
+            val state = viewModel.uiState.value
+            val start = tarihFormat.format(Date(state.baslangicMillis))
+            val end = tarihFormat.format(Date(state.bitisMillis))
+            summary?.text = "${state.ayAdi} · $start → $end"
+        }
+
+        btn?.setOnClickListener {
+            timelineFiltersExpanded = !timelineFiltersExpanded
+            refresh()
+        }
+        refresh()
     }
 
     // ── Tab yönetimi ─────────────────────────────────────────────────────────
@@ -329,12 +354,26 @@ class AylikFragment : Fragment() {
     // ── Timeline arama ────────────────────────────────────────────────────────
 
     private fun setupTimelineSearch(v: View) {
-        v.findViewById<TextInputEditText>(R.id.etTimelineSearch)
-            .addTextChangedListener(object : TextWatcher {
-                override fun afterTextChanged(s: Editable?) { timelineAdapter.filter(s?.toString() ?: "") }
-                override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
-                override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
-            })
+        val et = v.findViewById<TextInputEditText>(R.id.etTimelineSearch)
+        et.addTextChangedListener(object : TextWatcher {
+            override fun afterTextChanged(s: Editable?) {
+                timelineAdapter.filter(s?.toString() ?: "")
+                refreshTimelineEmptyState(v)
+            }
+            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
+            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
+        })
+        v.findViewById<MaterialButton>(R.id.btnTimelineClearSearch).setOnClickListener {
+            et.setText("")
+            timelineAdapter.filter("")
+            refreshTimelineEmptyState(v)
+        }
+    }
+
+    private fun refreshTimelineEmptyState(v: View) {
+        if (selectedTab != 0) return
+        v.findViewById<View>(R.id.timeline_empty_state).visibility =
+            if (timelineAdapter.shouldShowSearchEmpty()) View.VISIBLE else View.GONE
     }
 
     // ── Kategori tabı ─────────────────────────────────────────────────────────
@@ -343,23 +382,25 @@ class AylikFragment : Fragment() {
         v.findViewById<TextView>(R.id.tabKatGider).setOnClickListener { updateKatTab(v, false) }
         v.findViewById<TextView>(R.id.tabKatGelir).setOnClickListener { updateKatTab(v, true) }
 
-        v.findViewById<TextView>(R.id.btnChartPie).setOnClickListener {
-            showPieChart = true
-            updateChartToggle(v)
-            v.findViewById<PieChartView>(R.id.pieChart).setMode(false)
-        }
-        v.findViewById<TextView>(R.id.btnChartBar).setOnClickListener {
-            showPieChart = false
-            updateChartToggle(v)
-            v.findViewById<PieChartView>(R.id.pieChart).setMode(true)
-        }
+        v.findViewById<MaterialButtonToggleGroup>(R.id.chartTypeToggle)
+            .addOnButtonCheckedListener { _, checkedId, isChecked ->
+                if (!isChecked) return@addOnButtonCheckedListener
+                showPieChart = checkedId == R.id.btnChartPie
+                v.findViewById<PieChartView>(R.id.pieChart).setMode(!showPieChart)
+                val state = viewModel.uiState.value
+                val btnGider = v.findViewById<TextView>(R.id.tabKatGider)
+                val showIncome = btnGider.background.constantState ==
+                    ContextCompat.getDrawable(requireContext(), R.drawable.kategori_item_bg)?.constantState
+                val list = if (showIncome) state.gelirKategoriler else state.kategoriler
+                updatePieChart(v, list)
+            }
     }
 
     private fun updateChartToggle(v: View) {
-        val btnPie = v.findViewById<TextView>(R.id.btnChartPie)
-        val btnBar = v.findViewById<TextView>(R.id.btnChartBar)
-        btnPie.setBackgroundResource(if (showPieChart) R.drawable.kategori_item_selected_bg else R.drawable.kategori_item_bg)
-        btnBar.setBackgroundResource(if (!showPieChart) R.drawable.kategori_item_selected_bg else R.drawable.kategori_item_bg)
+        v.findViewById<MaterialButtonToggleGroup>(R.id.chartTypeToggle)?.let { t ->
+            val want = if (showPieChart) R.id.btnChartPie else R.id.btnChartBar
+            if (t.checkedButtonId != want) t.check(want)
+        }
     }
 
     private fun updateKatTab(v: View, showIncome: Boolean) {
@@ -375,19 +416,16 @@ class AylikFragment : Fragment() {
         val list  = if (showIncome) state.gelirKategoriler else state.kategoriler
         v.findViewById<RecyclerView>(R.id.rvKatAnaliz).adapter =
             KategoriAnalizAdapter(list) { kat ->
-                findNavController().navigate(
-                    R.id.action_aylik_to_kategoriDetay,
-                    bundleOf("kat" to kat, "ayOffset" to state.ayOffset)
-                )
+                KategoriIslemleriSheet.show(childFragmentManager, kat, state.ayOffset)
             }
         updatePieChart(v, list)
     }
 
     private val chartColors = listOf(
-        Color.parseColor("#4CAF50"), Color.parseColor("#2196F3"), Color.parseColor("#FF9800"),
-        Color.parseColor("#E91E63"), Color.parseColor("#9C27B0"), Color.parseColor("#00BCD4"),
-        Color.parseColor("#FF5722"), Color.parseColor("#607D8B"), Color.parseColor("#FFC107"),
-        Color.parseColor("#8BC34A")
+        Color.parseColor("#6B8FFF"), Color.parseColor("#4FC3F7"), Color.parseColor("#10B981"),
+        Color.parseColor("#F59E0B"), Color.parseColor("#EF5350"), Color.parseColor("#A78BFA"),
+        Color.parseColor("#F472B6"), Color.parseColor("#22C55E"), Color.parseColor("#38BDF8"),
+        Color.parseColor("#FB7185")
     )
 
     private fun updatePieChart(v: View, list: List<com.example.hesapyonetimi.presentation.aylik.KategoriOzet>) {
@@ -406,10 +444,7 @@ class AylikFragment : Fragment() {
         // Dilime tıklandığında kategori detay aç
         chart.onSliceTap = sliceTap@{ entry ->
             val kat = list.find { it.ad == entry.label } ?: return@sliceTap
-            findNavController().navigate(
-                R.id.action_aylik_to_kategoriDetay,
-                bundleOf("kat" to kat, "ayOffset" to viewModel.uiState.value.ayOffset)
-            )
+            KategoriIslemleriSheet.show(childFragmentManager, kat, viewModel.uiState.value.ayOffset)
         }
     }
 
@@ -424,6 +459,7 @@ class AylikFragment : Fragment() {
                         updateHeader(view, state)
                         updateDateLabels(view, state)
                         timelineAdapter.submitList(state.transactions)
+                        refreshTimelineEmptyState(view)
                         updateKatList(view, state)
                         updateOneri(view, state)
                     }
@@ -450,6 +486,9 @@ class AylikFragment : Fragment() {
         val tvNet = v.findViewById<TextView>(R.id.tv_net)
         tvNet.text = CurrencyFormatter.format(net)
         tvNet.setTextColor(if (net >= 0) Color.parseColor("#A5F3BB") else Color.parseColor("#FFAAAA"))
+        val ozetLine = v.findViewById<TextView>(R.id.tv_ay_ozet_line)
+        // Header kartları zaten Gelir/Gider/Net veriyor; burada sadece dönem adı yeterli.
+        ozetLine?.text = state.ayAdi
     }
 
     private fun updateDateLabels(v: View, state: AylikUiState) {
@@ -464,10 +503,7 @@ class AylikFragment : Fragment() {
             ContextCompat.getDrawable(requireContext(), R.drawable.kategori_item_bg)?.constantState
         val list = if (showIncome) state.gelirKategoriler else state.kategoriler
         rv.adapter = KategoriAnalizAdapter(list) { kat ->
-            findNavController().navigate(
-                R.id.action_aylik_to_kategoriDetay,
-                bundleOf("kat" to kat, "ayOffset" to state.ayOffset)
-            )
+            KategoriIslemleriSheet.show(childFragmentManager, kat, state.ayOffset)
         }
         updatePieChart(v, list)
     }
@@ -553,7 +589,9 @@ class AylikFragment : Fragment() {
                     if (secili) R.color.green_primary else R.color.text_secondary))
             }
         }
+        // UI ve data state'i aynı anda sıfırlansın (Bu Ay)
         guncelle(0)
+        viewModel.setDonem(0)
         butonlar.forEach { (btn, donem) ->
             btn.setOnClickListener { guncelle(donem); viewModel.setDonem(donem) }
         }

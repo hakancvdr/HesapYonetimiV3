@@ -5,13 +5,13 @@
         <layer-list>
             <item>
                 <shape>
-                    <solid android:color="#D1D1D1" />
+                    <solid android:color="@color/border" />
                     <corners android:radius="10dp" />
                 </shape>
             </item>
             <item android:bottom="2dp">
                 <shape>
-                    <solid android:color="#FFFFFF" />
+                    <solid android:color="@color/card_background" />
                     <corners android:radius="10dp" />
                 </shape>
             </item>

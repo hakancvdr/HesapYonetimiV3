@@ -11,6 +11,7 @@ data class Reminder(
     val categoryName: String = "",
     val categoryIcon: String = "",
     val isPaid: Boolean = false,
+    val paidAt: Long? = null,
     val isRecurring: Boolean = false,
     val recurringType: RecurringType? = null,
     val daysUntilDue: Int = 0,
@@ -19,4 +20,7 @@ data class Reminder(
 ) {
     val isOverdue: Boolean
         get() = !isPaid && dueDate < System.currentTimeMillis()
+
+    val calendarDisplayDate: Long
+        get() = if (isPaid && paidAt != null) paidAt else dueDate
 }

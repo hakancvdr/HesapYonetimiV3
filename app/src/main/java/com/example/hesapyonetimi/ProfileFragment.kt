@@ -5,12 +5,16 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.FrameLayout
+import android.widget.Toast
 import android.widget.LinearLayout
 import android.widget.TextView
-import android.widget.Toast
 import androidx.fragment.app.Fragment
 import androidx.navigation.fragment.findNavController
+import com.example.hesapyonetimi.BuildConfig
 import com.example.hesapyonetimi.util.CsvExporter
+import com.google.android.material.dialog.MaterialAlertDialogBuilder
+import com.google.android.material.textfield.TextInputEditText
 import androidx.fragment.app.viewModels
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
@@ -18,12 +22,13 @@ import androidx.lifecycle.repeatOnLifecycle
 import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
-import com.example.hesapyonetimi.ui.AvatarIconAdapter
 import com.example.hesapyonetimi.ui.IconPickerHelper
 import com.example.hesapyonetimi.domain.model.Category
 import com.example.hesapyonetimi.presentation.profile.ProfileCategoryAdapter
 import com.example.hesapyonetimi.presentation.profile.ProfileUiEvent
 import com.example.hesapyonetimi.presentation.profile.ProfileViewModel
+import com.example.hesapyonetimi.presentation.tags.TagManageDialog
+import com.example.hesapyonetimi.ui.EmojiPickerSheet
 import com.google.android.material.progressindicator.LinearProgressIndicator
 import com.google.android.material.snackbar.Snackbar
 import dagger.hilt.android.AndroidEntryPoint
@@ -33,6 +38,8 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.launch
 import java.text.NumberFormat
 import java.util.*
+
+private enum class ProFeature { WALLET, BIOMETRIC, EXPORT, CURRENCY }
 
 @AndroidEntryPoint
 class ProfileFragment : Fragment() {
@@ -74,10 +81,7 @@ class ProfileFragment : Fragment() {
         setupClicks(view)
         observe()
 
-        try {
-            tvAppVersion.text = "v${requireContext().packageManager
-                .getPackageInfo(requireContext().packageName, 0).versionName}"
-        } catch (_: Exception) { tvAppVersion.text = "v1.0" }
+        tvAppVersion.text = "v${BuildConfig.VERSION_NAME}"
     }
 
     private fun bindViews(v: View) {
@@ -98,18 +102,25 @@ class ProfileFragment : Fragment() {
     }
 
     private fun setupClicks(v: View) {
-        v.findViewById<View>(R.id.btnEditAvatar).setOnClickListener { showAvatarPicker() }
         v.findViewById<View>(R.id.btnEditName).setOnClickListener { showEditNameDialog() }
         v.findViewById<View>(R.id.tvUserName).setOnClickListener { showEditNameDialog() }
         v.findViewById<View>(R.id.btnEditBudget).setOnClickListener { showEditBudgetDialog() }
         v.findViewById<View>(R.id.cardCategories).setOnClickListener { showCategoryDialog() }
-        v.findViewById<View>(R.id.cardWallets).setOnClickListener { showProDialog() }
-        v.findViewById<View>(R.id.cardBiometric).setOnClickListener { showProDialog() }
+        v.findViewById<View>(R.id.cardTags).setOnClickListener {
+            TagManageDialog().show(childFragmentManager, "TagManageDialog")
+        }
+        v.findViewById<View>(R.id.cardProPage).setOnClickListener {
+            findNavController().navigate(R.id.proFragment)
+        }
+        v.findViewById<View>(R.id.cardWallets).setOnClickListener { showProDialog(ProFeature.WALLET) }
+        v.findViewById<View>(R.id.cardBiometric).setOnClickListener { showProDialog(ProFeature.BIOMETRIC) }
         v.findViewById<View>(R.id.cardChangePin).setOnClickListener { showChangePinDialog() }
+        v.findViewById<View>(R.id.cardResetSettings).setOnClickListener { showResetSettingsDialog() }
         v.findViewById<View>(R.id.cardSecurityQ).setOnClickListener { showChangeSecurityQDialog() }
         v.findViewById<View>(R.id.cardTheme).setOnClickListener { showThemeDialog() }
-        v.findViewById<View>(R.id.cardExportCsv).setOnClickListener { showProDialog() }
-        v.findViewById<View>(R.id.cardCurrency).setOnClickListener { showProDialog() }
+        v.findViewById<View>(R.id.cardExportCsv).setOnClickListener { showProDialog(ProFeature.EXPORT) }
+        v.findViewById<View>(R.id.cardCurrency).setOnClickListener { showProDialog(ProFeature.CURRENCY) }
+        v.findViewById<View>(R.id.cardWipeFinancialData).setOnClickListener { showWipeFinancialDataDialog() }
         // Para birimi altyazısını güncelle
         updateCurrencySubtitle(v)
     }
@@ -124,7 +135,8 @@ class ProfileFragment : Fragment() {
                         profile to expense
                     }.collectLatest { (profile, expense) ->
                         profile ?: return@collectLatest
-                        tvAvatar.text = profile.avatarEmoji
+                        // Avatar seçimi kaldırıldı; her yerde kullanıcı adı baş harfi gösterilecek.
+                        tvAvatar.text = (profile.displayName.firstOrNull()?.uppercaseChar()?.toString() ?: "K")
                         tvUserName.text = profile.displayName
                         tvThemeSubtitle.text = when (profile.themeMode) {
                             "LIGHT" -> "Açık tema"
@@ -281,14 +293,18 @@ class ProfileFragment : Fragment() {
         val dialog = buildDialog(R.layout.dialog_profile_edit_category, widthRatio = 0.92)
         var selectedEmoji = category.icon
         val tvSelectedEmoji = dialog.findViewById<TextView>(R.id.tvSelectedEmoji)
-        val emojiContainer  = dialog.findViewById<LinearLayout>(R.id.emojiContainer)
         tvSelectedEmoji.text = selectedEmoji
         val iconList =
-            if (category.icon !in categoryIconPresets) listOf(category.icon) + categoryIconPresets
-            else categoryIconPresets
-        IconPickerHelper.bindHorizontalChips(emojiContainer, iconList, category.icon) { e ->
+            if (category.icon !in categoryIconPresets) arrayListOf(category.icon).apply { addAll(categoryIconPresets) }
+            else ArrayList(categoryIconPresets)
+
+        parentFragmentManager.setFragmentResultListener(EmojiPickerSheet.RESULT_KEY, viewLifecycleOwner) { _, b ->
+            val e = b.getString(EmojiPickerSheet.BUNDLE_EMOJI) ?: return@setFragmentResultListener
             selectedEmoji = e
             tvSelectedEmoji.text = e
+        }
+        tvSelectedEmoji.setOnClickListener {
+            EmojiPickerSheet.show(parentFragmentManager, selectedEmoji, iconList)
         }
 
         val etName  = dialog.findViewById<com.google.android.material.textfield.TextInputEditText>(R.id.etCategoryName)
@@ -311,11 +327,15 @@ class ProfileFragment : Fragment() {
         val dialog = buildDialog(R.layout.dialog_profile_add_category, widthRatio = 0.92)
         var selectedEmoji = "💳"
         val tvSelectedEmoji = dialog.findViewById<TextView>(R.id.tvSelectedEmoji)
-        val emojiContainer = dialog.findViewById<LinearLayout>(R.id.emojiContainer)
         tvSelectedEmoji.text = selectedEmoji
-        IconPickerHelper.bindHorizontalChips(emojiContainer, categoryIconPresets, selectedEmoji) { e ->
+        val iconList = ArrayList(categoryIconPresets)
+        parentFragmentManager.setFragmentResultListener(EmojiPickerSheet.RESULT_KEY, viewLifecycleOwner) { _, b ->
+            val e = b.getString(EmojiPickerSheet.BUNDLE_EMOJI) ?: return@setFragmentResultListener
             selectedEmoji = e
             tvSelectedEmoji.text = e
+        }
+        tvSelectedEmoji.setOnClickListener {
+            EmojiPickerSheet.show(parentFragmentManager, selectedEmoji, iconList)
         }
 
         val etName = dialog.findViewById<com.google.android.material.textfield.TextInputEditText>(R.id.etCategoryName)
@@ -348,30 +368,6 @@ class ProfileFragment : Fragment() {
         dialog.show()
     }
 
-    private fun showAvatarPicker() {
-        val avatars = listOf(
-            "👤", "😊", "🧑", "👨", "👩", "🧔", "🦊", "🐼", "🦁", "🐯", "🐸",
-            "🌟", "✨", "💎", "🔥", "🌈", "🚀", "🎯", "🍀", "⚡", "🌙", "☀️",
-            "🎨", "🎵", "🏆", "💼", "🧘", "🐶", "🐱", "🦉", "🌿", "🍕", "☕"
-        )
-        val dialog = Dialog(requireContext())
-        dialog.setContentView(R.layout.dialog_avatar_picker)
-        dialog.window?.setBackgroundDrawableResource(android.R.color.transparent)
-        dialog.window?.setLayout(
-            (resources.displayMetrics.widthPixels * 0.90).toInt(),
-            ViewGroup.LayoutParams.WRAP_CONTENT
-        )
-        val current = viewModel.profile.value?.avatarEmoji ?: "👤"
-        val rv = dialog.findViewById<RecyclerView>(R.id.rvAvatarIcons)
-        rv.layoutManager = GridLayoutManager(requireContext(), 5)
-        rv.adapter = AvatarIconAdapter(avatars, current) { emoji ->
-            viewModel.updateAvatar(emoji)
-            dialog.dismiss()
-        }
-        dialog.findViewById<View>(R.id.btnAvatarCancel).setOnClickListener { dialog.dismiss() }
-        dialog.show()
-    }
-
     private fun buildDialog(layoutRes: Int, widthRatio: Double = 0.90): Dialog {
         val dialog = Dialog(requireContext())
         dialog.setContentView(layoutRes)
@@ -384,11 +380,52 @@ class ProfileFragment : Fragment() {
         findNavController().navigate(R.id.action_profil_to_wallet)
     }
 
-    private fun showProDialog() {
-        com.google.android.material.dialog.MaterialAlertDialogBuilder(requireContext())
-            .setTitle("⭐ Pro Özellik")
-            .setMessage("Bu özellik Pro sürümde kullanılabilecek.\n\nYakında geliyor — takipte kalın!")
+    private fun showProDialog(feature: ProFeature) {
+        val (title, msg) = when (feature) {
+            ProFeature.WALLET ->
+                "Cüzdan (Pro)" to "Birden fazla banka ve nakit hesabını ayrı ayrı takip etmek Pro sürümünde sunulacak."
+            ProFeature.BIOMETRIC ->
+                "Gelişmiş güvenlik (Pro)" to "Ek güvenlik katmanları ve yedekleme seçenekleri Pro ile genişletilecek."
+            ProFeature.EXPORT ->
+                "CSV dışa aktarma (Pro)" to "İşlemlerinizi Excel uyumlu dosya olarak dışa aktarmak Pro özelliği olacak."
+            ProFeature.CURRENCY ->
+                "Para birimi (Pro)" to "Çoklu para birimi ve kur takibi Pro sürümünde planlanıyor."
+        }
+        MaterialAlertDialogBuilder(requireContext())
+            .setTitle("⭐ $title")
+            .setMessage(msg)
             .setPositiveButton("Tamam", null)
+            .show()
+    }
+
+    private fun showWipeFinancialDataDialog() {
+        val input = TextInputEditText(requireContext()).apply { hint = "VERİLERİMİ SİL" }
+        val wrap = FrameLayout(requireContext()).apply {
+            val pad = (22 * resources.displayMetrics.density).toInt()
+            setPadding(pad, pad, pad, 0)
+            addView(input)
+        }
+        MaterialAlertDialogBuilder(requireContext())
+            .setTitle("Tüm finansal verileri sil")
+            .setMessage("İşlemler, hatırlatıcılar, hedefler ve bütçe kayıtları kalıcı olarak silinir. Devam etmek için aşağıya tam metni yazın.")
+            .setView(wrap)
+            .setPositiveButton("Sil") { _, _ ->
+                if (input.text?.toString()?.trim() == "VERİLERİMİ SİL") {
+                    viewModel.wipeAllFinancialData()
+                } else {
+                    Toast.makeText(requireContext(), "Onay metni tam eşleşmedi.", Toast.LENGTH_LONG).show()
+                }
+            }
+            .setNegativeButton("İptal", null)
+            .show()
+    }
+
+    private fun showResetSettingsDialog() {
+        MaterialAlertDialogBuilder(requireContext())
+            .setTitle("Ayarları sıfırla")
+            .setMessage("PIN kaldırılır, biyometrik kapatılır, tema sistem varsayılana ve aylık bütçe limiti sıfırlanır.")
+            .setPositiveButton("Sıfırla") { _, _ -> viewModel.resetAppSettings() }
+            .setNegativeButton("İptal", null)
             .show()
     }
 

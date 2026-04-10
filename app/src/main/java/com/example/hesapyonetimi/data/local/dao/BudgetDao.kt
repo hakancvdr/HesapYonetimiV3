@@ -27,4 +27,7 @@ interface BudgetDao {
     
     @Query("DELETE FROM budgets WHERE yearMonth = :yearMonth")
     suspend fun deleteBudgetsByMonth(yearMonth: String)
+
+    @Query("DELETE FROM budgets")
+    suspend fun deleteAll()
 }

@@ -30,7 +30,13 @@ interface ReminderDao {
     
     @Query("UPDATE reminders SET isPaid = :isPaid WHERE id = :id")
     suspend fun updatePaidStatus(id: Long, isPaid: Boolean)
+
+    @Query("UPDATE reminders SET isPaid = 1, paidAt = :paidAt WHERE id = :id")
+    suspend fun markPaidAt(id: Long, paidAt: Long)
     
     @Query("DELETE FROM reminders WHERE isPaid = 1 AND dueDate < :beforeDate")
     suspend fun deletePaidRemindersBefore(beforeDate: Long)
+
+    @Query("DELETE FROM reminders")
+    suspend fun deleteAll()
 }

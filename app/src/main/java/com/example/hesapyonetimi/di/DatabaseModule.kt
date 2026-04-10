@@ -2,7 +2,16 @@ package com.example.hesapyonetimi.di
 
 import android.content.Context
 import com.example.hesapyonetimi.data.local.AppDatabase
-import com.example.hesapyonetimi.data.local.dao.*
+import com.example.hesapyonetimi.data.local.dao.BudgetDao
+import com.example.hesapyonetimi.data.local.dao.CategoryDao
+import com.example.hesapyonetimi.data.local.dao.GoalContributionDao
+import com.example.hesapyonetimi.data.local.dao.GoalDao
+import com.example.hesapyonetimi.data.local.dao.ReminderDao
+import com.example.hesapyonetimi.data.local.dao.TagDao
+import com.example.hesapyonetimi.data.local.dao.TransactionDao
+import com.example.hesapyonetimi.data.local.dao.TransactionTagDao
+import com.example.hesapyonetimi.data.local.dao.UserProfileDao
+import com.example.hesapyonetimi.data.local.dao.WalletDao
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -60,5 +69,23 @@ object DatabaseModule {
     @Singleton
     fun provideGoalDao(database: AppDatabase): GoalDao {
         return database.goalDao()
+    }
+
+    @Provides
+    @Singleton
+    fun provideGoalContributionDao(database: AppDatabase): GoalContributionDao {
+        return database.goalContributionDao()
+    }
+
+    @Provides
+    @Singleton
+    fun provideTagDao(database: AppDatabase): TagDao {
+        return database.tagDao()
+    }
+
+    @Provides
+    @Singleton
+    fun provideTransactionTagDao(database: AppDatabase): TransactionTagDao {
+        return database.transactionTagDao()
     }
 }

@@ -23,9 +23,12 @@ import kotlinx.coroutines.launch
         ReminderEntity::class,
         UserProfileEntity::class,
         WalletEntity::class,
-        GoalEntity::class
+        GoalEntity::class,
+        GoalContributionEntity::class,
+        TagEntity::class,
+        TransactionTagCrossRef::class
     ],
-    version = 8,
+    version = 11,
     exportSchema = false
 )
 @TypeConverters(Converters::class)
@@ -38,10 +41,66 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun userProfileDao(): UserProfileDao
     abstract fun walletDao(): WalletDao
     abstract fun goalDao(): GoalDao
+    abstract fun goalContributionDao(): GoalContributionDao
+    abstract fun tagDao(): TagDao
+    abstract fun transactionTagDao(): TransactionTagDao
 
     companion object {
+        val MIGRATION_9_10 = object : Migration(9, 10) {
+            override fun migrate(db: MigSQLiteDatabase) {
+                db.execSQL("ALTER TABLE `reminders` ADD COLUMN `paidAt` INTEGER")
+            }
+        }
+
+        val MIGRATION_10_11 = object : Migration(10, 11) {
+            override fun migrate(db: MigSQLiteDatabase) {
+                db.execSQL(
+                    """
+                    CREATE TABLE IF NOT EXISTS `tags` (
+                        `id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                        `name` TEXT NOT NULL,
+                        `color` TEXT,
+                        `createdAt` INTEGER NOT NULL,
+                        `isArchived` INTEGER NOT NULL
+                    )
+                    """.trimIndent()
+                )
+                db.execSQL("CREATE UNIQUE INDEX IF NOT EXISTS `index_tags_name` ON `tags` (`name`)")
+
+                db.execSQL(
+                    """
+                    CREATE TABLE IF NOT EXISTS `transaction_tags` (
+                        `transactionId` INTEGER NOT NULL,
+                        `tagId` INTEGER NOT NULL,
+                        PRIMARY KEY(`transactionId`, `tagId`),
+                        FOREIGN KEY(`transactionId`) REFERENCES `transactions`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE,
+                        FOREIGN KEY(`tagId`) REFERENCES `tags`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE
+                    )
+                    """.trimIndent()
+                )
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_transaction_tags_transactionId` ON `transaction_tags` (`transactionId`)")
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_transaction_tags_tagId` ON `transaction_tags` (`tagId`)")
+            }
+        }
+
         @Volatile
         private var INSTANCE: AppDatabase? = null
+
+        val MIGRATION_8_9 = object : Migration(8, 9) {
+            override fun migrate(db: MigSQLiteDatabase) {
+                db.execSQL(
+                    """
+                    CREATE TABLE IF NOT EXISTS `goal_contributions` (
+                        `id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                        `goalId` INTEGER NOT NULL,
+                        `amount` REAL NOT NULL,
+                        `contributedAt` INTEGER NOT NULL
+                    )
+                    """.trimIndent()
+                )
+                db.execSQL("CREATE INDEX IF NOT EXISTS `index_goal_contributions_goalId` ON `goal_contributions` (`goalId`)")
+            }
+        }
 
         val MIGRATION_7_8 = object : Migration(7, 8) {
             override fun migrate(db: MigSQLiteDatabase) {
@@ -93,7 +152,7 @@ abstract class AppDatabase : RoomDatabase() {
                     AppDatabase::class.java,
                     "hesap_yonetimi_database"
                 )
-                    .addMigrations(MIGRATION_6_7, MIGRATION_7_8)
+                    .addMigrations(MIGRATION_6_7, MIGRATION_7_8, MIGRATION_8_9, MIGRATION_9_10, MIGRATION_10_11)
                     .addCallback(DatabaseCallback())
                     .build()
                 INSTANCE = instance

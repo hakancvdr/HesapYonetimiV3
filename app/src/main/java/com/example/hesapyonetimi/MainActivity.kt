@@ -3,8 +3,11 @@ package com.example.hesapyonetimi
 import android.content.Context
 import android.graphics.Color
 import android.os.Bundle
+import android.content.pm.PackageManager
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.app.AppCompatDelegate
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.core.content.ContextCompat
 import androidx.core.view.WindowInsetsControllerCompat
 import androidx.navigation.NavController
 import androidx.navigation.NavOptions
@@ -17,6 +20,8 @@ import dagger.hilt.android.AndroidEntryPoint
 class MainActivity : AppCompatActivity() {
 
     private lateinit var navController: NavController
+    private val notifPermissionLauncher =
+        registerForActivityResult(ActivityResultContracts.RequestPermission()) { /* no-op */ }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         applyThemeFromPrefs()
@@ -35,20 +40,28 @@ class MainActivity : AppCompatActivity() {
         val bottomNav = findViewById<BottomNavigationView>(R.id.bottom_navigation)
         bottomNav.setupWithNavController(navController)
 
+        // Android 13+: bildirim izni runtime olarak istenir; aksi halde hatırlatıcı bildirimleri görünmez.
+        requestPostNotificationsIfNeeded()
+
         // Bottom nav dışındaki destinasyonlarda (KategoriDetay, Wallet) BottomNav gizle
         navController.addOnDestinationChangedListener { _, destination, _ ->
             val topLevelIds = setOf(
                 R.id.nav_ozet, R.id.nav_gunluk, R.id.nav_aylik,
-                R.id.nav_yaklasan, R.id.nav_hedefler, R.id.nav_profil
+                R.id.nav_yaklasan, R.id.nav_hedefler
             )
             bottomNav.visibility = if (destination.id in topLevelIds)
                 android.view.View.VISIBLE else android.view.View.GONE
-            // Profil sayfasında hiçbir tab seçili görünmesin
-            if (destination.id == R.id.nav_profil) {
-                bottomNav.menu.setGroupCheckable(0, true, false)
-                for (i in 0 until bottomNav.menu.size()) bottomNav.menu.getItem(i).isChecked = false
-                bottomNav.menu.setGroupCheckable(0, true, true)
-            }
+        }
+    }
+
+    private fun requestPostNotificationsIfNeeded() {
+        if (android.os.Build.VERSION.SDK_INT < 33) return
+        val granted = ContextCompat.checkSelfPermission(
+            this,
+            android.Manifest.permission.POST_NOTIFICATIONS
+        ) == PackageManager.PERMISSION_GRANTED
+        if (!granted) {
+            notifPermissionLauncher.launch(android.Manifest.permission.POST_NOTIFICATIONS)
         }
     }
 
@@ -110,7 +123,6 @@ class MainActivity : AppCompatActivity() {
     fun gosterProfil() {
         // nav_profil menüde yok, doğrudan navigate
         val opts = NavOptions.Builder()
-            .setPopUpTo(R.id.nav_ozet, false)
             .setLaunchSingleTop(true)
             .build()
         navController.navigate(R.id.nav_profil, null, opts)

@@ -38,6 +38,6 @@ class ReminderRepositoryImpl @Inject constructor(
     }
     
     override suspend fun markAsPaid(id: Long) {
-        reminderDao.updatePaidStatus(id, true)
+        reminderDao.markPaidAt(id, System.currentTimeMillis())
     }
 }

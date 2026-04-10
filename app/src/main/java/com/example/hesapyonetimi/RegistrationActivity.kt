@@ -28,17 +28,11 @@ class RegistrationActivity : AppCompatActivity() {
     lateinit var userProfileDao: UserProfileDao
 
     private var currentStep = 1
-    private var selectedAvatar = "👤"
     private var selectedQuestionIndex = 0
     private var regPin = ""
     private var savedName = ""
     private var savedAnswer = ""
     private lateinit var pinDots: Array<View>
-
-    private val avatars = listOf(
-        "👤","😊","🧑","👨","👩","🧔","👱","🧒",
-        "🐶","🐱","🦊","🐻","🐼","🦁","🌟","🚀"
-    )
 
     private val questions = listOf(
         "İlk evcil hayvanınızın adı nedir?",
@@ -67,16 +61,19 @@ class RegistrationActivity : AppCompatActivity() {
         val bottomBar = findViewById<View>(R.id.bottomButtonBar)
         ViewCompat.setOnApplyWindowInsetsListener(bottomBar) { v, insets ->
             val navBarHeight = insets.getInsets(WindowInsetsCompat.Type.navigationBars()).bottom
+            // IME (klavye) için ayrıca padding verme: adjustResize zaten pencereyi küçültür.
+            // Burada sadece navigation bar padding'i yeterli; aksi halde içerik iki kez yukarı itilir.
             v.setPadding(dp16, dp16, dp16, navBarHeight + dp16)
             insets
         }
 
-        // Klavye açıldığında ScrollView'ı keyboard yüksekliği kadar kaydır
+        // Klavye açılınca ScrollView altına IME padding ver (tek kaynak) ve odaklanan alanı görünür yap.
+        // Bottom bar IME padding almadığı için "çift yukarı itme" bug'ı oluşmaz.
         val scrollView = findViewById<ScrollView>(R.id.regScrollView)
         ViewCompat.setOnApplyWindowInsetsListener(scrollView) { v, insets ->
             val imeBottom = insets.getInsets(WindowInsetsCompat.Type.ime()).bottom
             v.setPadding(0, 0, 0, imeBottom)
-            // Klavye açıkken odaklanan alana kaydır
+
             if (imeBottom > 0) {
                 val focused = currentFocus
                 if (focused != null) {
@@ -84,9 +81,9 @@ class RegistrationActivity : AppCompatActivity() {
                         scrollView.requestChildRectangleOnScreen(
                             focused,
                             android.graphics.Rect(0, 0, focused.width, focused.height),
-                            false
+                            true
                         )
-                    }, 100)
+                    }, 120)
                 }
             }
             insets
@@ -97,10 +94,10 @@ class RegistrationActivity : AppCompatActivity() {
             findViewById(R.id.pin_dot3), findViewById(R.id.pin_dot4)
         )
 
-        setupAvatarGrid()
         setupNumpad()
         setupNavigation()
         setupAnswerField()
+        setupKeyboardAutoScroll()
         showStep(1)
     }
 
@@ -109,8 +106,7 @@ class RegistrationActivity : AppCompatActivity() {
     private fun showStep(step: Int) {
         currentStep = step
         val containers = listOf(
-            R.id.step1Container, R.id.step2Container,
-            R.id.step3Container, R.id.step4Container
+            R.id.step1Container, R.id.step2Container, R.id.step4Container
         )
         containers.forEachIndexed { i, id ->
             findViewById<View>(id).visibility = if (i + 1 == step) View.VISIBLE else View.GONE
@@ -123,17 +119,17 @@ class RegistrationActivity : AppCompatActivity() {
 
         when (step) {
             1 -> btnNext.text = "Başlayalım →"
-            4 -> btnNext.visibility = View.GONE  // PIN adımında buton gizli (numpad ile ilerler)
+            3 -> btnNext.visibility = View.GONE  // PIN adımında buton gizli (numpad ile ilerler)
             else -> { btnNext.text = "İleri →"; btnNext.visibility = View.VISIBLE }
         }
     }
 
     private fun updateStepIndicator(step: Int) {
-        val dots = listOf(R.id.dot1, R.id.dot2, R.id.dot3, R.id.dot4)
+        val dots = listOf(R.id.dot1, R.id.dot2, R.id.dot3)
         dots.forEachIndexed { i, id ->
             findViewById<View>(id).alpha = if (i + 1 <= step) 1.0f else 0.33f
         }
-        val titles = listOf("Hoş Geldiniz", "Profiliniz", "Güvenlik", "PIN Oluştur")
+        val titles = listOf("Hoş Geldiniz", "Profiliniz", "PIN Oluştur")
         findViewById<TextView>(R.id.tvStepTitle).text = "Adım $step — ${titles[step - 1]}"
     }
 
@@ -154,9 +150,6 @@ class RegistrationActivity : AppCompatActivity() {
                     return
                 }
                 savedName = name   // view GONE olunca kaybolmayacak şekilde sakla
-                showStep(3)
-            }
-            3 -> {
                 val answer = findViewById<TextInputEditText>(R.id.etAnswer).text?.toString()?.trim() ?: ""
                 if (answer.isBlank()) {
                     findViewById<TextInputLayout>(R.id.tilAnswer).error = "Lütfen cevap girin"
@@ -168,7 +161,7 @@ class RegistrationActivity : AppCompatActivity() {
                 ) {
                     R.id.rq0 -> 0; R.id.rq1 -> 1; R.id.rq2 -> 2; else -> 3
                 }
-                showStep(4)
+                showStep(3)
             }
         }
     }
@@ -186,26 +179,26 @@ class RegistrationActivity : AppCompatActivity() {
         }
     }
 
-    // ── Avatar grid ───────────────────────────────────────────────────────────
+    private fun setupKeyboardAutoScroll() {
+        val scrollView = findViewById<ScrollView>(R.id.regScrollView)
+        val etName = findViewById<TextInputEditText>(R.id.etName)
+        val etAnswer = findViewById<TextInputEditText>(R.id.etAnswer)
 
-    private fun setupAvatarGrid() {
-        val grid = findViewById<GridLayout>(R.id.avatarGrid)
-        val tvSelected = findViewById<TextView>(R.id.tvSelectedAvatar)
-        grid.removeAllViews()
-        avatars.forEach { emoji ->
-            val tv = TextView(this).apply {
-                text = emoji; textSize = 26f; gravity = android.view.Gravity.CENTER
-                setPadding(12, 12, 12, 12)
-                setOnClickListener {
-                    selectedAvatar = emoji
-                    tvSelected.text = emoji
-                }
-            }
-            val params = GridLayout.LayoutParams().apply {
-                width = 0; height = GridLayout.LayoutParams.WRAP_CONTENT
-                columnSpec = GridLayout.spec(GridLayout.UNDEFINED, 1, 1f)
-            }
-            grid.addView(tv, params)
+        fun scrollTo(v: View) {
+            scrollView.postDelayed({
+                scrollView.requestChildRectangleOnScreen(
+                    v,
+                    android.graphics.Rect(0, 0, v.width, v.height),
+                    true
+                )
+            }, 120)
+        }
+
+        etName.setOnFocusChangeListener { v, hasFocus ->
+            if (hasFocus) scrollTo(v)
+        }
+        etAnswer.setOnFocusChangeListener { v, hasFocus ->
+            if (hasFocus) scrollTo(v)
         }
     }
 
@@ -261,17 +254,15 @@ class RegistrationActivity : AppCompatActivity() {
             .putLong("son_giris_zamani", System.currentTimeMillis())
             // SharedPreferences'a da kaydet (Room yavaş gelirse fallback)
             .putString("user_display_name", name)
-            .putString("user_avatar", selectedAvatar)
             .apply()
 
         lifecycleScope.launch {
             // Var olan profili güncelle, yoksa oluştur
             val existing = userProfileDao.getProfileOnce()
             if (existing == null) {
-                userProfileDao.upsertProfile(UserProfileEntity(displayName = name, avatarEmoji = selectedAvatar))
+                userProfileDao.upsertProfile(UserProfileEntity(displayName = name))
             } else {
                 userProfileDao.updateName(name)
-                userProfileDao.updateAvatar(selectedAvatar)
             }
             startActivity(Intent(this@RegistrationActivity, MainActivity::class.java))
             finish()

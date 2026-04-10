@@ -12,6 +12,7 @@ data class ReminderEntity(
     val dueDate: Long,
     val categoryId: Long = 0,
     val isPaid: Boolean = false,
+    val paidAt: Long? = null,
     val isRecurring: Boolean = false,
     val recurringType: RecurringType? = null,
     val totalDonem: Int = 0,      // 0 = sonsuz değil, sınırlı dönem sayısı

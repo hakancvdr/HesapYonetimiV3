@@ -27,22 +27,33 @@ class TimelineAdapter(
 
     private var rows: List<TimelineRow> = emptyList()
     private var allTransactions: List<Transaction> = emptyList()
+    private var lastFilterQuery: String = ""
     private val dateFmt = SimpleDateFormat("d MMMM yyyy  —  EEEE", Locale("tr"))
     private val timeFmt = SimpleDateFormat("HH:mm", Locale.getDefault())
 
     fun submitList(transactions: List<Transaction>) {
         allTransactions = transactions
-        rebuildRows(transactions)
-    }
-
-    fun filter(query: String) {
-        val filtered = if (query.isBlank()) allTransactions
-        else allTransactions.filter {
-            it.description.contains(query, ignoreCase = true) ||
-            it.categoryName.contains(query, ignoreCase = true)
+        val filtered = if (lastFilterQuery.isBlank()) transactions
+        else transactions.filter {
+            it.description.contains(lastFilterQuery, ignoreCase = true) ||
+                it.categoryName.contains(lastFilterQuery, ignoreCase = true)
         }
         rebuildRows(filtered)
     }
+
+    fun filter(query: String) {
+        lastFilterQuery = query.trim()
+        val filtered = if (lastFilterQuery.isBlank()) allTransactions
+        else allTransactions.filter {
+            it.description.contains(lastFilterQuery, ignoreCase = true) ||
+            it.categoryName.contains(lastFilterQuery, ignoreCase = true)
+        }
+        rebuildRows(filtered)
+    }
+
+    /** Arama metni dolu, dönemde işlem var ama eşleşme yok */
+    fun shouldShowSearchEmpty(): Boolean =
+        lastFilterQuery.isNotEmpty() && allTransactions.isNotEmpty() && rows.isEmpty()
 
     private fun rebuildRows(transactions: List<Transaction>) {
         val newRows = mutableListOf<TimelineRow>()

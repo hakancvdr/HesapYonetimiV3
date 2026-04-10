@@ -36,6 +36,8 @@ class PieChartView @JvmOverloads constructor(
 
     // Legend touch areas: index in allEntries → Rect
     private val legendRects = mutableMapOf<Int, RectF>()
+    private var animateIn = true
+    private var animProgress = 1f
 
     fun setData(data: List<PieEntry>) {
         allEntries  = data.filter { it.value > 0f }
@@ -43,6 +45,8 @@ class PieChartView @JvmOverloads constructor(
         selectedIdx = -1
         sliceAngles.clear()
         legendRects.clear()
+        animateIn = true
+        animProgress = 0f
         requestLayout()
         invalidate()
     }
@@ -52,6 +56,10 @@ class PieChartView @JvmOverloads constructor(
     override fun onDraw(canvas: Canvas) {
         super.onDraw(canvas)
         if (allEntries.isEmpty()) return
+        if (animateIn) {
+            animProgress = (animProgress + 0.08f).coerceAtMost(1f)
+            if (animProgress >= 1f) animateIn = false else postInvalidateOnAnimation()
+        }
         if (showBar) drawBar(canvas) else drawPie(canvas)
         drawLegend(canvas)
     }
@@ -71,7 +79,7 @@ class PieChartView @JvmOverloads constructor(
         sliceAngles.clear()
         var startAngle = -90f
         visible.forEachIndexed { visIdx, entry ->
-            val sweep = (entry.value / total) * 360f
+            val sweep = (entry.value / total) * 360f * animProgress
             val globalIdx = allEntries.indexOf(entry)
             val isSelected = globalIdx == selectedIdx
             val dr = if (isSelected) r * 0.08f else 0f
@@ -133,7 +141,7 @@ class PieChartView @JvmOverloads constructor(
         visible.forEachIndexed { i, entry ->
             val globalIdx  = allEntries.indexOf(entry)
             val bx         = startX + i * (barArea / visible.size)
-            val bh         = (entry.value / maxVal) * bottom * 0.88f
+            val bh         = (entry.value / maxVal) * bottom * 0.88f * animProgress
             val top        = bottom - bh
             val isSelected = globalIdx == selectedIdx
             paint.color = entry.color

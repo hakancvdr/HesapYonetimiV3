@@ -1,7 +1,12 @@
 package com.example.hesapyonetimi.presentation.profile
 
+import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.hesapyonetimi.data.local.dao.BudgetDao
+import com.example.hesapyonetimi.data.local.dao.GoalContributionDao
+import com.example.hesapyonetimi.data.local.dao.GoalDao
+import com.example.hesapyonetimi.data.local.dao.ReminderDao
 import com.example.hesapyonetimi.data.local.dao.TransactionDao
 import com.example.hesapyonetimi.data.local.dao.UserProfileDao
 import com.example.hesapyonetimi.data.local.entity.CategoryEntity
@@ -12,6 +17,7 @@ import com.example.hesapyonetimi.domain.model.Category
 import com.example.hesapyonetimi.domain.model.Transaction
 import com.example.hesapyonetimi.domain.repository.CategoryRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
+import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
@@ -32,10 +38,15 @@ sealed class ProfileUiEvent {
 
 @HiltViewModel
 class ProfileViewModel @Inject constructor(
+    @ApplicationContext private val appContext: Context,
     private val userProfileDao: UserProfileDao,
     private val categoryRepository: CategoryRepository,
     private val categoryDao: CategoryDao,
-    private val transactionDao: TransactionDao
+    private val transactionDao: TransactionDao,
+    private val reminderDao: ReminderDao,
+    private val goalDao: GoalDao,
+    private val budgetDao: BudgetDao,
+    private val goalContributionDao: GoalContributionDao
 ) : ViewModel() {
 
     val profile: StateFlow<UserProfileEntity?> = userProfileDao.getProfile()
@@ -152,6 +163,31 @@ class ProfileViewModel @Inject constructor(
 
     fun deleteCategory(category: Category) {
         viewModelScope.launch { categoryRepository.deleteCategory(category) }
+    }
+
+    /** İşlemler, hatırlatıcılar, hedefler, bütçe kayıtları ve katkı geçmişi — kategoriler kalır */
+    fun wipeAllFinancialData() {
+        viewModelScope.launch {
+            goalContributionDao.deleteAll()
+            transactionDao.deleteAll()
+            reminderDao.deleteAll()
+            goalDao.deleteAll()
+            budgetDao.deleteAll()
+            _uiEvent.emit(ProfileUiEvent.ShowMessage("Finansal veriler silindi."))
+        }
+    }
+
+    fun resetAppSettings() {
+        viewModelScope.launch {
+            userProfileDao.updateThemeMode("SYSTEM")
+            userProfileDao.updateBudgetLimit(0.0)
+            appContext.getSharedPreferences("HesapPrefs", Context.MODE_PRIVATE).edit()
+                .remove("kullanici_pin")
+                .putBoolean("biometric_enabled", false)
+                .apply()
+            _uiEvent.emit(ProfileUiEvent.ThemeChanged("SYSTEM"))
+            _uiEvent.emit(ProfileUiEvent.ShowMessage("PIN, biyometrik ve tema varsayılana alındı."))
+        }
     }
 
     // TransactionEntity → Transaction with category join

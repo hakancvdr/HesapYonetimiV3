@@ -1,0 +1,7 @@
+<resources>
+    <!-- BottomSheetDialogTheme night modda da DayNight parent ile çalışsın -->
+    <style name="App.BottomSheetDialog" parent="Theme.Material3.DayNight.BottomSheetDialog">
+        <item name="bottomSheetStyle">@style/App.BottomSheet</item>
+        <item name="android:backgroundDimAmount">0.45</item>
+    </style>
+</resources>

@@ -178,17 +178,10 @@ class AddTransactionDialog : BottomSheetDialogFragment() {
             }
         }
 
-        // Etiket chip'leri
+        // Etiket chip'leri (DB'den)
+        val tvTagsTitle = view.findViewById<View>(R.id.tvTagsTitle)
         val chipGroupTags = view.findViewById<ChipGroup>(R.id.chipGroupTags)
-        val predefinedTags = listOf("Fatura", "Market", "Yemek", "Ulaşım", "Kira", "Abonelik", "Sağlık", "Eğlence")
-        predefinedTags.forEach { tag ->
-            val chip = Chip(requireContext()).apply {
-                text = tag
-                isCheckable = true
-                isChecked = false
-            }
-            chipGroupTags.addView(chip)
-        }
+        val tagIdByChipId = mutableMapOf<Int, Long>()
 
         // Tekrarlayan toggle
         val switchRecurring = view.findViewById<androidx.appcompat.widget.SwitchCompat>(R.id.switchRecurring)
@@ -219,10 +212,13 @@ class AddTransactionDialog : BottomSheetDialogFragment() {
             }
             val amount = amountStr.toDoubleOrNull() ?: 0.0
             val recurringDays = etRecurringDays.text?.toString()?.toIntOrNull() ?: 30
-            val selectedTags = (0 until chipGroupTags.childCount)
-                .map { chipGroupTags.getChildAt(it) as Chip }
-                .filter { it.isChecked }
-                .joinToString(",") { it.text.toString() }
+            val selectedTagIds = tagIdByChipId
+                .filter { (chipId, _) -> (view.findViewById<Chip>(chipId)?.isChecked == true) }
+                .values
+                .toList()
+            val selectedTagsCsv = selectedTagIds.mapNotNull { id ->
+                viewModel.tags.value.firstOrNull { it.id == id }?.name
+            }.joinToString(",")
             viewModel.addTransaction(
                 amount = amount,
                 categoryId = cat.id,
@@ -232,10 +228,37 @@ class AddTransactionDialog : BottomSheetDialogFragment() {
                 walletId = selectedWalletId,
                 isRecurring = isRecurring,
                 recurringDays = recurringDays,
-                tags = selectedTags
+                tags = selectedTagsCsv,
+                tagIds = selectedTagIds
             )
             toast("✅ İşlem eklendi!")
             dismiss()
+        }
+
+        // Tags observe
+        viewLifecycleOwner.lifecycleScope.launch {
+            viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
+                viewModel.tags.collect { tags ->
+                    tagIdByChipId.clear()
+                    chipGroupTags.removeAllViews()
+                    if (tags.isEmpty()) {
+                        tvTagsTitle?.visibility = View.GONE
+                        chipGroupTags.visibility = View.GONE
+                        return@collect
+                    }
+                    tvTagsTitle?.visibility = View.VISIBLE
+                    chipGroupTags.visibility = View.VISIBLE
+                    tags.forEach { t ->
+                        val chip = Chip(requireContext()).apply {
+                            text = t.name
+                            isCheckable = true
+                            isChecked = false
+                        }
+                        chipGroupTags.addView(chip)
+                        tagIdByChipId[chip.id] = t.id
+                    }
+                }
+            }
         }
     }
 

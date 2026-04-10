@@ -80,9 +80,9 @@ class HatirlaticiAdapter(
         if (r.isRecurring && r.recurringType != null) {
             holder.tekrar.visibility = View.VISIBLE
             holder.tekrar.text = when (r.recurringType.name) {
-                "MONTHLY" -> "🔁 Her ay"
-                "YEARLY" -> "🔁 Her yıl"
-                "WEEKLY" -> "🔁 Her hafta"
+                "MONTHLY" -> "🔁 Aylık"
+                "YEARLY" -> "🔁 Yıllık"
+                "WEEKLY" -> "🔁 Haftalık"
                 else -> ""
             }
         } else {
@@ -90,16 +90,19 @@ class HatirlaticiAdapter(
         }
 
         holder.odendi.setOnClickListener { onOdendi(r.id) }
+        holder.itemView.setOnClickListener { onDuzenle(r) }
 
-        // Ödendi ise soluk göster, buton gizle
+        // Ödendi ise soluk + üstü çizili, buton gizle
         if (r.isPaid) {
-            holder.itemView.alpha = 0.5f
+            holder.itemView.alpha = 0.52f
+            holder.baslik.paintFlags = holder.baslik.paintFlags or Paint.STRIKE_THRU_TEXT_FLAG
             holder.odendi.visibility = View.GONE
             holder.kalanGun.text = "✓ Ödendi"
             holder.kalanGun.setTextColor(ContextCompat.getColor(ctx, R.color.green_primary))
             holder.cizgi.setBackgroundColor(ContextCompat.getColor(ctx, R.color.green_primary))
         } else {
             holder.itemView.alpha = 1f
+            holder.baslik.paintFlags = holder.baslik.paintFlags and Paint.STRIKE_THRU_TEXT_FLAG.inv()
             holder.odendi.visibility = View.VISIBLE
         }
     }

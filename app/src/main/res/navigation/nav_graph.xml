@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="utf-8"?>
+<navigation xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/nav_graph"
+    app:startDestination="@id/nav_ozet">
+
+    <fragment
+        android:id="@+id/nav_ozet"
+        android:name="com.example.hesapyonetimi.DashboardFragment"
+        android:label="Anasayfa" />
+
+    <fragment
+        android:id="@+id/nav_gunluk"
+        android:name="com.example.hesapyonetimi.GunlukFragment"
+        android:label="Günlük" />
+
+    <fragment
+        android:id="@+id/nav_aylik"
+        android:name="com.example.hesapyonetimi.AylikFragment"
+        android:label="Aylık">
+        <action
+            android:id="@+id/action_aylik_to_kategoriDetay"
+            app:destination="@id/kategoriDetayFragment"
+            app:enterAnim="@anim/slide_in_right"
+            app:exitAnim="@anim/slide_out_left"
+            app:popEnterAnim="@anim/slide_in_left"
+            app:popExitAnim="@anim/slide_out_right" />
+    </fragment>
+
+    <fragment
+        android:id="@+id/nav_yaklasan"
+        android:name="com.example.hesapyonetimi.YaklasanFragment"
+        android:label="Yaklaşan" />
+
+    <fragment
+        android:id="@+id/nav_profil"
+        android:name="com.example.hesapyonetimi.ProfileFragment"
+        android:label="Profil">
+        <action
+            android:id="@+id/action_profil_to_wallet"
+            app:destination="@id/walletFragment"
+            app:enterAnim="@anim/slide_in_right"
+            app:exitAnim="@anim/slide_out_left"
+            app:popEnterAnim="@anim/slide_in_left"
+            app:popExitAnim="@anim/slide_out_right" />
+    </fragment>
+
+    <fragment
+        android:id="@+id/kategoriDetayFragment"
+        android:name="com.example.hesapyonetimi.presentation.aylik.KategoriDetayFragment"
+        android:label="Kategori Detay">
+        <argument
+            android:name="kat"
+            app:argType="com.example.hesapyonetimi.presentation.aylik.KategoriOzet" />
+        <argument
+            android:name="ayOffset"
+            app:argType="integer"
+            android:defaultValue="0" />
+    </fragment>
+
+    <fragment
+        android:id="@+id/walletFragment"
+        android:name="com.example.hesapyonetimi.presentation.wallet.WalletFragment"
+        android:label="Cüzdanlar" />
+
+    <fragment
+        android:id="@+id/nav_hedefler"
+        android:name="com.example.hesapyonetimi.presentation.goals.GoalFragment"
+        android:label="Hedefler" />
+
+    <fragment
+        android:id="@+id/proFragment"
+        android:name="com.example.hesapyonetimi.presentation.pro.ProFragment"
+        android:label="PRO" />
+
+</navigation>

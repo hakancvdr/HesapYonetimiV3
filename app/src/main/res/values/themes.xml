@@ -27,8 +27,8 @@
         <item name="cornerSize">20dp</item>
     </style>
 
-    <!-- BottomSheetDialog — daha belirgin yuvarlak üst köşe + dim overlay -->
-    <style name="App.BottomSheetDialog" parent="Theme.Material3.Light.BottomSheetDialog">
+    <!-- BottomSheetDialog — night mod ile uyumlu olmalı -->
+    <style name="App.BottomSheetDialog" parent="Theme.Material3.DayNight.BottomSheetDialog">
         <item name="bottomSheetStyle">@style/App.BottomSheet</item>
         <item name="android:backgroundDimAmount">0.45</item>
     </style>

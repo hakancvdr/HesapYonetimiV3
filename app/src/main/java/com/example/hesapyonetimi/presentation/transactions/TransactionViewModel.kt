@@ -2,6 +2,10 @@ package com.example.hesapyonetimi.presentation.transactions
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.hesapyonetimi.data.local.dao.TagDao
+import com.example.hesapyonetimi.data.local.dao.TransactionTagDao
+import com.example.hesapyonetimi.data.local.entity.TagEntity
+import com.example.hesapyonetimi.data.local.entity.TransactionTagCrossRef
 import com.example.hesapyonetimi.domain.model.Category
 import com.example.hesapyonetimi.domain.model.Transaction
 import com.example.hesapyonetimi.domain.repository.CategoryRepository
@@ -23,11 +27,16 @@ data class TransactionUiState(
 @HiltViewModel
 class TransactionViewModel @Inject constructor(
     private val transactionRepository: TransactionRepository,
-    private val categoryRepository: CategoryRepository
+    private val categoryRepository: CategoryRepository,
+    private val tagDao: TagDao,
+    private val transactionTagDao: TransactionTagDao
 ) : ViewModel() {
     
     private val _uiState = MutableStateFlow(TransactionUiState(isLoading = true))
     val uiState: StateFlow<TransactionUiState> = _uiState.asStateFlow()
+
+    val tags: StateFlow<List<TagEntity>> = tagDao.observeActive()
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
     
     init {
         loadData()
@@ -66,7 +75,8 @@ class TransactionViewModel @Inject constructor(
         walletId: Long? = null,
         isRecurring: Boolean = false,
         recurringDays: Int = 30,
-        tags: String = ""
+        tags: String = "",
+        tagIds: List<Long> = emptyList()
     ) {
         viewModelScope.launch {
             try {
@@ -82,7 +92,12 @@ class TransactionViewModel @Inject constructor(
                     tags = tags
                 )
                 
-                transactionRepository.insertTransaction(transaction)
+                val txId = transactionRepository.insertTransaction(transaction)
+                if (tagIds.isNotEmpty() && txId > 0) {
+                    transactionTagDao.insertAll(tagIds.distinct().map { tagId ->
+                        TransactionTagCrossRef(transactionId = txId, tagId = tagId)
+                    })
+                }
                 
                 _uiState.value = _uiState.value.copy(
                     successMessage = "İşlem başarıyla eklendi!"
@@ -119,6 +134,7 @@ class TransactionViewModel @Inject constructor(
     fun deleteTransaction(transaction: Transaction) {
         viewModelScope.launch {
             try {
+                if (transaction.id > 0) transactionTagDao.deleteForTransaction(transaction.id)
                 transactionRepository.deleteTransaction(transaction)
                 _uiState.value = _uiState.value.copy(
                     successMessage = "İşlem silindi!"
