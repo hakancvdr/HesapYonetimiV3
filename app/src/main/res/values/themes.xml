@@ -9,10 +9,8 @@
 
     <style name="Theme.HesapYonetimi" parent="Base.Theme.HesapYonetimi" />
 
-    <style name="TextAppearance.App.NavigationDrawer" parent="TextAppearance.Material3.TitleMedium">
-        <item name="android:textSize">17sp</item>
-        <item name="android:textAlignment">center</item>
-        <item name="android:gravity">center_horizontal</item>
+    <style name="TextAppearance.App.NavigationDrawer" parent="TextAppearance.Material3.BodyLarge">
+        <item name="android:textSize">15sp</item>
     </style>
 
     <style name="ThemeOverlay.App.NavigationDrawer" parent="ThemeOverlay.Material3.NavigationView">

@@ -1,6 +1,7 @@
 package com.example.hesapyonetimi.adapter
 
 import android.view.LayoutInflater
+import android.view.View
 import android.view.ViewGroup
 import androidx.core.content.ContextCompat
 import androidx.recyclerview.widget.RecyclerView
@@ -25,12 +26,26 @@ class TransactionAdapter(
     override fun onBindViewHolder(holder: TransactionViewHolder, position: Int) {
         val islem = transactionList[position]
 
-        holder.binding.tvIslemAciklama.text = islem.title
+        val rawTitle = islem.title.trim()
+        val cat = islem.category.trim()
+        val useCategoryOnly = rawTitle.isEmpty() || rawTitle.equals(cat, ignoreCase = true)
+        holder.binding.tvIslemAciklama.text = if (useCategoryOnly) cat else rawTitle
+
         val recurringTag = if (islem.transaction?.isRecurring == true) " 🔁" else ""
-        holder.binding.tvIslemKategori.text = if (islem.time.isNotEmpty())
-            "${islem.category} · ${islem.time}$recurringTag"
-        else
-            "${islem.category}$recurringTag"
+        val subtitle = buildString {
+            if (!useCategoryOnly) {
+                append(cat)
+                if (islem.time.isNotEmpty()) append(" · ")
+            }
+            if (islem.time.isNotEmpty()) append(islem.time)
+            append(recurringTag)
+        }.trim()
+        if (subtitle.isEmpty()) {
+            holder.binding.tvIslemKategori.visibility = View.GONE
+        } else {
+            holder.binding.tvIslemKategori.visibility = View.VISIBLE
+            holder.binding.tvIslemKategori.text = subtitle
+        }
 
         val ctx = holder.itemView.context
         val incomeC = ContextCompat.getColor(ctx, R.color.income_green)

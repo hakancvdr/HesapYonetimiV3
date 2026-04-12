@@ -59,7 +59,7 @@
                         android:background="@drawable/bg_circle_outline_primary"
                         android:clickable="true"
                         android:focusable="true"
-                        android:contentDescription="İşlem ekle" />
+                        android:contentDescription="@string/gunluk_cd_add_transaction" />
                 </LinearLayout>
 
                 <LinearLayout
@@ -131,7 +131,7 @@
                         android:layout_height="match_parent"
                         android:layout_weight="1"
                         android:gravity="center"
-                        android:text="💸  Gider"
+                        android:text="@string/gunluk_toggle_expense"
                         android:textSize="13sp"
                         android:textStyle="bold"
                         android:textColor="@color/green_primary"
@@ -145,7 +145,7 @@
                         android:layout_height="match_parent"
                         android:layout_weight="1"
                         android:gravity="center"
-                        android:text="💰  Gelir"
+                        android:text="@string/gunluk_toggle_income"
                         android:textSize="13sp"
                         android:textStyle="bold"
                         android:textColor="@color/text_secondary"
@@ -198,7 +198,7 @@
                             android:layout_width="0dp"
                             android:layout_height="wrap_content"
                             android:layout_weight="1"
-                            android:text="İşlem Ekle"
+                            android:text="@string/gunluk_form_title"
                             android:textSize="15sp"
                             android:textStyle="bold"
                             android:textColor="@color/text_primary" />
@@ -221,13 +221,13 @@
                         android:paddingStart="16dp"
                         android:paddingEnd="16dp"
                         android:paddingBottom="16dp"
-                        android:visibility="gone">
+                        android:visibility="visible">
 
                         <!-- 1. Tutar -->
                         <TextView
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:text="Tutar"
+                            android:text="@string/label_amount"
                             android:textSize="13sp"
                             android:textColor="@color/text_secondary"
                             android:layout_marginBottom="6dp" />
@@ -258,7 +258,60 @@
                                 android:textSize="16sp" />
                         </com.google.android.material.textfield.TextInputLayout>
 
-                        <!-- 2. Tarih -->
+                        <!-- 3. Kategori -->
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="@string/label_category"
+                            android:textSize="13sp"
+                            android:textColor="@color/text_secondary"
+                            android:layout_marginBottom="8dp" />
+
+                        <androidx.recyclerview.widget.RecyclerView
+                            android:id="@+id/rv_kategoriler"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:nestedScrollingEnabled="false"
+                            android:layout_marginBottom="10dp" />
+
+                        <LinearLayout
+                            android:id="@+id/form_details_toggle_row"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:orientation="horizontal"
+                            android:gravity="center_vertical"
+                            android:paddingTop="4dp"
+                            android:paddingBottom="8dp"
+                            android:background="?attr/selectableItemBackground"
+                            android:clickable="true"
+                            android:focusable="true">
+
+                            <TextView
+                                android:id="@+id/tv_form_details_toggle"
+                                android:layout_width="0dp"
+                                android:layout_height="wrap_content"
+                                android:layout_weight="1"
+                                android:text="@string/gunluk_details_expand"
+                                android:textColor="@color/green_primary"
+                                android:textSize="13sp"
+                                android:textStyle="bold" />
+
+                            <TextView
+                                android:id="@+id/iv_form_details_chevron"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="▼"
+                                android:textSize="12sp"
+                                android:textColor="@color/green_primary" />
+                        </LinearLayout>
+
+                        <LinearLayout
+                            android:id="@+id/form_extra_details"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:orientation="vertical"
+                            android:visibility="gone">
+
                         <LinearLayout
                             android:id="@+id/tarih_row"
                             android:layout_width="match_parent"
@@ -290,27 +343,11 @@
                                 android:focusable="true"/>
                         </LinearLayout>
 
-                        <!-- 3. Kategori -->
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="Kategori"
-                            android:textSize="13sp"
-                            android:textColor="@color/text_secondary"
-                            android:layout_marginBottom="8dp" />
-
-                        <androidx.recyclerview.widget.RecyclerView
-                            android:id="@+id/rv_kategoriler"
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:nestedScrollingEnabled="false"
-                            android:layout_marginBottom="16dp" />
-
                         <!-- 4. Açıklama -->
                         <TextView
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:text="Açıklama (opsiyonel)"
+                            android:text="@string/hint_description_optional"
                             android:textSize="13sp"
                             android:textColor="@color/text_secondary"
                             android:layout_marginBottom="6dp" />
@@ -341,7 +378,7 @@
                         <TextView
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:text="Etiketler"
+                            android:text="@string/label_tags"
                             android:textSize="13sp"
                             android:textColor="@color/text_secondary"
                             android:layout_marginBottom="6dp" />
@@ -357,7 +394,7 @@
                         <TextView
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:text="Cüzdan"
+                            android:text="@string/label_wallet"
                             android:textColor="@color/text_secondary"
                             android:textSize="12sp"
                             android:layout_marginBottom="6dp"/>
@@ -370,12 +407,14 @@
                             android:nestedScrollingEnabled="false"
                             android:layout_marginBottom="14dp"/>
 
+                        </LinearLayout>
+
                         <!-- Kaydet -->
                         <com.google.android.material.button.MaterialButton
                             android:id="@+id/btn_kaydet"
                             android:layout_width="match_parent"
                             android:layout_height="52dp"
-                            android:text="Gider Ekle"
+                            android:text="@string/gunluk_add_expense"
                             android:textSize="14sp"
                             app:backgroundTint="@color/green_primary"
                             app:cornerRadius="12dp" />
@@ -411,7 +450,7 @@
                             android:layout_width="0dp"
                             android:layout_height="wrap_content"
                             android:layout_weight="1"
-                            android:text="Bugünün işlemleri"
+                            android:text="@string/gunluk_transactions_today"
                             android:textSize="14sp"
                             android:textStyle="bold"
                             android:textColor="@color/text_primary" />
@@ -421,7 +460,7 @@
                             android:id="@+id/tv_filter_hint"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:text="🏷 Filtrele"
+                            android:text="@string/gunluk_filter_chip"
                             android:textSize="11sp"
                             android:textColor="@color/text_secondary"
                             android:visibility="gone" />
@@ -454,7 +493,7 @@
                         <TextView
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:text="Bu tarihte işlem yok"
+                            android:text="@string/gunluk_empty_day_title"
                             android:textSize="14sp"
                             android:textStyle="bold"
                             android:textColor="@color/text_primary"
@@ -463,7 +502,7 @@
                         <TextView
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:text="▲ Yukarıdaki formu açarak ekleyebilirsin"
+                            android:text="@string/gunluk_empty_day_hint"
                             android:textSize="12sp"
                             android:textColor="@color/text_secondary"
                             android:gravity="center"

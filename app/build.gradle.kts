@@ -88,3 +88,4 @@ dependencies {
     // Google ile oturum (hesap adı için)
     implementation("com.google.android.gms:play-services-auth:21.3.0")
 }
+

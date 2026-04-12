@@ -2,19 +2,19 @@
     <item
         android:id="@+id/nav_ozet"
         android:icon="@drawable/home_24px"
-        android:title="Anasayfa" />
+        android:title="@string/nav_home_short" />
     <item
         android:id="@+id/nav_gunluk"
         android:icon="@drawable/today_24px"
-        android:title="Günlük" />
+        android:title="@string/nav_gunluk_short" />
     <item
         android:id="@+id/nav_aylik"
         android:icon="@drawable/calendar_month_24px"
-        android:title="Aylık" />
+        android:title="@string/nav_monthly_short" />
     <item
         android:id="@+id/nav_plan"
         android:icon="@drawable/notifications_active_24px"
-        android:title="@string/nav_plan" />
+        android:title="@string/nav_plan_short" />
     <!-- nav_profil alt bardan kaldırıldı (max 5 limit).
          Profil erişimi: her sayfanın header'ındaki avatar ikonuyla. -->
 </menu>

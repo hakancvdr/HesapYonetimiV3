@@ -7,7 +7,6 @@
     android:background="@color/background"
     android:orientation="vertical">
 
-    <!-- Gradient header — adım göstergesi -->
     <LinearLayout
         android:id="@+id/regHeader"
         android:layout_width="match_parent"
@@ -27,7 +26,6 @@
             android:textSize="20sp"
             android:textStyle="bold" />
 
-        <!-- Adım noktaları -->
         <LinearLayout
             android:id="@+id/stepDotsContainer"
             android:layout_width="wrap_content"
@@ -35,9 +33,19 @@
             android:layout_marginTop="16dp"
             android:orientation="horizontal">
 
-            <View android:id="@+id/dot1" android:layout_width="28dp" android:layout_height="6dp" android:layout_margin="4dp" android:background="#FFFFFF" />
-            <View android:id="@+id/dot2" android:layout_width="28dp" android:layout_height="6dp" android:layout_margin="4dp" android:background="#55FFFFFF" />
-            <View android:id="@+id/dot3" android:layout_width="28dp" android:layout_height="6dp" android:layout_margin="4dp" android:background="#55FFFFFF" />
+            <View
+                android:id="@+id/dot1"
+                android:layout_width="36dp"
+                android:layout_height="6dp"
+                android:layout_margin="4dp"
+                android:background="#FFFFFF" />
+
+            <View
+                android:id="@+id/dot2"
+                android:layout_width="36dp"
+                android:layout_height="6dp"
+                android:layout_margin="4dp"
+                android:background="#55FFFFFF" />
         </LinearLayout>
 
         <TextView
@@ -45,62 +53,96 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginTop="10dp"
-            android:text="Hoş Geldiniz"
             android:textColor="#CCFFFFFF"
             android:textSize="13sp" />
     </LinearLayout>
 
-    <!-- İçerik alanı -->
     <ScrollView
         android:id="@+id/regScrollView"
         android:layout_width="match_parent"
         android:layout_height="0dp"
         android:layout_weight="1"
-        android:fillViewport="false"
-        android:clipToPadding="false">
+        android:clipToPadding="false"
+        android:fillViewport="true">
 
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical">
 
-            <!-- ADIM 1: Hoş geldiniz -->
+            <!-- Adım 1: isim + dönem -->
             <LinearLayout
                 android:id="@+id/step1Container"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:gravity="center"
                 android:orientation="vertical"
-                android:padding="32dp"
+                android:padding="24dp"
                 android:visibility="visible">
 
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="💎"
-                    android:textSize="64sp"
-                    android:layout_marginBottom="20dp" />
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:gravity="center"
-                    android:text="Finansal özgürlüğünüz\nbir dokunuş uzağınızda."
+                    android:text="@string/reg_how_call_you_title"
                     android:textColor="@color/text_primary"
                     android:textSize="18sp"
                     android:textStyle="bold"
-                    android:layout_marginBottom="12dp" />
+                    android:layout_marginBottom="16dp" />
+
+                <com.google.android.material.textfield.TextInputLayout
+                    android:id="@+id/tilName"
+                    style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:hint="@string/reg_hint_display_name"
+                    app:boxStrokeColor="@color/green_light">
+
+                    <com.google.android.material.textfield.TextInputEditText
+                        android:id="@+id/etName"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:inputType="textPersonName"
+                        android:imeOptions="actionDone"
+                        android:maxLength="30"
+                        android:textColor="@color/text_primary" />
+                </com.google.android.material.textfield.TextInputLayout>
 
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:gravity="center"
-                    android:text="Gelir ve giderlerinizi takip edin,\nbütçenizi yönetin, hedeflerinize ulaşın."
+                    android:layout_marginTop="20dp"
+                    android:layout_marginBottom="8dp"
+                    android:text="@string/reg_pay_period_section_title"
+                    android:textColor="@color/text_primary"
+                    android:textSize="15sp"
+                    android:textStyle="bold" />
+
+                <RadioButton
+                    android:id="@+id/rb_reg_pay_from_first"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="@string/reg_pay_from_first_of_month"
+                    android:textColor="@color/text_primary" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btn_reg_pick_salary_day"
+                    style="@style/Widget.Material3.Button.OutlinedButton"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:text="@string/reg_pay_pick_salary_day_button"
+                    app:strokeColor="@color/green_light" />
+
+                <TextView
+                    android:id="@+id/tv_reg_pay_period_summary"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="12dp"
                     android:textColor="@color/text_secondary"
-                    android:textSize="14sp" />
+                    android:textSize="14sp"
+                    android:visibility="gone" />
             </LinearLayout>
 
-            <!-- ADIM 2: İsim + Avatar -->
+            <!-- Adım 2: PIN tercihi -->
             <LinearLayout
                 android:id="@+id/step2Container"
                 android:layout_width="match_parent"
@@ -112,186 +154,138 @@
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="Sizi nasıl tanıyalım? 👋"
+                    android:text="@string/reg_pin_offer_title"
                     android:textColor="@color/text_primary"
-                    android:textSize="18sp"
+                    android:textSize="17sp"
                     android:textStyle="bold"
-                    android:layout_marginBottom="6dp" />
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="Adınız ve güvenlik sorusu"
-                    android:textColor="@color/text_secondary"
-                    android:textSize="13sp"
-                    android:layout_marginBottom="24dp" />
-
-                <com.google.android.material.textfield.TextInputLayout
-                    android:id="@+id/tilName"
-                    style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    app:boxStrokeColor="@color/green_light"
-                    android:hint="Adınız Soyadınız">
-
-                    <com.google.android.material.textfield.TextInputEditText
-                        android:id="@+id/etName"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:textColor="@color/text_primary"
-                        android:inputType="textPersonName"
-                        android:imeOptions="actionNext"
-                        android:maxLength="30" />
-                </com.google.android.material.textfield.TextInputLayout>
-
-                <TextView
-                    android:id="@+id/tvSecuritySetupWarning"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="20dp"
-                    android:layout_marginBottom="12dp"
-                    android:background="#26FF9800"
-                    android:padding="14dp"
-                    android:text="Şifre sıfırlamak için güvenlik sorusu gereklidir. Cevabınızı güvenli bir yerde not alın; tahmin edilemez veya anlamsız bir cümle yazmayın."
-                    android:textColor="@color/text_primary"
-                    android:textSize="13sp" />
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="Güvenlik Sorusu 🔐"
-                    android:textColor="@color/text_primary"
-                    android:textSize="18sp"
-                    android:textStyle="bold"
-                    android:layout_marginTop="8dp"
-                    android:layout_marginBottom="6dp" />
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="PIN'inizi unuttuğunuzda bu soruyla doğrulama yapabilirsiniz."
-                    android:textColor="@color/text_secondary"
-                    android:textSize="13sp"
-                    android:layout_marginBottom="24dp" />
-
-                <!-- Soru seçimi (4 kart) -->
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="Bir soru seçin:"
-                    android:textColor="@color/text_secondary"
-                    android:textSize="12sp"
-                    android:textStyle="bold"
-                    android:layout_marginBottom="10dp" />
+                    android:layout_marginBottom="8dp" />
 
                 <RadioGroup
-                    android:id="@+id/radioQuestions"
+                    android:id="@+id/rg_pin_choice"
                     android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginBottom="20dp">
+                    android:layout_height="wrap_content">
 
-                    <RadioButton android:id="@+id/rq0" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="İlk evcil hayvanınızın adı nedir?" android:textColor="@color/text_primary" android:layout_marginBottom="6dp"/>
-                    <RadioButton android:id="@+id/rq1" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Annenizin kız soyadı nedir?" android:textColor="@color/text_primary" android:layout_marginBottom="6dp"/>
-                    <RadioButton android:id="@+id/rq2" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Doğduğunuz şehir neresidir?" android:textColor="@color/text_primary" android:layout_marginBottom="6dp"/>
-                    <RadioButton android:id="@+id/rq3" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="En sevdiğiniz film nedir?" android:textColor="@color/text_primary"/>
-                </RadioGroup>
-
-                <com.google.android.material.textfield.TextInputLayout
-                    android:id="@+id/tilAnswer"
-                    style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    app:boxStrokeColor="@color/green_light"
-                    android:hint="Cevabınız">
-
-                    <com.google.android.material.textfield.TextInputEditText
-                        android:id="@+id/etAnswer"
+                    <RadioButton
+                        android:id="@+id/rb_pin_yes"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:textColor="@color/text_primary"
-                        android:inputType="text"
-                        android:imeOptions="actionDone"
-                        android:singleLine="true"
-                        android:maxLines="1"
-                        android:maxLength="50" />
-                </com.google.android.material.textfield.TextInputLayout>
-            </LinearLayout>
+                        android:text="@string/reg_pin_yes"
+                        android:textColor="@color/text_primary" />
 
-            <!-- ADIM 4: PIN oluştur -->
-            <LinearLayout
-                android:id="@+id/step4Container"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:gravity="center"
-                android:orientation="vertical"
-                android:padding="24dp"
-                android:visibility="gone">
+                    <RadioButton
+                        android:id="@+id/rb_pin_no"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="6dp"
+                        android:text="@string/reg_pin_no"
+                        android:textColor="@color/text_primary" />
+                </RadioGroup>
 
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="Güvenli PIN Belirle 🔑"
-                    android:textColor="@color/text_primary"
-                    android:textSize="18sp"
-                    android:textStyle="bold"
-                    android:layout_marginBottom="6dp" />
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="4 haneli bir PIN kodu oluşturun"
-                    android:textColor="@color/text_secondary"
-                    android:textSize="13sp"
-                    android:layout_marginBottom="32dp" />
-
-                <!-- PIN noktaları -->
                 <LinearLayout
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:orientation="horizontal"
-                    android:layout_marginBottom="32dp">
-                    <View android:id="@+id/pin_dot1" android:layout_width="14dp" android:layout_height="14dp" android:layout_margin="10dp" android:background="@drawable/pin_dot_off"/>
-                    <View android:id="@+id/pin_dot2" android:layout_width="14dp" android:layout_height="14dp" android:layout_margin="10dp" android:background="@drawable/pin_dot_off"/>
-                    <View android:id="@+id/pin_dot3" android:layout_width="14dp" android:layout_height="14dp" android:layout_margin="10dp" android:background="@drawable/pin_dot_off"/>
-                    <View android:id="@+id/pin_dot4" android:layout_width="14dp" android:layout_height="14dp" android:layout_margin="10dp" android:background="@drawable/pin_dot_off"/>
-                </LinearLayout>
-
-                <!-- Numpad -->
-                <TableLayout
+                    android:id="@+id/group_pin_yes_setup"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:stretchColumns="0,1,2">
-                    <TableRow android:layout_marginBottom="10dp">
-                        <Button style="@style/PinButtonStyle" android:id="@+id/reg_btn1" android:text="1"/>
-                        <Button style="@style/PinButtonStyle" android:id="@+id/reg_btn2" android:text="2"/>
-                        <Button style="@style/PinButtonStyle" android:id="@+id/reg_btn3" android:text="3"/>
-                    </TableRow>
-                    <TableRow android:layout_marginBottom="10dp">
-                        <Button style="@style/PinButtonStyle" android:id="@+id/reg_btn4" android:text="4"/>
-                        <Button style="@style/PinButtonStyle" android:id="@+id/reg_btn5" android:text="5"/>
-                        <Button style="@style/PinButtonStyle" android:id="@+id/reg_btn6" android:text="6"/>
-                    </TableRow>
-                    <TableRow android:layout_marginBottom="10dp">
-                        <Button style="@style/PinButtonStyle" android:id="@+id/reg_btn7" android:text="7"/>
-                        <Button style="@style/PinButtonStyle" android:id="@+id/reg_btn8" android:text="8"/>
-                        <Button style="@style/PinButtonStyle" android:id="@+id/reg_btn9" android:text="9"/>
-                    </TableRow>
-                    <TableRow>
-                        <View android:layout_width="0dp" android:layout_height="0dp"/>
-                        <Button style="@style/PinButtonStyle" android:id="@+id/reg_btn0" android:text="0"/>
-                        <ImageButton
-                            style="@style/PinButtonStyle"
-                            android:id="@+id/reg_btn_del"
-                            android:src="@android:drawable/ic_input_delete"
-                            app:tint="@color/ana_mavi" />
-                    </TableRow>
-                </TableLayout>
-            </LinearLayout>
+                    android:layout_marginTop="8dp"
+                    android:orientation="vertical"
+                    android:visibility="gone">
 
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginBottom="8dp"
+                        android:background="#1A4CAF50"
+                        android:padding="8dp"
+                        android:text="@string/reg_pin_security_short_hint"
+                        android:textColor="@color/text_primary"
+                        android:textSize="12sp" />
+
+                    <!-- PIN üstte: klavye açılınca güvenlik alanının altında kalmaz -->
+                    <com.google.android.material.textfield.TextInputLayout
+                        android:id="@+id/tilPin"
+                        style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:hint="@string/reg_pin_field_hint"
+                        app:boxStrokeColor="@color/green_light">
+
+                        <com.google.android.material.textfield.TextInputEditText
+                            android:id="@+id/etPin"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:imeOptions="actionNext"
+                            android:inputType="numberPassword"
+                            android:maxLength="4"
+                            android:textColor="@color/text_primary" />
+                    </com.google.android.material.textfield.TextInputLayout>
+
+                    <com.google.android.material.textfield.TextInputLayout
+                        android:id="@+id/tilSecurityQuestion"
+                        style="@style/Widget.Material3.TextInputLayout.OutlinedBox.ExposedDropdownMenu"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="8dp"
+                        android:hint="@string/reg_security_question_title"
+                        app:boxStrokeColor="@color/green_light">
+
+                        <com.google.android.material.textfield.MaterialAutoCompleteTextView
+                            android:id="@+id/act_security_question"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:inputType="none"
+                            android:textColor="@color/text_primary" />
+                    </com.google.android.material.textfield.TextInputLayout>
+
+                    <com.google.android.material.textfield.TextInputLayout
+                        android:id="@+id/tilAnswer"
+                        style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="8dp"
+                        android:hint="@string/reg_security_answer_hint"
+                        app:boxStrokeColor="@color/green_light">
+
+                        <com.google.android.material.textfield.TextInputEditText
+                            android:id="@+id/etAnswer"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:imeOptions="actionDone"
+                            android:inputType="text"
+                            android:maxLength="50"
+                            android:maxLines="1"
+                            android:singleLine="true"
+                            android:textColor="@color/text_primary" />
+                    </com.google.android.material.textfield.TextInputLayout>
+                </LinearLayout>
+
+                <LinearLayout
+                    android:id="@+id/group_continue_actions"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="12dp"
+                    android:orientation="vertical"
+                    android:visibility="gone">
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btn_reg_first_expense"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="@string/reg_first_expense"
+                        app:backgroundTint="@color/green_primary"
+                        android:textColor="#FFFFFF" />
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btn_reg_explore"
+                        style="@style/Widget.Material3.Button.OutlinedButton"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="10dp"
+                        android:text="@string/reg_explore"
+                        app:strokeColor="@color/green_light" />
+                </LinearLayout>
+            </LinearLayout>
         </LinearLayout>
     </ScrollView>
 
-    <!-- Alt buton satırı -->
     <LinearLayout
         android:id="@+id/bottomButtonBar"
         android:layout_width="match_parent"
@@ -320,9 +314,9 @@
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            app:backgroundTint="@color/green_primary"
-            android:text="Başlayalım →"
-            android:textColor="#FFFFFF" />
+            android:text="@string/reg_next"
+            android:textColor="#FFFFFF"
+            app:backgroundTint="@color/green_primary" />
     </LinearLayout>
 
 </LinearLayout>

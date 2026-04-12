@@ -5,7 +5,6 @@ import android.content.Intent
 import android.os.Bundle
 import android.view.View
 import android.widget.Toast
-import androidx.activity.OnBackPressedCallback
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.ViewCompat
@@ -13,8 +12,6 @@ import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.lifecycle.lifecycleScope
 import com.example.hesapyonetimi.auth.AuthPrefs
-import com.example.hesapyonetimi.data.local.dao.UserProfileDao
-import com.example.hesapyonetimi.data.local.entity.UserProfileEntity
 import com.google.android.gms.auth.api.signin.GoogleSignIn
 import com.google.android.gms.auth.api.signin.GoogleSignInAccount
 import com.google.android.gms.auth.api.signin.GoogleSignInClient
@@ -22,26 +19,13 @@ import com.google.android.gms.auth.api.signin.GoogleSignInOptions
 import com.google.android.gms.common.api.ApiException
 import com.google.android.gms.tasks.Tasks
 import com.example.hesapyonetimi.util.LocaleHelper
-import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import javax.inject.Inject
 
-@AndroidEntryPoint
 class WelcomeActivity : AppCompatActivity() {
 
-    companion object {
-        const val EXTRA_LINK_ACCOUNT = "extra_link_account"
-    }
-
-    @Inject
-    lateinit var userProfileDao: UserProfileDao
-
     private lateinit var googleClient: GoogleSignInClient
-
-    private val linkAccount: Boolean
-        get() = intent.getBooleanExtra(EXTRA_LINK_ACCOUNT, false)
 
     override fun attachBaseContext(newBase: Context) {
         super.attachBaseContext(LocaleHelper.wrap(newBase))
@@ -61,21 +45,10 @@ class WelcomeActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        if (!linkAccount && AuthPrefs.prefs(this).getBoolean("is_registered", false)) {
+        if (AuthPrefs.prefs(this).getBoolean("is_registered", false)) {
             startActivity(Intent(this, PinActivity::class.java))
             finish()
             return
-        }
-
-        if (linkAccount) {
-            onBackPressedDispatcher.addCallback(
-                this,
-                object : OnBackPressedCallback(true) {
-                    override fun handleOnBackPressed() {
-                        finish()
-                    }
-                }
-            )
         }
 
         WindowCompat.setDecorFitsSystemWindows(window, false)
@@ -106,16 +79,7 @@ class WelcomeActivity : AppCompatActivity() {
             googleLauncher.launch(googleClient.signInIntent)
         }
         findViewById<View>(R.id.btnWelcomeQuick).setOnClickListener {
-            startActivity(Intent(this, RegistrationActivity::class.java).apply {
-                if (linkAccount) putExtra(RegistrationActivity.EXTRA_LINK_ACCOUNT, true)
-            })
-            finish()
-        }
-        val guestBtn = findViewById<View>(R.id.btnWelcomeGuest)
-        if (linkAccount) {
-            guestBtn.visibility = View.GONE
-        } else {
-            guestBtn.setOnClickListener { completeGuestAndOpenMain() }
+            startActivity(Intent(this, RegistrationActivity::class.java))
         }
     }
 
@@ -131,68 +95,17 @@ class WelcomeActivity : AppCompatActivity() {
         val display = account.displayName?.trim()?.takeIf { it.isNotEmpty() }
             ?: account.email?.substringBefore("@")?.trim()?.takeIf { it.isNotEmpty() }
             ?: "Kullanıcı"
+        val email = account.email?.trim().orEmpty()
 
         lifecycleScope.launch {
-            val prefs = AuthPrefs.prefs(this@WelcomeActivity)
-            val email = account.email?.trim().orEmpty()
-            prefs.edit()
-                .putBoolean("is_registered", true)
-                .putString("auth_method", AuthPrefs.AUTH_METHOD_GMAIL)
-                .putBoolean("pin_enabled", false)
-                .remove("kullanici_pin")
-                .remove("security_answer")
-                .remove("security_question_index")
-                .putLong("pin_lock_timeout_ms", AuthPrefs.DEFAULT_PIN_LOCK_TIMEOUT_MS)
-                .putLong("son_giris_zamani", System.currentTimeMillis())
-                .putString("user_display_name", display)
-                .putBoolean("biometric_enabled", false)
-                .apply {
-                    if (email.isNotEmpty()) putString(AuthPrefs.KEY_LINKED_GOOGLE_EMAIL, email)
-                    else remove(AuthPrefs.KEY_LINKED_GOOGLE_EMAIL)
-                }
-                .apply()
-
-            val existing = userProfileDao.getProfileOnce()
-            if (existing == null) {
-                userProfileDao.upsertProfile(UserProfileEntity(displayName = display))
-            } else {
-                userProfileDao.updateName(display)
-            }
-
             withContext(Dispatchers.IO) {
                 runCatching { Tasks.await(googleClient.signOut()) }
             }
-            openMainAndFinish()
+            startActivity(Intent(this@WelcomeActivity, RegistrationActivity::class.java).apply {
+                putExtra(RegistrationActivity.EXTRA_GOOGLE_SETUP, true)
+                putExtra(RegistrationActivity.EXTRA_GOOGLE_DISPLAY_NAME, display)
+                putExtra(RegistrationActivity.EXTRA_GOOGLE_EMAIL, email)
+            })
         }
-    }
-
-    private fun completeGuestAndOpenMain() {
-        lifecycleScope.launch {
-            AuthPrefs.prefs(this@WelcomeActivity).edit()
-                .putBoolean("is_registered", true)
-                .putString("auth_method", AuthPrefs.AUTH_METHOD_GUEST)
-                .putBoolean("pin_enabled", false)
-                .remove("kullanici_pin")
-                .remove("security_answer")
-                .remove("security_question_index")
-                .putLong("pin_lock_timeout_ms", AuthPrefs.DEFAULT_PIN_LOCK_TIMEOUT_MS)
-                .putLong("son_giris_zamani", System.currentTimeMillis())
-                .putString("user_display_name", "Kullanıcı")
-                .putBoolean("biometric_enabled", false)
-                .apply()
-
-            val existing = userProfileDao.getProfileOnce()
-            if (existing == null) {
-                userProfileDao.upsertProfile(UserProfileEntity(displayName = "Kullanıcı"))
-            } else {
-                userProfileDao.updateName("Kullanıcı")
-            }
-            openMainAndFinish()
-        }
-    }
-
-    private fun openMainAndFinish() {
-        startActivity(Intent(this, MainActivity::class.java))
-        finish()
     }
 }

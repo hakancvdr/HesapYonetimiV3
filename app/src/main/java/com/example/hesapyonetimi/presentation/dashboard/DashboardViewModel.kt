@@ -12,7 +12,9 @@ import com.example.hesapyonetimi.domain.repository.ReminderRepository
 import com.example.hesapyonetimi.domain.repository.TransactionRepository
 import com.example.hesapyonetimi.presentation.common.AkilliOneriService
 import com.example.hesapyonetimi.presentation.common.BudgetInsightService
+import com.example.hesapyonetimi.presentation.common.MonthlyForecastCard
 import com.example.hesapyonetimi.presentation.common.HizliOneri
+import com.example.hesapyonetimi.util.PayPeriodResolver
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
@@ -34,6 +36,8 @@ data class DashboardUiState(
     val totalBalance: Double = 0.0,
     val totalIncome: Double = 0.0,
     val totalExpense: Double = 0.0,
+    /** Bu bütçe dönemindeki işlem sayısı (erken uyarı vb. için). */
+    val periodTransactionCount: Int = 0,
     val recentTransactions: List<Transaction> = emptyList(),
     val upcomingReminders: List<Reminder> = emptyList(),
     val daysWithTransactions: Set<Int> = emptySet(),
@@ -45,7 +49,10 @@ data class DashboardUiState(
     /** Tekrarlayan işlem worker özeti */
     val recurringWorkerBanner: String? = null,
     /** Bu ay gider — kategori dilimleri (mini pasta) */
-    val expensePieSlices: List<DashboardExpenseSlice> = emptyList()
+    val expensePieSlices: List<DashboardExpenseSlice> = emptyList(),
+    val forecastHeadline: String = "",
+    val forecastLine1: String = "",
+    val forecastLine2: String = ""
 )
 
 private const val PREFS_APP = "HesapPrefs"
@@ -168,15 +175,20 @@ class DashboardViewModel @Inject constructor(
         statsJob = viewModelScope.launch {
             try {
                 val (startOfMonth, endOfMonth) = getCurrentMonthDateRange()
+                val visCal = Calendar.getInstance()
+                val visYear = visCal.get(Calendar.YEAR)
+                val visMonth = visCal.get(Calendar.MONTH)
                 combine(
                     reminderRepository.getUnpaidReminders(),
                     transactionRepository.getTransactionsByDateRange(startOfMonth, endOfMonth)
                 ) { reminders, monthTransactions ->
-                    val income = transactionRepository.getTotalIncome(startOfMonth, endOfMonth)
-                    val expense = transactionRepository.getTotalExpense(startOfMonth, endOfMonth)
-                    val daysWithData = monthTransactions.map {
-                        Calendar.getInstance().apply { timeInMillis = it.date }
-                            .get(Calendar.DAY_OF_MONTH)
+                    val income = monthTransactions.filter { it.isIncome }.sumOf { it.amount }
+                    val expense = monthTransactions.filter { !it.isIncome }.sumOf { it.amount }
+                    val daysWithData = monthTransactions.mapNotNull { tx ->
+                        val c = Calendar.getInstance().apply { timeInMillis = tx.date }
+                        if (c.get(Calendar.YEAR) == visYear && c.get(Calendar.MONTH) == visMonth) {
+                            c.get(Calendar.DAY_OF_MONTH)
+                        } else null
                     }.toSet()
                     val highestCat = monthTransactions
                         .filter { !it.isIncome }
@@ -186,19 +198,32 @@ class DashboardViewModel @Inject constructor(
                         ?.let { "${it.key}: ${String.format("%,.0f", it.value)} ₺" } ?: ""
 
                     val pieSlices = buildExpensePieSlices(monthTransactions)
-                    listOf(income, expense) to Triple(reminders, daysWithData, highestCat) to pieSlices
-                }.collect { (balancesAndRest, pieSlices) ->
+                    Triple(
+                        listOf(income, expense) to Triple(reminders, daysWithData, highestCat),
+                        pieSlices,
+                        monthTransactions.size
+                    )
+                }.collect { (balancesAndRest, pieSlices, txCount) ->
                     val balances = balancesAndRest.first
                     val (reminders, daysWithData, highestCat) = balancesAndRest.second
+                    val forecast = try {
+                        budgetInsightService.monthlyForecastCard()
+                    } catch (_: Exception) {
+                        MonthlyForecastCard("", "", "")
+                    }
                     _uiState.update { current ->
                         current.copy(
                             totalBalance = balances[0] - balances[1],
                             totalIncome = balances[0],
                             totalExpense = balances[1],
+                            periodTransactionCount = txCount,
                             upcomingReminders = reminders.take(3),
                             daysWithTransactions = daysWithData,
                             highestCategory = highestCat,
                             expensePieSlices = pieSlices,
+                            forecastHeadline = forecast.headline,
+                            forecastLine1 = forecast.line1,
+                            forecastLine2 = forecast.line2,
                             isLoading = false
                         )
                     }
@@ -230,6 +255,7 @@ class DashboardViewModel @Inject constructor(
     fun refreshData() {
         loadMonthlyStats()
         loadExchangeAndRecurringBanners()
+        loadSuggestions()
         _recentTxRefresh.update { it + 1 }
     }
 
@@ -246,14 +272,7 @@ class DashboardViewModel @Inject constructor(
     }
 
     private fun getCurrentMonthDateRange(): Pair<Long, Long> {
-        val cal = Calendar.getInstance()
-        cal.set(Calendar.DAY_OF_MONTH, 1)
-        cal.set(Calendar.HOUR_OF_DAY, 0); cal.set(Calendar.MINUTE, 0)
-        cal.set(Calendar.SECOND, 0); cal.set(Calendar.MILLISECOND, 0)
-        val start = cal.timeInMillis
-        cal.set(Calendar.DAY_OF_MONTH, cal.getActualMaximum(Calendar.DAY_OF_MONTH))
-        cal.set(Calendar.HOUR_OF_DAY, 23); cal.set(Calendar.MINUTE, 59)
-        cal.set(Calendar.SECOND, 59); cal.set(Calendar.MILLISECOND, 999)
-        return start to cal.timeInMillis
+        val p = PayPeriodResolver.currentPeriod(appContext)
+        return p.startMillis to p.endInclusiveMillis()
     }
 }

@@ -110,7 +110,18 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:nestedScrollingEnabled="false"
-            android:layout_marginBottom="16dp" />
+            android:layout_marginBottom="4dp" />
+
+        <TextView
+            android:id="@+id/tvNewCategoryLink"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="14dp"
+            android:background="?attr/selectableItemBackground"
+            android:paddingVertical="4dp"
+            android:text="@string/add_transaction_new_category"
+            android:textColor="@color/green_primary"
+            android:textSize="12sp" />
 
         <!-- Açıklama -->
         <com.google.android.material.textfield.TextInputLayout

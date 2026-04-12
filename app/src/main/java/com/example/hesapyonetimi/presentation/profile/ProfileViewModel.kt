@@ -14,12 +14,24 @@ import com.example.hesapyonetimi.data.local.entity.TransactionEntity
 import com.example.hesapyonetimi.data.local.entity.UserProfileEntity
 import com.example.hesapyonetimi.auth.AuthPrefs
 import com.example.hesapyonetimi.data.local.dao.CategoryDao
+import com.example.hesapyonetimi.util.PayPeriodResolver
 import com.example.hesapyonetimi.domain.model.Category
 import com.example.hesapyonetimi.domain.model.Transaction
 import com.example.hesapyonetimi.domain.repository.CategoryRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
-import kotlinx.coroutines.flow.*
+import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharedFlow
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asSharedFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.*
@@ -40,6 +52,7 @@ sealed class ProfileUiEvent {
     data class ShowMessage(val message: String) : ProfileUiEvent()
 }
 
+@OptIn(ExperimentalCoroutinesApi::class)
 @HiltViewModel
 class ProfileViewModel @Inject constructor(
     @ApplicationContext private val appContext: Context,
@@ -63,30 +76,30 @@ class ProfileViewModel @Inject constructor(
         .map { list -> list.map { it.toDomainModel() } }
         .stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
 
-    // ── Bu ay başlangıç/bitiş ─────────────────────────────────────────────────
-    private val monthRange: Pair<Long, Long> = run {
-        val cal = Calendar.getInstance()
-        cal.set(Calendar.DAY_OF_MONTH, 1)
-        cal.set(Calendar.HOUR_OF_DAY, 0); cal.set(Calendar.MINUTE, 0)
-        cal.set(Calendar.SECOND, 0); cal.set(Calendar.MILLISECOND, 0)
-        val start = cal.timeInMillis
-        cal.set(Calendar.DAY_OF_MONTH, cal.getActualMaximum(Calendar.DAY_OF_MONTH))
-        cal.set(Calendar.HOUR_OF_DAY, 23); cal.set(Calendar.MINUTE, 59)
-        cal.set(Calendar.SECOND, 59); cal.set(Calendar.MILLISECOND, 999)
-        start to cal.timeInMillis
+    private val payPeriodRefresh = MutableStateFlow(0L)
+
+    /** Maaş dönemi veya takvim ayı tercihi değişince çağırın. */
+    fun refreshPayPeriodDependentFlows() {
+        payPeriodRefresh.value = System.currentTimeMillis()
     }
 
-    // ── Bu ay toplam gider — bütçe progress için ─────────────────────────────
-    val currentMonthExpense: StateFlow<Double> =
-        transactionDao.getTotalExpenseFlow(monthRange.first, monthRange.second)
-            .map { it ?: 0.0 }
-            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 0.0)
+    // ── Dönem toplam gider — bütçe progress için ─────────────────────────────
+    val currentMonthExpense: StateFlow<Double> = payPeriodRefresh
+        .flatMapLatest {
+            val p = PayPeriodResolver.currentPeriod(appContext)
+            transactionDao.getTotalExpenseFlow(p.startMillis, p.endInclusiveMillis())
+        }
+        .map { it ?: 0.0 }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 0.0)
 
-    // ── Bu ay toplam gelir ────────────────────────────────────────────────────
-    val currentMonthIncome: StateFlow<Double> =
-        transactionDao.getTotalIncomeFlow(monthRange.first, monthRange.second)
-            .map { it ?: 0.0 }
-            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 0.0)
+    // ── Dönem toplam gelir ────────────────────────────────────────────────────
+    val currentMonthIncome: StateFlow<Double> = payPeriodRefresh
+        .flatMapLatest {
+            val p = PayPeriodResolver.currentPeriod(appContext)
+            transactionDao.getTotalIncomeFlow(p.startMillis, p.endInclusiveMillis())
+        }
+        .map { it ?: 0.0 }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 0.0)
 
     private val _stats = MutableStateFlow(ProfileStats())
     val stats: StateFlow<ProfileStats> = _stats.asStateFlow()

@@ -16,11 +16,11 @@ import com.example.hesapyonetimi.adapter.WalletChipAdapter
 import com.example.hesapyonetimi.data.local.dao.WalletDao
 import com.example.hesapyonetimi.data.local.entity.WalletEntity
 import com.example.hesapyonetimi.domain.model.Category
+import com.example.hesapyonetimi.domain.repository.CategoryRepository
 import com.example.hesapyonetimi.presentation.transactions.TransactionViewModel
 import javax.inject.Inject
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment
 import com.google.android.material.button.MaterialButton
-import com.google.android.material.button.MaterialButtonToggleGroup
 import com.google.android.material.chip.Chip
 import com.google.android.material.chip.ChipGroup
 import com.google.android.material.textfield.TextInputEditText
@@ -29,7 +29,10 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import dagger.hilt.android.AndroidEntryPoint
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import android.widget.LinearLayout
+import android.widget.TextView
 
 @AndroidEntryPoint
 class AddTransactionDialog : BottomSheetDialogFragment() {
@@ -37,11 +40,15 @@ class AddTransactionDialog : BottomSheetDialogFragment() {
     @Inject
     lateinit var walletDao: WalletDao
 
+    @Inject
+    lateinit var categoryRepository: CategoryRepository
+
     private val viewModel: TransactionViewModel by viewModels()
     private var selectedCategory: Category? = null
     private var isIncome: Boolean = false
     private var preSelectedType: Boolean? = null
     private lateinit var categoryAdapter: CategoryChipAdapter
+    private lateinit var reloadCategoryChips: () -> Unit
     private var selectedWalletId: Long? = null
     private var isRecurring: Boolean = false
 
@@ -151,6 +158,7 @@ class AddTransactionDialog : BottomSheetDialogFragment() {
             val cats = if (isIncome) viewModel.getIncomeCategories() else viewModel.getExpenseCategories()
             categoryAdapter.setCategories(cats, defaultName)
         }
+        reloadCategoryChips = { loadCategories() }
 
         // Başlangıç
         preSelectedType?.let {
@@ -178,6 +186,10 @@ class AddTransactionDialog : BottomSheetDialogFragment() {
                     }
                 }
             }
+        }
+
+        view.findViewById<TextView>(R.id.tvNewCategoryLink).setOnClickListener {
+            showInlineAddCategoryDialog()
         }
 
         // Etiket chip'leri (DB'den)
@@ -265,4 +277,60 @@ class AddTransactionDialog : BottomSheetDialogFragment() {
     }
 
     private fun toast(msg: String) = Toast.makeText(requireContext(), msg, Toast.LENGTH_SHORT).show()
+
+    private fun showInlineAddCategoryDialog() {
+        val ctx = requireContext()
+        val dialog = android.app.Dialog(ctx)
+        val v = LayoutInflater.from(ctx).inflate(R.layout.dialog_profile_add_category, null)
+        v.findViewById<View>(R.id.layoutAddCategoryType).visibility = View.GONE
+        val emojiContainer = v.findViewById<LinearLayout>(R.id.emojiContainer)
+        val tvSel = v.findViewById<TextView>(R.id.tvSelectedEmoji)
+        val etName = v.findViewById<TextInputEditText>(R.id.etCategoryName)
+        val til = v.findViewById<com.google.android.material.textfield.TextInputLayout>(R.id.tilCategoryName)
+        var icon = "💳"
+        tvSel.text = icon
+        val pad = (6 * resources.displayMetrics.density).toInt()
+        val emojis = listOf("💳", "🛒", "🏠", "🚗", "🍔", "💊", "🎁", "📚", "⚡", "🎮", "💼", "☕")
+        emojis.forEach { em ->
+            val tv = TextView(ctx).apply {
+                text = em
+                textSize = 22f
+                setPadding(pad, pad, pad, pad)
+                background = androidx.core.content.ContextCompat.getDrawable(ctx, R.drawable.kategori_item_bg)
+                setOnClickListener {
+                    icon = em
+                    tvSel.text = em
+                }
+            }
+            emojiContainer.addView(tv)
+        }
+
+        dialog.setContentView(v)
+        dialog.window?.setLayout((resources.displayMetrics.widthPixels * 0.92).toInt(), ViewGroup.LayoutParams.WRAP_CONTENT)
+        dialog.window?.setBackgroundDrawableResource(android.R.color.transparent)
+
+        v.findViewById<View>(R.id.btnCancel).setOnClickListener { dialog.dismiss() }
+        v.findViewById<View>(R.id.btnAdd).setOnClickListener {
+            val name = etName.text?.toString()?.trim().orEmpty()
+            if (name.isBlank()) {
+                til.error = getString(R.string.categories_name_required)
+                return@setOnClickListener
+            }
+            val income = isIncome
+            viewLifecycleOwner.lifecycleScope.launch {
+                try {
+                    categoryRepository.insertCategory(
+                        Category(0, name, icon, "#2E7D32", income, isDefault = false)
+                    )
+                    delay(80)
+                    reloadCategoryChips()
+                    toast(getString(R.string.category_added))
+                    dialog.dismiss()
+                } catch (_: Exception) {
+                    toast(getString(R.string.category_add_error))
+                }
+            }
+        }
+        dialog.show()
+    }
 }

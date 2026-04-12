@@ -21,6 +21,7 @@ import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.ItemTouchHelper
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
+import com.example.hesapyonetimi.auth.AuthPrefs
 import com.example.hesapyonetimi.adapter.CategoryChipAdapter
 import com.example.hesapyonetimi.adapter.TransactionAdapter
 import com.example.hesapyonetimi.adapter.WalletChipAdapter
@@ -56,8 +57,11 @@ class GunlukFragment : Fragment() {
     private var selectedDateMillis = System.currentTimeMillis()
     private var selectedWalletId: Long? = null
     private val selectedTagFilters = mutableSetOf<String>()
-    private var isFormExpanded = false
+    private var isFormExpanded = true
+    private var isDetailsExpanded = false
     private var currentDayTransactions: List<Transaction> = emptyList()
+
+    private fun currentLocale(): Locale = resources.configuration.locales.get(0)
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
         return inflater.inflate(R.layout.fragment_gunluk, container, false)
@@ -71,9 +75,9 @@ class GunlukFragment : Fragment() {
             setOnRefreshListener { isRefreshing = false }
         }
 
-        val tarihFormat = SimpleDateFormat("d MMMM yyyy", Locale("tr"))
-        val tarihFormatUzun = SimpleDateFormat("d MMMM yyyy, EEEE", Locale("tr"))
-        val tarihFormatKisa = SimpleDateFormat("d MMMM", Locale("tr"))
+        val tarihFormat = SimpleDateFormat("d MMMM yyyy", currentLocale())
+        val tarihFormatUzun = SimpleDateFormat("d MMMM yyyy, EEEE", currentLocale())
+        val tarihFormatKisa = SimpleDateFormat("d MMMM", currentLocale())
 
         val btnGider  = view.findViewById<TextView>(R.id.btn_gider)
         val btnGelir  = view.findViewById<TextView>(R.id.btn_gelir)
@@ -93,6 +97,41 @@ class GunlukFragment : Fragment() {
         formHeaderRow.setOnClickListener {
             isFormExpanded = !isFormExpanded
             updateFormExpanded()
+        }
+
+        val formExtraDetails = view.findViewById<View>(R.id.form_extra_details)
+        val tvFormDetailsToggle = view.findViewById<TextView>(R.id.tv_form_details_toggle)
+        val ivFormDetailsChevron = view.findViewById<TextView>(R.id.iv_form_details_chevron)
+        fun updateDetailsExpanded() {
+            formExtraDetails.visibility = if (isDetailsExpanded) View.VISIBLE else View.GONE
+            tvFormDetailsToggle.setText(
+                if (isDetailsExpanded) R.string.gunluk_details_collapse else R.string.gunluk_details_expand
+            )
+            ivFormDetailsChevron.text = if (isDetailsExpanded) "▲" else "▼"
+        }
+        updateDetailsExpanded()
+        view.findViewById<View>(R.id.form_details_toggle_row)?.setOnClickListener {
+            isDetailsExpanded = !isDetailsExpanded
+            updateDetailsExpanded()
+        }
+
+        view.post {
+            val act = activity as? MainActivity ?: return@post
+            if (!act.consumePendingDailyCoachmarkRequest()) return@post
+            if (AuthPrefs.isDailyFormCoachmarkShown(requireContext())) return@post
+            Snackbar.make(view, R.string.coachmark_daily_add, Snackbar.LENGTH_LONG)
+                .setAnchorView(btnKaydet)
+                .setAction(R.string.close) {
+                    AuthPrefs.setDailyFormCoachmarkShown(requireContext(), true)
+                }
+                .addCallback(object : Snackbar.Callback() {
+                    override fun onDismissed(transientBottomBar: Snackbar?, event: Int) {
+                        if (event != DISMISS_EVENT_ACTION) {
+                            AuthPrefs.setDailyFormCoachmarkShown(requireContext(), true)
+                        }
+                    }
+                })
+                .show()
         }
 
         val chipGroupInputTags = view.findViewById<ChipGroup>(R.id.chipGroupInputTags)
@@ -128,7 +167,11 @@ class GunlukFragment : Fragment() {
             val sel = Calendar.getInstance().apply { timeInMillis = selectedDateMillis }
             tvSelectedDayLabel.text = when {
                 sel.get(Calendar.DAY_OF_YEAR) == today.get(Calendar.DAY_OF_YEAR) &&
-                sel.get(Calendar.YEAR) == today.get(Calendar.YEAR) -> "Bugün · ${tarihFormatKisa.format(Date(selectedDateMillis))}"
+                    sel.get(Calendar.YEAR) == today.get(Calendar.YEAR) ->
+                    getString(
+                        R.string.gunluk_day_label_today,
+                        tarihFormatKisa.format(Date(selectedDateMillis))
+                    )
                 else -> tarihFormatKisa.format(Date(selectedDateMillis))
             }
         }
@@ -148,13 +191,13 @@ class GunlukFragment : Fragment() {
                 btnGider.setTextColor(greenColor)
                 btnGelir.background = null
                 btnGelir.setTextColor(dimWhite)
-                btnKaydet.text = "Gider Ekle"
+                btnKaydet.text = getString(R.string.gunluk_add_expense)
             } else {
                 btnGelir.setBackgroundResource(R.drawable.toggle_pill_selected)
                 btnGelir.setTextColor(greenColor)
                 btnGider.background = null
                 btnGider.setTextColor(dimWhite)
-                btnKaydet.text = "Gelir Ekle"
+                btnKaydet.text = getString(R.string.gunluk_add_income)
             }
             val cats = if (isGider) viewModel.getExpenseCategories() else viewModel.getIncomeCategories()
             categoryAdapter.setCategories(cats, if (isGider) "Market" else "Maaş")
@@ -180,8 +223,14 @@ class GunlukFragment : Fragment() {
                 val today = Calendar.getInstance()
                 val isBugün = cal.get(Calendar.DAY_OF_YEAR) == today.get(Calendar.DAY_OF_YEAR) &&
                               cal.get(Calendar.YEAR) == today.get(Calendar.YEAR)
-                tvIslemlerBaslik.text = if (isBugün) "Bugünün işlemleri"
-                                        else tarihFormat.format(Date(selectedDateMillis)) + " işlemleri"
+                tvIslemlerBaslik.text = if (isBugün) {
+                    getString(R.string.gunluk_transactions_today)
+                } else {
+                    getString(
+                        R.string.gunluk_transactions_for_day,
+                        tarihFormat.format(Date(selectedDateMillis))
+                    )
+                }
                 refreshIslemler(view, viewModel.uiState.value.transactions)
             }, cal.get(Calendar.YEAR), cal.get(Calendar.MONTH), cal.get(Calendar.DAY_OF_MONTH)).show()
         }
@@ -202,11 +251,18 @@ class GunlukFragment : Fragment() {
         btnKaydet.setOnClickListener {
             hideKeyboard(view)
             val tutarStr = etTutar.text.toString()
-            if (tutarStr.isEmpty()) { toast("Lütfen tutar girin"); return@setOnClickListener }
-            val cat = selectedCategory ?: run { toast("Lütfen kategori seçin"); return@setOnClickListener }
+            if (tutarStr.isEmpty()) {
+                toast(getString(R.string.toast_enter_amount))
+                return@setOnClickListener
+            }
+            val cat = selectedCategory ?: run {
+                toast(getString(R.string.toast_select_category))
+                return@setOnClickListener
+            }
             val aciklama = etAciklama.text.toString()
             if (cat.name.equals("Diğer", ignoreCase = true) && aciklama.isEmpty()) {
-                toast("Diğer kategorisinde açıklama zorunlu"); return@setOnClickListener
+                toast(getString(R.string.toast_other_category_needs_note))
+                return@setOnClickListener
             }
             val tutar = tutarStr.toDoubleOrNull() ?: 0.0
             val tags = (0 until chipGroupInputTags.childCount)
@@ -227,10 +283,9 @@ class GunlukFragment : Fragment() {
             (0 until chipGroupInputTags.childCount).forEach { i ->
                 (chipGroupInputTags.getChildAt(i) as? Chip)?.isChecked = false
             }
-            // Formu kapat ve başarı mesajı göster
-            isFormExpanded = false
-            updateFormExpanded()
-            Snackbar.make(view, "✅ İşlem eklendi!", Snackbar.LENGTH_SHORT).show()
+            isDetailsExpanded = false
+            updateDetailsExpanded()
+            Snackbar.make(view, getString(R.string.snackbar_transaction_added), Snackbar.LENGTH_SHORT).show()
         }
 
         // ── Cüzdan seçimi ──────────────────────────────────────────────────
@@ -340,8 +395,8 @@ class GunlukFragment : Fragment() {
 
                 viewModel.deleteTransaction(deletedTransaction)
 
-                Snackbar.make(rootView, "İşlem silindi", Snackbar.LENGTH_LONG)
-                    .setAction("Geri Al") {
+                Snackbar.make(rootView, getString(R.string.snackbar_transaction_deleted), Snackbar.LENGTH_LONG)
+                    .setAction(getString(R.string.action_undo)) {
                         viewModel.addTransaction(deletedTransaction.copy(id = 0L))
                     }
                     .setActionTextColor(ContextCompat.getColor(requireContext(), R.color.green_primary))
@@ -384,8 +439,8 @@ class GunlukFragment : Fragment() {
         val rvIslemler = view.findViewById<RecyclerView>(R.id.rv_gunluk_islemler)
         val emptyState = view.findViewById<View>(R.id.empty_state_gunluk)
         val tvIslemlerBaslik = view.findViewById<TextView>(R.id.tv_islemler_baslik)
-        val tarihFormat = SimpleDateFormat("d MMMM yyyy", Locale("tr"))
-        val timeFormat  = SimpleDateFormat("HH:mm", Locale.getDefault())
+        val tarihFormat = SimpleDateFormat("d MMMM yyyy", currentLocale())
+        val timeFormat  = SimpleDateFormat("HH:mm", currentLocale())
 
         val secilen = Calendar.getInstance().apply { timeInMillis = selectedDateMillis }
         val filtered = allTransactions.filter { t ->
@@ -402,8 +457,14 @@ class GunlukFragment : Fragment() {
         val today = Calendar.getInstance()
         val isBugün = secilen.get(Calendar.DAY_OF_YEAR) == today.get(Calendar.DAY_OF_YEAR) &&
                       secilen.get(Calendar.YEAR) == today.get(Calendar.YEAR)
-        tvIslemlerBaslik?.text = if (isBugün) "Bugünün işlemleri"
-                                 else tarihFormat.format(Date(selectedDateMillis)) + " işlemleri"
+        tvIslemlerBaslik?.text = if (isBugün) {
+            getString(R.string.gunluk_transactions_today)
+        } else {
+            getString(
+                R.string.gunluk_transactions_for_day,
+                tarihFormat.format(Date(selectedDateMillis))
+            )
+        }
 
         if (filtered.isEmpty()) {
             emptyState.visibility = View.VISIBLE

@@ -5,10 +5,13 @@ import android.content.Intent
 import android.content.pm.PackageManager
 import android.graphics.Color
 import android.os.Bundle
+import android.view.LayoutInflater
+import android.view.View
 import android.widget.TextView
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.app.AppCompatDelegate
+import androidx.appcompat.content.res.AppCompatResources
 import androidx.core.content.ContextCompat
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
@@ -30,11 +33,14 @@ import com.example.hesapyonetimi.auth.AuthSignOut
 import com.example.hesapyonetimi.data.local.dao.UserProfileDao
 import com.example.hesapyonetimi.domain.repository.ReminderRepository
 import com.example.hesapyonetimi.util.LocaleHelper
+import com.example.hesapyonetimi.presentation.profile.ProfileCategoriesDialogFragment
 import com.example.hesapyonetimi.worker.ReminderScheduler
 import com.google.android.material.bottomnavigation.BottomNavigationView
+import com.google.android.material.snackbar.Snackbar
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.google.android.material.navigation.NavigationView
 import com.google.android.material.appbar.MaterialToolbar
+import com.google.android.material.materialswitch.MaterialSwitch
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.first
@@ -44,11 +50,20 @@ import javax.inject.Inject
 @AndroidEntryPoint
 class MainActivity : AppCompatActivity() {
 
+    companion object {
+        const val EXTRA_START_TAB = "extra_start_tab"
+        const val EXTRA_SHOW_DAILY_COACHMARK = "extra_show_daily_coachmark"
+        const val TAB_GUNLUK = "gunluk"
+        const val TAB_OZET = "ozet"
+    }
+
     @Inject
     lateinit var reminderRepository: ReminderRepository
 
     @Inject
     lateinit var userProfileDao: UserProfileDao
+
+    private var pendingDailyCoachmark: Boolean = false
 
     private lateinit var navController: NavController
     private lateinit var drawerLayout: DrawerLayout
@@ -96,8 +111,7 @@ class MainActivity : AppCompatActivity() {
                         ?.takeIf { it.isNotBlank() && it != "Kullanıcı" }
                         ?: prefs.getString("user_display_name", null)?.takeIf { it.isNotBlank() }
                         ?: "Kullanıcı"
-                    val emoji = profile?.avatarEmoji?.takeIf { it.isNotBlank() } ?: "👤"
-                    tvProfile.text = "$emoji $name"
+                    tvProfile.text = name
                 }
             }
         }
@@ -125,8 +139,9 @@ class MainActivity : AppCompatActivity() {
                     navController.navigate(R.id.nav_profil, null, opts)
                     drawerLayout.closeDrawers()
                 }
-                R.id.drawer_wallets -> {
-                    navController.navigate(R.id.walletFragment)
+                R.id.drawer_categories -> {
+                    ProfileCategoriesDialogFragment.newInstance()
+                        .show(supportFragmentManager, "ProfileCategoriesDialogFragment")
                     drawerLayout.closeDrawers()
                 }
                 R.id.drawer_pro -> {
@@ -137,23 +152,13 @@ class MainActivity : AppCompatActivity() {
                     startActivity(Intent(this, WelcomeActivity::class.java))
                     drawerLayout.closeDrawers()
                 }
-                R.id.drawer_link_account -> {
-                    startActivity(
-                        Intent(this, WelcomeActivity::class.java)
-                            .putExtra(WelcomeActivity.EXTRA_LINK_ACCOUNT, true)
-                    )
-                    drawerLayout.closeDrawers()
-                }
-                R.id.drawer_quick_register -> {
-                    startActivity(
-                        Intent(this, RegistrationActivity::class.java)
-                            .putExtra(RegistrationActivity.EXTRA_LINK_ACCOUNT, true)
-                    )
-                    drawerLayout.closeDrawers()
-                }
                 R.id.drawer_sign_out -> {
                     drawerLayout.closeDrawers()
                     confirmAndSignOut()
+                }
+                R.id.drawer_dashboard_modules -> {
+                    drawerLayout.closeDrawers()
+                    showDashboardModulesDialog()
                 }
                 R.id.drawer_theme -> {
                     showThemePicker()
@@ -173,18 +178,61 @@ class MainActivity : AppCompatActivity() {
             NavigationUI.onNavDestinationSelected(item, navController)
         }
 
+        if (savedInstanceState == null) {
+            pendingDailyCoachmark = intent.getBooleanExtra(EXTRA_SHOW_DAILY_COACHMARK, false)
+            when (intent.getStringExtra(EXTRA_START_TAB)) {
+                TAB_GUNLUK -> bottomNav.selectedItemId = R.id.nav_gunluk
+                TAB_OZET -> bottomNav.selectedItemId = R.id.nav_ozet
+            }
+        }
+
         // Android 13+: bildirim izni runtime olarak istenir; aksi halde hatırlatıcı bildirimleri görünmez.
         requestPostNotificationsIfNeeded()
 
         // Bottom nav dışındaki destinasyonlarda (KategoriDetay, Wallet) BottomNav gizle
         navController.addOnDestinationChangedListener { _, destination, _ ->
+            if (destination.id !in appBarConfiguration.topLevelDestinations) {
+                val back = AppCompatResources.getDrawable(this, R.drawable.ic_chevron_left)?.mutate()
+                back?.setTint(ContextCompat.getColor(this, android.R.color.white))
+                toolbar.navigationIcon = back
+                toolbar.navigationContentDescription = getString(R.string.toolbar_cd_back)
+            }
             val topLevelIds = setOf(
                 R.id.nav_ozet, R.id.nav_gunluk, R.id.nav_aylik,
-                R.id.nav_plan, R.id.nav_profil
+                R.id.nav_plan, R.id.nav_profil, R.id.nav_security
             )
             bottomNav.visibility = if (destination.id in topLevelIds)
                 android.view.View.VISIBLE else android.view.View.GONE
+
+            if (destination.id == R.id.nav_ozet && !AuthPrefs.isDashboardSummaryCoachmarkShown(this)) {
+                bottomNav.post {
+                    Snackbar.make(
+                        bottomNav,
+                        getString(R.string.coachmark_dashboard_summary),
+                        Snackbar.LENGTH_LONG
+                    )
+                        .setAnchorView(bottomNav)
+                        .setAction(R.string.close) {
+                            AuthPrefs.setDashboardSummaryCoachmarkShown(this, true)
+                        }
+                        .addCallback(object : Snackbar.Callback() {
+                            override fun onDismissed(transientBottomBar: Snackbar?, event: Int) {
+                                if (event != DISMISS_EVENT_ACTION) {
+                                    AuthPrefs.setDashboardSummaryCoachmarkShown(this@MainActivity, true)
+                                }
+                            }
+                        })
+                        .show()
+                }
+            }
         }
+    }
+
+    /** İlk açılışta günlük coachmark gösterilecekse bir kez true döner. */
+    fun consumePendingDailyCoachmarkRequest(): Boolean {
+        if (!pendingDailyCoachmark) return false
+        pendingDailyCoachmark = false
+        return true
     }
 
     override fun onSupportNavigateUp(): Boolean {
@@ -258,11 +306,8 @@ class MainActivity : AppCompatActivity() {
         val navDrawer = findViewById<NavigationView>(R.id.nav_drawer)
         val menu = navDrawer.menu
         val method = AuthPrefs.getAuthMethod(this)
-        val guest = method == AuthPrefs.AUTH_METHOD_GUEST
         val signedIn = method == AuthPrefs.AUTH_METHOD_GMAIL || method == AuthPrefs.AUTH_METHOD_LOCAL
-        menu.findItem(R.id.drawer_sign_in)?.isVisible = guest || method.isEmpty()
-        menu.findItem(R.id.drawer_link_account)?.isVisible = guest
-        menu.findItem(R.id.drawer_quick_register)?.isVisible = guest
+        menu.findItem(R.id.drawer_sign_in)?.isVisible = method.isEmpty()
         menu.findItem(R.id.drawer_sign_out)?.isVisible = signedIn
     }
 
@@ -364,5 +409,56 @@ class MainActivity : AppCompatActivity() {
     private fun findPlanFragment(): PlanFragment? {
         val host = supportFragmentManager.findFragmentById(R.id.nav_host_fragment) as? NavHostFragment
         return host?.childFragmentManager?.primaryNavigationFragment as? PlanFragment
+    }
+
+    private fun showDashboardModulesDialog() {
+        val v = LayoutInflater.from(this).inflate(R.layout.dialog_drawer_dashboard_modules, null)
+        bindDashboardModuleToggles(v)
+        MaterialAlertDialogBuilder(this)
+            .setTitle(R.string.drawer_dashboard_modules)
+            .setView(v)
+            .setPositiveButton(R.string.close, null)
+            .show()
+    }
+
+    /** Özet ekranı kartlarının görünürlüğü — yalnızca diyalogdan (çekmece menüsü). */
+    private fun bindDashboardModuleToggles(root: View) {
+        val fx = root.findViewById<MaterialSwitch>(R.id.switch_drawer_dashboard_fx)
+        val reminders = root.findViewById<MaterialSwitch>(R.id.switch_drawer_dashboard_reminders)
+        val insights = root.findViewById<MaterialSwitch>(R.id.switch_drawer_dashboard_insights)
+        val miniPie = root.findViewById<MaterialSwitch>(R.id.switch_drawer_dashboard_mini_pie)
+        fun clearListeners() {
+            fx.setOnCheckedChangeListener(null)
+            reminders.setOnCheckedChangeListener(null)
+            insights.setOnCheckedChangeListener(null)
+            miniPie.setOnCheckedChangeListener(null)
+        }
+        clearListeners()
+        fx.isChecked = AuthPrefs.isDashboardFxVisible(this)
+        reminders.isChecked = AuthPrefs.isDashboardReminderSectionVisible(this)
+        insights.isChecked = AuthPrefs.isDashboardInsightsVisible(this)
+        miniPie.isChecked = AuthPrefs.isDashboardMiniPieSectionVisible(this)
+        fx.setOnCheckedChangeListener { _, c ->
+            AuthPrefs.setDashboardFxVisible(this, c)
+            notifyDashboardFragmentPrefsChanged()
+        }
+        reminders.setOnCheckedChangeListener { _, c ->
+            AuthPrefs.setDashboardReminderSectionVisible(this, c)
+            notifyDashboardFragmentPrefsChanged()
+        }
+        insights.setOnCheckedChangeListener { _, c ->
+            AuthPrefs.setDashboardInsightsVisible(this, c)
+            notifyDashboardFragmentPrefsChanged()
+        }
+        miniPie.setOnCheckedChangeListener { _, c ->
+            AuthPrefs.setDashboardMiniPieSectionVisible(this, c)
+            notifyDashboardFragmentPrefsChanged()
+        }
+    }
+
+    private fun notifyDashboardFragmentPrefsChanged() {
+        val host = supportFragmentManager.findFragmentById(R.id.nav_host_fragment) as? NavHostFragment ?: return
+        val dash = host.childFragmentManager.primaryNavigationFragment as? DashboardFragment
+        dash?.refreshDashboardModulePrefs()
     }
 }

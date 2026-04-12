@@ -16,8 +16,27 @@ import javax.inject.Singleton
 @Singleton
 class ExchangeRatesService @Inject constructor() {
 
+    @Volatile
+    private var cachedBanner: String? = null
+
+    @Volatile
+    private var cachedAtMillis: Long = 0L
+
     suspend fun tryCrossRatesBanner(): String? = withContext(Dispatchers.IO) {
-        runCatching {
+        val now = System.currentTimeMillis()
+        if (cachedBanner != null && now - cachedAtMillis < 300_000L) {
+            return@withContext cachedBanner
+        }
+        val fresh = fetchBannerFresh()
+        if (fresh != null) {
+            cachedBanner = fresh
+            cachedAtMillis = now
+        }
+        return@withContext fresh
+    }
+
+    private fun fetchBannerFresh(): String? {
+        return runCatching {
             val url = URL("https://cdn.jsdelivr.net/npm/@fawazahmed0/currency-api@latest/v1/currencies/try.min.json")
             val conn = (url.openConnection() as HttpURLConnection).apply {
                 connectTimeout = 12_000

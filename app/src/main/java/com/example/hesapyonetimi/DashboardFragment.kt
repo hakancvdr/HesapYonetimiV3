@@ -26,8 +26,12 @@ import com.example.hesapyonetimi.model.ReminderModel
 import com.example.hesapyonetimi.model.TransactionModel
 import com.example.hesapyonetimi.presentation.common.AddTransactionDialog
 import com.example.hesapyonetimi.presentation.common.CurrencyFormatter
+import com.example.hesapyonetimi.R
 import com.example.hesapyonetimi.auth.AuthPrefs
+import com.example.hesapyonetimi.presentation.dashboard.DashboardModuleCatalog
 import com.example.hesapyonetimi.presentation.dashboard.DashboardViewModel
+import com.example.hesapyonetimi.util.PayPeriodResolver
+import com.google.android.material.bottomsheet.BottomSheetDialog
 import com.example.hesapyonetimi.ui.PieChartView
 import androidx.core.content.ContextCompat
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout
@@ -49,6 +53,8 @@ class DashboardFragment : Fragment() {
     private var lastKnownExpense = 0.0
     private var budgetWarnShown = false
 
+    private fun currentLocale(): Locale = resources.configuration.locales.get(0)
+
     @Inject
     lateinit var userProfileDao: UserProfileDao
 
@@ -61,13 +67,14 @@ class DashboardFragment : Fragment() {
         super.onViewCreated(view, savedInstanceState)
         initUI()
         setupMonthlyCalendar()
-        setupDashboardHomeControls()
+        setupMiniPieSectionBehavior()
         observeViewModel()
         observeBudgetWarning()
         observeSuggestions()
         observeNetBakiye()
         setupClickListeners()
         applyDashboardModuleVisibility()
+        applyDashboardModuleOrder()
 
         val swipeRefresh = binding.root.findViewById<SwipeRefreshLayout>(R.id.swipe_refresh)
         swipeRefresh?.setColorSchemeResources(R.color.green_primary)
@@ -93,6 +100,59 @@ class DashboardFragment : Fragment() {
         binding.root.findViewById<View>(R.id.overdue_banner)?.setOnClickListener {
             (activity as? MainActivity)?.gosterYaklasan()
         }
+
+        binding.tvMainBalance.setOnClickListener { showPeriodSummaryBottomSheet() }
+    }
+
+    private fun applyDashboardModuleOrder() {
+        val col = binding.root.findViewById<LinearLayout>(R.id.dashboard_modules_column) ?: return
+        val order = AuthPrefs.getDashboardModuleOrder(requireContext())
+        val map = mapOf(
+            DashboardModuleCatalog.MODULE_OVERDUE to R.id.overdue_banner,
+            DashboardModuleCatalog.MODULE_RECURRING_STRIP to R.id.dashboard_recurring_strip,
+            DashboardModuleCatalog.MODULE_CARRYOVER_STRIP to R.id.dashboard_carryover_strip,
+            DashboardModuleCatalog.MODULE_FORECAST to R.id.dashboard_forecast_card,
+            DashboardModuleCatalog.MODULE_MINI_PIE to R.id.dashboard_mini_pie_card,
+            DashboardModuleCatalog.MODULE_CALENDAR to R.id.dashboard_calendar_card,
+            DashboardModuleCatalog.MODULE_INSIGHTS to R.id.dashboard_section_insights,
+            DashboardModuleCatalog.MODULE_FX to R.id.dashboard_fx_card,
+            DashboardModuleCatalog.MODULE_REMINDERS to R.id.dashboard_section_reminders,
+        )
+        val ordered = order.mapNotNull { tag -> map[tag]?.let { id -> col.findViewById<View>(id) } }
+        if (ordered.isEmpty()) return
+        val mappedIds = map.values.toSet()
+        val stray = buildList {
+            for (i in 0 until col.childCount) {
+                val v = col.getChildAt(i)
+                if (v.id != View.NO_ID && v.id !in mappedIds) add(v)
+                if (v.id == View.NO_ID) add(v)
+            }
+        }.distinct()
+        stray.forEach { col.removeView(it) }
+        ordered.forEach { col.removeView(it) }
+        ordered.forEach { col.addView(it) }
+        stray.forEach { col.addView(it) }
+    }
+
+    private fun showPeriodSummaryBottomSheet() {
+        val state = viewModel.uiState.value
+        val period = PayPeriodResolver.currentPeriod(requireContext())
+        val sheet = BottomSheetDialog(requireContext())
+        val v = layoutInflater.inflate(R.layout.sheet_period_summary, null)
+        v.findViewById<TextView>(R.id.tv_sheet_period_range).text =
+            PayPeriodResolver.formatShortRange(requireContext(), period)
+        v.findViewById<TextView>(R.id.tv_sheet_income).text =
+            getString(R.string.period_summary_income_line, CurrencyFormatter.format(state.totalIncome))
+        v.findViewById<TextView>(R.id.tv_sheet_expense).text =
+            getString(R.string.period_summary_expense_line, CurrencyFormatter.format(state.totalExpense))
+        val net = state.totalIncome - state.totalExpense
+        v.findViewById<TextView>(R.id.tv_sheet_net).text =
+            getString(
+                R.string.period_summary_net_line,
+                CurrencyFormatter.formatWithSign(net, net >= 0)
+            )
+        sheet.setContentView(v)
+        sheet.show()
     }
 
     private fun showAddTransactionDialog(isIncome: Boolean?) {
@@ -106,35 +166,30 @@ class DashboardFragment : Fragment() {
         binding.rvDashboardReminders.layoutManager = LinearLayoutManager(context)
     }
 
-    private fun setupDashboardHomeControls() {
-        val ctx = requireContext()
-        binding.switchDashboardFxHome.isChecked = AuthPrefs.isDashboardFxVisible(ctx)
-        binding.switchDashboardRemindersHome.isChecked = AuthPrefs.isDashboardReminderSectionVisible(ctx)
-        binding.switchDashboardInsightsHome.isChecked = AuthPrefs.isDashboardInsightsVisible(ctx)
-        binding.switchDashboardFxHome.setOnCheckedChangeListener { _, c ->
-            AuthPrefs.setDashboardFxVisible(ctx, c)
-            applyDashboardModuleVisibility()
-        }
-        binding.switchDashboardRemindersHome.setOnCheckedChangeListener { _, c ->
-            AuthPrefs.setDashboardReminderSectionVisible(ctx, c)
-            applyDashboardModuleVisibility()
-        }
-        binding.switchDashboardInsightsHome.setOnCheckedChangeListener { _, c ->
-            AuthPrefs.setDashboardInsightsVisible(ctx, c)
-            applyDashboardModuleVisibility()
-        }
-
-        val miniPie = binding.dashboardMiniPie
-        fun applyMiniPieExpanded(expanded: Boolean) {
-            miniPie.visibility = if (expanded) View.VISIBLE else View.GONE
-            binding.btnToggleMiniPie.rotation = if (expanded) 180f else 0f
-        }
-        applyMiniPieExpanded(AuthPrefs.isDashboardMiniPieExpanded(ctx))
+    private fun setupMiniPieSectionBehavior() {
         binding.btnToggleMiniPie.setOnClickListener {
-            val next = miniPie.visibility != View.VISIBLE
+            if (!AuthPrefs.isDashboardMiniPieSectionVisible(requireContext())) return@setOnClickListener
+            val next = binding.dashboardMiniPie.visibility != View.VISIBLE
             AuthPrefs.setDashboardMiniPieExpanded(requireContext(), next)
-            applyMiniPieExpanded(next)
+            applyMiniPieExpandState()
         }
+        applyMiniPieExpandState()
+    }
+
+    private fun applyMiniPieExpandState() {
+        if (_binding == null) return
+        if (!AuthPrefs.isDashboardMiniPieSectionVisible(requireContext())) return
+        val expanded = AuthPrefs.isDashboardMiniPieExpanded(requireContext())
+        binding.dashboardMiniPie.visibility = if (expanded) View.VISIBLE else View.GONE
+        binding.btnToggleMiniPie.rotation = if (expanded) 180f else 0f
+    }
+
+    /** Çekmece ana sayfa anahtarları değişince çağrılır. */
+    fun refreshDashboardModulePrefs() {
+        if (_binding == null || !isAdded) return
+        applyDashboardModuleVisibility()
+        applyDashboardModuleOrder()
+        applyMiniPieExpandState()
     }
 
     private fun observeViewModel() {
@@ -175,37 +230,68 @@ class DashboardFragment : Fragment() {
     }
 
     private fun updateUI(state: com.example.hesapyonetimi.presentation.dashboard.DashboardUiState) {
+        val forecastCard = binding.root.findViewById<View>(R.id.dashboard_forecast_card)
+        val tvForecastCompact = binding.root.findViewById<TextView>(R.id.tv_forecast_compact)
+        val forecastParts = listOfNotNull(
+            state.forecastHeadline.trim().takeIf { it.isNotEmpty() },
+            state.forecastLine1.trim().takeIf { it.isNotEmpty() },
+            state.forecastLine2.trim().takeIf { it.isNotEmpty() }
+        )
+        if (forecastParts.isEmpty()) {
+            forecastCard?.visibility = View.GONE
+        } else {
+            forecastCard?.visibility = View.VISIBLE
+            tvForecastCompact?.visibility = View.VISIBLE
+            tvForecastCompact?.text = forecastParts.joinToString(separator = " — ")
+        }
+
         binding.tvMainBalance.text = CurrencyFormatter.format(state.totalBalance)
         binding.tvDashboardIncomeVal.text = CurrencyFormatter.format(state.totalIncome)
         binding.tvDashboardExpenseVal.text = CurrencyFormatter.format(state.totalExpense)
 
-        val monthName = SimpleDateFormat("MMMM yyyy", Locale("tr")).format(Date())
-        binding.tvMonthTitle.text = "Bu ay — $monthName"
+        val period = PayPeriodResolver.currentPeriod(requireContext())
+        binding.tvMonthTitle.text = getString(
+            R.string.dashboard_period_title,
+            PayPeriodResolver.formatShortRange(requireContext(), period)
+        )
 
-        val bannerLines = listOfNotNull(state.exchangeRatesBanner, state.recurringWorkerBanner)
-            .map { it.trim() }
-            .filter { it.isNotEmpty() }
-        if (bannerLines.isEmpty()) {
-            binding.tvExchangeRates.visibility = View.GONE
+        val recurringStrip = binding.root.findViewById<TextView>(R.id.dashboard_recurring_strip)
+        val recurringText = state.recurringWorkerBanner?.trim().orEmpty()
+        if (recurringText.isEmpty()) {
+            recurringStrip?.visibility = View.GONE
         } else {
-            binding.tvExchangeRates.visibility = View.VISIBLE
-            binding.tvExchangeRates.text = bannerLines.joinToString("\n")
+            recurringStrip?.visibility = View.VISIBLE
+            recurringStrip?.text = recurringText
         }
+
+        val carryStrip = binding.root.findViewById<TextView>(R.id.dashboard_carryover_strip)
+        val showCarryoverHint =
+            state.periodTransactionCount >= 5 && (state.totalIncome > 0.0 || state.totalExpense > 0.0)
+        carryStrip?.visibility = if (showCarryoverHint) View.VISIBLE else View.GONE
 
         val suggestionContainer = binding.root.findViewById<View>(R.id.suggestion_container)
         if (state.totalIncome == 0.0 && state.totalExpense == 0.0) {
             suggestionContainer?.visibility = View.GONE
         } else {
             suggestionContainer?.visibility = View.VISIBLE
+            val dayIdx = PayPeriodResolver.currentDayIndexInPeriod(requireContext())
+            val minTxForStrongWarnings = 5
+            val suppressEarlyBurn =
+                dayIdx <= 5 && state.periodTransactionCount < minTxForStrongWarnings
             // Bütçe/denge durum metni — tv_suggestion'a (akıllı öneri tvSmartTip'e)
             binding.tvSuggestion.text = when {
-                state.totalExpense > state.totalIncome ->
-                    "Bu ay giderleriniz gelirinizi aştı ⚠️"
-                state.totalIncome > 0 && state.totalExpense > state.totalIncome * 0.8 ->
-                    "Harcamalarınız gelirinizin %${((state.totalExpense / state.totalIncome) * 100).toInt()}'ine ulaştı"
-                else -> "Bu ay bütçeni dengeli tutuyorsun 👍"
+                !suppressEarlyBurn && state.totalExpense > state.totalIncome ->
+                    getString(R.string.dashboard_suggestion_expense_over_income)
+                !suppressEarlyBurn && state.totalIncome > 0 && state.totalExpense > state.totalIncome * 0.8 ->
+                    getString(
+                        R.string.dashboard_suggestion_spend_ratio,
+                        ((state.totalExpense / state.totalIncome) * 100).toInt()
+                    )
+                else -> getString(R.string.dashboard_suggestion_balanced)
             }
-            binding.tvHighestCategory.text = state.highestCategory.ifEmpty { "—" }
+            binding.tvHighestCategory.text = state.highestCategory.ifEmpty {
+                getString(R.string.dashboard_category_placeholder)
+            }
         }
 
         // Gecikmiş ödemeler banner
@@ -218,9 +304,16 @@ class DashboardFragment : Fragment() {
             overdueBanner?.visibility = View.GONE
         } else {
             overdueBanner?.visibility = View.VISIBLE
-            overdueTitle?.text = if (gecikmisler.size == 1) "Gecikmiş ödemen var!" else "${gecikmisler.size} gecikmiş ödemen var!"
+            overdueTitle?.text = if (gecikmisler.size == 1) {
+                getString(R.string.dashboard_overdue_title_one)
+            } else {
+                getString(R.string.dashboard_overdue_title_many, gecikmisler.size)
+            }
             val totalOverdue = gecikmisler.sumOf { it.amount }
-            overdueSubtitle?.text = "Toplam: ${CurrencyFormatter.format(totalOverdue)} · Detay için dokun"
+            overdueSubtitle?.text = getString(
+                R.string.dashboard_overdue_subtitle,
+                CurrencyFormatter.format(totalOverdue)
+            )
         }
 
         // Yaklaşan ödemeler (sadece bugün ve sonrası, gecikmişler ayrı bannerda)
@@ -243,13 +336,13 @@ class DashboardFragment : Fragment() {
             yaklasamaContainer?.visibility = View.VISIBLE
             binding.rvDashboardReminders.visibility = View.VISIBLE
             binding.emptyReminders.visibility = View.GONE
-            val dateFormat = SimpleDateFormat("d MMMM", Locale("tr"))
+            val dateFormat = SimpleDateFormat("d MMMM", currentLocale())
             binding.rvDashboardReminders.adapter = ReminderAdapter(
                 yaklasanOdemeler.map { reminder ->
                     val dateStr = when {
-                        reminder.daysUntilDue == 0 -> "Bugün"
-                        reminder.daysUntilDue == 1 -> "Yarın"
-                        reminder.daysUntilDue < 0  -> "Gecikmiş"
+                        reminder.daysUntilDue == 0 -> getString(R.string.reminder_due_today)
+                        reminder.daysUntilDue == 1 -> getString(R.string.reminder_due_tomorrow)
+                        reminder.daysUntilDue < 0  -> getString(R.string.reminder_due_overdue)
                         else -> dateFormat.format(Date(reminder.dueDate))
                     }
                     ReminderModel(reminder.title, CurrencyFormatter.format(reminder.amount), dateStr,
@@ -262,8 +355,6 @@ class DashboardFragment : Fragment() {
     }
 
     private fun updateTransactionList(transactions: List<com.example.hesapyonetimi.domain.model.Transaction>) {
-        val selectedDateLabel = binding.root.findViewById<TextView>(R.id.tv_selected_date_label)
-
         if (transactions.isEmpty()) {
             binding.tvEmptyState.visibility = View.VISIBLE
             binding.rvRecentTransactions.visibility = View.GONE
@@ -298,7 +389,7 @@ class DashboardFragment : Fragment() {
     private fun refreshCalendar(daysWithData: Set<Int>) {
         val calendar = Calendar.getInstance()
         val daysInMonth = calendar.getActualMaximum(Calendar.DAY_OF_MONTH)
-        val dayFormat = SimpleDateFormat("EEE", Locale("tr"))
+        val dayFormat = SimpleDateFormat("EEE", currentLocale())
         val numberFormat = SimpleDateFormat("dd", Locale.getDefault())
         val monthlyDays = (1..daysInMonth).map { i ->
             val c = (calendar.clone() as Calendar).also { it.set(Calendar.DAY_OF_MONTH, i) }
@@ -322,7 +413,7 @@ class DashboardFragment : Fragment() {
         val calendar = Calendar.getInstance()
         val currentDay = calendar.get(Calendar.DAY_OF_MONTH)
         val daysInMonth = calendar.getActualMaximum(Calendar.DAY_OF_MONTH)
-        val dayFormat = SimpleDateFormat("EEE", Locale("tr"))
+        val dayFormat = SimpleDateFormat("EEE", currentLocale())
         val numberFormat = SimpleDateFormat("dd", Locale.getDefault())
         val daysWithData = viewModel.uiState.value.daysWithTransactions
         val monthlyDays = (1..daysInMonth).map { i ->
@@ -347,15 +438,15 @@ class DashboardFragment : Fragment() {
     private fun updateSelectedDateLabel(day: Int) {
         val selectedDateLabel = binding.root.findViewById<TextView>(R.id.tv_selected_date_label) ?: return
         val today = Calendar.getInstance().get(Calendar.DAY_OF_MONTH)
-        val monthName = SimpleDateFormat("d MMMM", Locale("tr")).format(
+        val monthName = SimpleDateFormat("d MMMM", currentLocale()).format(
             Calendar.getInstance().apply { set(Calendar.DAY_OF_MONTH, day) }.time
         )
         selectedDateLabel.visibility = View.VISIBLE
         selectedDateLabel.text = when (day) {
-            today -> "Bugün ($monthName) işlemleri"
-            today - 1 -> "Dün ($monthName) işlemleri"
-            today + 1 -> "Yarın ($monthName)"
-            else -> "$monthName işlemleri"
+            today -> getString(R.string.dashboard_selected_day_today, monthName)
+            today - 1 -> getString(R.string.dashboard_selected_day_yesterday, monthName)
+            today + 1 -> getString(R.string.dashboard_selected_day_tomorrow, monthName)
+            else -> getString(R.string.dashboard_selected_day_other, monthName)
         }
     }
 
@@ -384,10 +475,10 @@ class DashboardFragment : Fragment() {
                 val percent = (ratio * 100).toInt().coerceAtMost(100)
                 Snackbar.make(
                     binding.root,
-                    "⚠️ Aylık bütçenizin %$percent'ini harcadınız!",
+                    getString(R.string.snackbar_budget_threshold, percent),
                     Snackbar.LENGTH_LONG
                 )
-                    .setAction("Analiz Et") {
+                    .setAction(getString(R.string.action_analyze)) {
                         (activity as? MainActivity)?.gosterAylik()
                     }
                     .setActionTextColor(
@@ -432,16 +523,24 @@ class DashboardFragment : Fragment() {
                     val lines = mutableListOf<String>()
                     suggestions.take(4).forEach { o ->
                         lines.add(
-                            "💡 ${o.categoryIcon} ${o.categoryName} — yaklaşık ${CurrencyFormatter.format(o.amount)} (ör. tekrar)"
+                            getString(
+                                R.string.dashboard_smart_tip_line,
+                                o.categoryIcon,
+                                o.categoryName,
+                                CurrencyFormatter.format(o.amount)
+                            )
                         )
                     }
-                    budgetLines.forEach { lines.add("📊 $it") }
+                    budgetLines.forEach { lines.add(getString(R.string.dashboard_budget_tip_line, it)) }
+                    val tipsCard = binding.root.findViewById<View>(R.id.dashboard_tips_card)
                     if (lines.isEmpty()) {
+                        tipsCard?.visibility = View.GONE
                         tvSmartTip?.visibility = View.GONE
                         smartTipRow?.visibility = View.GONE
                         smartTipDivider?.visibility = View.GONE
                         return@collect
                     }
+                    tipsCard?.visibility = View.VISIBLE
                     tvSmartTip?.text = lines.joinToString("\n\n")
                     tvSmartTip?.visibility = View.VISIBLE
                     smartTipRow?.visibility = View.VISIBLE
@@ -453,7 +552,7 @@ class DashboardFragment : Fragment() {
 
     override fun onResume() {
         super.onResume()
-        applyDashboardModuleVisibility()
+        refreshDashboardModulePrefs()
     }
 
     private fun applyDashboardModuleVisibility() {
@@ -465,6 +564,8 @@ class DashboardFragment : Fragment() {
             if (AuthPrefs.isDashboardInsightsVisible(ctx)) View.VISIBLE else View.GONE
         binding.root.findViewById<View>(R.id.dashboard_section_reminders)?.visibility =
             if (AuthPrefs.isDashboardReminderSectionVisible(ctx)) View.VISIBLE else View.GONE
+        binding.root.findViewById<View>(R.id.dashboard_mini_pie_card)?.visibility =
+            if (AuthPrefs.isDashboardMiniPieSectionVisible(ctx)) View.VISIBLE else View.GONE
     }
 
     override fun onDestroyView() {

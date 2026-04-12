@@ -1,54 +1,56 @@
 <?xml version="1.0" encoding="utf-8"?>
 <menu xmlns:android="http://schemas.android.com/apk/res/android">
-    <group android:id="@+id/drawer_group_main" android:checkableBehavior="none">
+    <!-- Bölüm başlığı yok: sade gruplar + ayırıcı -->
+    <group
+        android:id="@+id/drawer_group_main"
+        android:checkableBehavior="none">
         <item
             android:id="@+id/drawer_profile"
             android:icon="@drawable/ic_person"
             android:title="@string/drawer_profile" />
         <item
-            android:id="@+id/drawer_wallets"
-            android:icon="@drawable/ic_wallet_24"
-            android:title="@string/drawer_wallets" />
+            android:id="@+id/drawer_categories"
+            android:icon="@drawable/ic_category_label_24"
+            android:title="@string/drawer_categories" />
         <item
             android:id="@+id/drawer_pro"
-            android:icon="@drawable/ic_goals"
+            android:icon="@drawable/ic_star_pro_24"
             android:title="@string/drawer_pro" />
     </group>
 
-    <item android:title="@string/drawer_section_account">
-        <menu>
-            <item
-                android:id="@+id/drawer_sign_in"
-                android:icon="@drawable/ic_person"
-                android:title="@string/drawer_sign_in"
-                android:visible="false" />
-            <item
-                android:id="@+id/drawer_link_account"
-                android:icon="@drawable/ic_link_24"
-                android:title="@string/drawer_link_account"
-                android:visible="false" />
-            <item
-                android:id="@+id/drawer_quick_register"
-                android:icon="@drawable/ic_edit"
-                android:title="@string/drawer_quick_register"
-                android:visible="false" />
-            <item
-                android:id="@+id/drawer_sign_out"
-                android:icon="@drawable/ic_logout_24"
-                android:title="@string/drawer_sign_out" />
-        </menu>
-    </item>
+    <group
+        android:id="@+id/drawer_group_prefs"
+        android:checkableBehavior="none">
+        <item
+            android:id="@+id/drawer_dashboard_modules"
+            android:icon="@drawable/home_24px"
+            android:title="@string/drawer_dashboard_modules" />
+        <item
+            android:id="@+id/drawer_theme"
+            android:icon="@drawable/ic_theme_24"
+            android:title="@string/drawer_theme" />
+        <item
+            android:id="@+id/drawer_language"
+            android:icon="@drawable/ic_translate_24"
+            android:title="@string/drawer_language" />
+    </group>
 
-    <item android:title="@string/drawer_section_settings">
-        <menu>
-            <item
-                android:id="@+id/drawer_theme"
-                android:icon="@drawable/calendar_month_24px"
-                android:title="@string/drawer_theme" />
-            <item
-                android:id="@+id/drawer_language"
-                android:icon="@drawable/ic_translate_24"
-                android:title="@string/drawer_language" />
-        </menu>
-    </item>
+    <group
+        android:id="@+id/drawer_group_sign_in"
+        android:checkableBehavior="none">
+        <item
+            android:id="@+id/drawer_sign_in"
+            android:icon="@drawable/ic_person"
+            android:title="@string/drawer_sign_in"
+            android:visible="false" />
+    </group>
+
+    <group
+        android:id="@+id/drawer_group_sign_out"
+        android:checkableBehavior="none">
+        <item
+            android:id="@+id/drawer_sign_out"
+            android:icon="@drawable/ic_logout_24"
+            android:title="@string/drawer_sign_out" />
+    </group>
 </menu>

@@ -1,11 +1,14 @@
 package com.example.hesapyonetimi.presentation.aylik
 
+import android.content.Context
 import android.os.Parcelable
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.hesapyonetimi.domain.model.Transaction
 import com.example.hesapyonetimi.domain.repository.TransactionRepository
+import com.example.hesapyonetimi.util.PayPeriodResolver
 import dagger.hilt.android.lifecycle.HiltViewModel
+import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import kotlinx.parcelize.Parcelize
@@ -42,7 +45,8 @@ data class AylikUiState(
 
 @HiltViewModel
 class AylikViewModel @Inject constructor(
-    private val transactionRepository: TransactionRepository
+    private val transactionRepository: TransactionRepository,
+    @ApplicationContext private val appContext: Context
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(AylikUiState())
@@ -86,7 +90,7 @@ class AylikViewModel @Inject constructor(
     private fun loadData() {
         viewModelScope.launch {
             val (start, end, ayAdi, gunSayisi) = getDateRange()
-            val (prevStart, prevEnd) = getMonthRange(-1)
+            val (prevStart, prevEnd) = previousComparisonRange()
             val prevTx = transactionRepository.getTransactionsByDateRange(prevStart, prevEnd).first()
             val prevGiderler = prevTx.filter { !it.isIncome }
 
@@ -180,26 +184,18 @@ class AylikViewModel @Inject constructor(
         }
 
         val cal = Calendar.getInstance()
-        val format = java.text.SimpleDateFormat("MMMM yyyy", Locale("tr"))
         return when (donem) {
             0 -> {
-                cal.set(Calendar.DAY_OF_MONTH, 1)
-                cal.set(Calendar.HOUR_OF_DAY, 0); cal.set(Calendar.MINUTE, 0); cal.set(Calendar.SECOND, 0)
-                val start = cal.timeInMillis
-                val gun = cal.getActualMaximum(Calendar.DAY_OF_MONTH)
-                cal.set(Calendar.DAY_OF_MONTH, gun)
-                cal.set(Calendar.HOUR_OF_DAY, 23); cal.set(Calendar.MINUTE, 59); cal.set(Calendar.SECOND, 59)
-                DateRange(start, cal.timeInMillis, format.format(Date(start)), gun)
+                val p = PayPeriodResolver.currentPeriod(appContext)
+                val gun = PayPeriodResolver.inclusiveDayCount(p)
+                val label = PayPeriodResolver.formatShortRange(appContext, p)
+                DateRange(p.startMillis, p.endInclusiveMillis(), label, gun)
             }
             1 -> {
-                cal.add(Calendar.MONTH, -1)
-                cal.set(Calendar.DAY_OF_MONTH, 1)
-                cal.set(Calendar.HOUR_OF_DAY, 0); cal.set(Calendar.MINUTE, 0); cal.set(Calendar.SECOND, 0)
-                val start = cal.timeInMillis
-                val gun = cal.getActualMaximum(Calendar.DAY_OF_MONTH)
-                cal.set(Calendar.DAY_OF_MONTH, gun)
-                cal.set(Calendar.HOUR_OF_DAY, 23); cal.set(Calendar.MINUTE, 59); cal.set(Calendar.SECOND, 59)
-                DateRange(start, cal.timeInMillis, format.format(Date(start)), gun)
+                val p = PayPeriodResolver.previousPeriod(appContext)
+                val gun = PayPeriodResolver.inclusiveDayCount(p)
+                val label = PayPeriodResolver.formatShortRange(appContext, p)
+                DateRange(p.startMillis, p.endInclusiveMillis(), label, gun)
             }
             3 -> {
                 val end = cal.timeInMillis
@@ -223,5 +219,22 @@ class AylikViewModel @Inject constructor(
         cal.set(Calendar.DAY_OF_MONTH, cal.getActualMaximum(Calendar.DAY_OF_MONTH))
         cal.set(Calendar.HOUR_OF_DAY, 23); cal.set(Calendar.MINUTE, 59); cal.set(Calendar.SECOND, 59)
         return start to cal.timeInMillis
+    }
+
+    /** Önceki dönemle kıyas için aralık (takvim ayı özel filtrelerde eski davranış). */
+    private fun previousComparisonRange(): Pair<Long, Long> {
+        return when (donem) {
+            0 -> {
+                val cur = PayPeriodResolver.currentPeriod(appContext)
+                val prev = PayPeriodResolver.periodBefore(appContext, cur)
+                prev.startMillis to prev.endInclusiveMillis()
+            }
+            1 -> {
+                val prev = PayPeriodResolver.previousPeriod(appContext)
+                val beforePrev = PayPeriodResolver.periodBefore(appContext, prev)
+                beforePrev.startMillis to beforePrev.endInclusiveMillis()
+            }
+            else -> getMonthRange(-1)
+        }
     }
 }

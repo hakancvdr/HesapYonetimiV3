@@ -12,11 +12,11 @@ import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
 import com.example.hesapyonetimi.MainActivity
 import com.example.hesapyonetimi.R
+import com.example.hesapyonetimi.util.PayPeriodResolver
 import com.example.hesapyonetimi.data.local.dao.TransactionDao
 import com.example.hesapyonetimi.data.local.dao.UserProfileDao
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedInject
-import java.util.Calendar
 
 @HiltWorker
 class BudgetAlertWorker @AssistedInject constructor(
@@ -38,16 +38,10 @@ class BudgetAlertWorker @AssistedInject constructor(
             val budgetLimit = profile.monthlyBudgetLimit
             if (budgetLimit <= 0) return Result.success()
 
-            val now = Calendar.getInstance()
-            val startOfMonth = Calendar.getInstance().apply {
-                set(Calendar.DAY_OF_MONTH, 1)
-                set(Calendar.HOUR_OF_DAY, 0)
-                set(Calendar.MINUTE, 0)
-                set(Calendar.SECOND, 0)
-                set(Calendar.MILLISECOND, 0)
-            }
+            val now = System.currentTimeMillis()
+            val period = PayPeriodResolver.currentPeriod(applicationContext)
             val totalExpense = transactionDao.getTotalExpense(
-                startOfMonth.timeInMillis, now.timeInMillis
+                period.startMillis, now
             ) ?: 0.0
 
             val ratio = totalExpense / budgetLimit

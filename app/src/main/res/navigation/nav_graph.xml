@@ -7,17 +7,17 @@
     <fragment
         android:id="@+id/nav_ozet"
         android:name="com.example.hesapyonetimi.DashboardFragment"
-        android:label="Anasayfa" />
+        android:label="@string/nav_home_short" />
 
     <fragment
         android:id="@+id/nav_gunluk"
         android:name="com.example.hesapyonetimi.GunlukFragment"
-        android:label="Günlük" />
+        android:label="@string/nav_gunluk_short" />
 
     <fragment
         android:id="@+id/nav_aylik"
         android:name="com.example.hesapyonetimi.AylikFragment"
-        android:label="Aylık">
+        android:label="@string/nav_monthly_short">
         <action
             android:id="@+id/action_aylik_to_kategoriDetay"
             app:destination="@id/kategoriDetayFragment"
@@ -30,12 +30,17 @@
     <fragment
         android:id="@+id/nav_plan"
         android:name="com.example.hesapyonetimi.PlanFragment"
-        android:label="@string/nav_plan">
+        android:label="@string/nav_plan_short">
         <argument
             android:name="initialTab"
             app:argType="integer"
             android:defaultValue="0" />
     </fragment>
+
+    <fragment
+        android:id="@+id/nav_security"
+        android:name="com.example.hesapyonetimi.presentation.profile.SecurityPrivacyFragment"
+        android:label="@string/security_privacy_title" />
 
     <fragment
         android:id="@+id/nav_profil"

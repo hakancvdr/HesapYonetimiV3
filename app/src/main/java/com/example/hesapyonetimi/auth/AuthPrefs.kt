@@ -2,6 +2,7 @@ package com.example.hesapyonetimi.auth
 
 import android.content.Context
 import android.content.SharedPreferences
+import com.example.hesapyonetimi.presentation.dashboard.DashboardModuleCatalog
 
 /**
  * Kurulum yöntemi ve PIN tercihleri [HesapPrefs] üzerinde tutulur (Room migration gerekmez).
@@ -12,7 +13,6 @@ object AuthPrefs {
 
     const val AUTH_METHOD_GMAIL = "GMAIL"
     const val AUTH_METHOD_LOCAL = "LOCAL"
-    const val AUTH_METHOD_GUEST = "GUEST"
 
     private const val KEY_AUTH_METHOD = "auth_method"
     private const val KEY_PIN_ENABLED = "pin_enabled"
@@ -26,6 +26,20 @@ object AuthPrefs {
     private const val KEY_DASH_MOD_REMINDERS = "dashboard_mod_reminders"
     private const val KEY_DASH_MOD_INSIGHTS = "dashboard_mod_insights"
     private const val KEY_DASH_MINI_PIE_EXPANDED = "dashboard_mini_pie_expanded"
+    private const val KEY_DASH_MOD_MINI_PIE = "dashboard_mod_mini_pie_visible"
+
+    const val PAY_PERIOD_MODE_CALENDAR = "calendar"
+    const val PAY_PERIOD_MODE_SALARY = "salary"
+
+    private const val KEY_PAY_PERIOD_MODE = "pay_period_mode"
+    private const val KEY_SALARY_DAY_OF_MONTH = "salary_day_of_month"
+    private const val KEY_LAST_MANUAL_EXPORT_YEAR = "last_manual_export_year"
+    private const val KEY_LAST_MANUAL_EXPORT_MONTH = "last_manual_export_month"
+
+    private const val KEY_DASHBOARD_MODULE_ORDER = "dashboard_module_order"
+    private const val KEY_ANALYTICS_ANONYMOUS = "analytics_anonymous_enabled"
+    private const val KEY_COACHMARK_DASHBOARD = "coachmark_dashboard_summary_shown"
+    private const val KEY_COACHMARK_DAILY_FORM = "coachmark_daily_form_shown"
 
     const val LOCALE_TR = "tr"
     const val LOCALE_EN = "en"
@@ -37,6 +51,8 @@ object AuthPrefs {
 
     fun getAuthMethod(ctx: Context): String {
         val raw = prefs(ctx).getString(KEY_AUTH_METHOD, null)?.trim().orEmpty()
+        // Eski sürümlerde kayıtlı GUEST değeri; yerel hesap gibi işlenir.
+        if (raw.equals("GUEST", ignoreCase = true)) return AUTH_METHOD_LOCAL
         if (raw.isNotEmpty()) return raw
         // Eski kurulumlar: kayıtlı + güvenlik cevabı → yerel hızlı kayıt
         return if (prefs(ctx).getBoolean("is_registered", false)) AUTH_METHOD_LOCAL else ""
@@ -71,9 +87,6 @@ object AuthPrefs {
     }
 
     fun hasSecurityRecovery(ctx: Context): Boolean {
-        when (getAuthMethod(ctx)) {
-            AUTH_METHOD_GMAIL, AUTH_METHOD_GUEST -> return false
-        }
         val ans = prefs(ctx).getString("security_answer", null)?.trim().orEmpty()
         return ans.isNotEmpty()
     }
@@ -119,7 +132,7 @@ object AuthPrefs {
     }
 
     fun isDashboardFxVisible(ctx: Context): Boolean =
-        prefs(ctx).getBoolean(KEY_DASHBOARD_FX, true)
+        prefs(ctx).getBoolean(KEY_DASHBOARD_FX, false)
 
     fun setDashboardFxVisible(ctx: Context, visible: Boolean) {
         prefs(ctx).edit().putBoolean(KEY_DASHBOARD_FX, visible).apply()
@@ -140,10 +153,84 @@ object AuthPrefs {
     }
 
     fun isDashboardMiniPieExpanded(ctx: Context): Boolean =
-        prefs(ctx).getBoolean(KEY_DASH_MINI_PIE_EXPANDED, true)
+        prefs(ctx).getBoolean(KEY_DASH_MINI_PIE_EXPANDED, false)
 
     fun setDashboardMiniPieExpanded(ctx: Context, expanded: Boolean) {
         prefs(ctx).edit().putBoolean(KEY_DASH_MINI_PIE_EXPANDED, expanded).apply()
+    }
+
+    fun isDashboardMiniPieSectionVisible(ctx: Context): Boolean =
+        prefs(ctx).getBoolean(KEY_DASH_MOD_MINI_PIE, true)
+
+    fun setDashboardMiniPieSectionVisible(ctx: Context, visible: Boolean) {
+        prefs(ctx).edit().putBoolean(KEY_DASH_MOD_MINI_PIE, visible).apply()
+    }
+
+    fun getPayPeriodMode(ctx: Context): String {
+        val raw = prefs(ctx).getString(KEY_PAY_PERIOD_MODE, PAY_PERIOD_MODE_CALENDAR)?.trim().orEmpty()
+        return if (raw == PAY_PERIOD_MODE_SALARY) PAY_PERIOD_MODE_SALARY else PAY_PERIOD_MODE_CALENDAR
+    }
+
+    fun setPayPeriodMode(ctx: Context, mode: String) {
+        val v = if (mode == PAY_PERIOD_MODE_SALARY) PAY_PERIOD_MODE_SALARY else PAY_PERIOD_MODE_CALENDAR
+        prefs(ctx).edit().putString(KEY_PAY_PERIOD_MODE, v).apply()
+    }
+
+    fun getSalaryDayOfMonth(ctx: Context): Int =
+        prefs(ctx).getInt(KEY_SALARY_DAY_OF_MONTH, 1).coerceIn(1, 31)
+
+    fun setSalaryDayOfMonth(ctx: Context, day: Int) {
+        prefs(ctx).edit().putInt(KEY_SALARY_DAY_OF_MONTH, day.coerceIn(1, 31)).apply()
+    }
+
+    fun canManualExportCsvThisMonth(ctx: Context): Boolean {
+        val cal = java.util.Calendar.getInstance()
+        val y = cal.get(java.util.Calendar.YEAR)
+        val m = cal.get(java.util.Calendar.MONTH)
+        val ly = prefs(ctx).getInt(KEY_LAST_MANUAL_EXPORT_YEAR, -1)
+        val lm = prefs(ctx).getInt(KEY_LAST_MANUAL_EXPORT_MONTH, -1)
+        return ly != y || lm != m
+    }
+
+    fun markManualExportCsvDoneForCurrentMonth(ctx: Context) {
+        val cal = java.util.Calendar.getInstance()
+        prefs(ctx).edit()
+            .putInt(KEY_LAST_MANUAL_EXPORT_YEAR, cal.get(java.util.Calendar.YEAR))
+            .putInt(KEY_LAST_MANUAL_EXPORT_MONTH, cal.get(java.util.Calendar.MONTH))
+            .apply()
+    }
+
+    fun getDashboardModuleOrder(ctx: Context): List<String> {
+        val raw = prefs(ctx).getString(KEY_DASHBOARD_MODULE_ORDER, null)?.trim().orEmpty()
+        if (raw.isEmpty()) return DashboardModuleCatalog.defaultOrder
+        val parts = raw.split(",").map { it.trim() }.filter { it.isNotEmpty() }
+        return DashboardModuleCatalog.normalizeOrder(parts)
+    }
+
+    fun setDashboardModuleOrder(ctx: Context, order: List<String>) {
+        val normalized = DashboardModuleCatalog.normalizeOrder(order)
+        prefs(ctx).edit().putString(KEY_DASHBOARD_MODULE_ORDER, normalized.joinToString(",")).apply()
+    }
+
+    fun isAnonymousAnalyticsEnabled(ctx: Context): Boolean =
+        prefs(ctx).getBoolean(KEY_ANALYTICS_ANONYMOUS, true)
+
+    fun setAnonymousAnalyticsEnabled(ctx: Context, enabled: Boolean) {
+        prefs(ctx).edit().putBoolean(KEY_ANALYTICS_ANONYMOUS, enabled).apply()
+    }
+
+    fun isDashboardSummaryCoachmarkShown(ctx: Context): Boolean =
+        prefs(ctx).getBoolean(KEY_COACHMARK_DASHBOARD, false)
+
+    fun setDashboardSummaryCoachmarkShown(ctx: Context, shown: Boolean) {
+        prefs(ctx).edit().putBoolean(KEY_COACHMARK_DASHBOARD, shown).apply()
+    }
+
+    fun isDailyFormCoachmarkShown(ctx: Context): Boolean =
+        prefs(ctx).getBoolean(KEY_COACHMARK_DAILY_FORM, false)
+
+    fun setDailyFormCoachmarkShown(ctx: Context, shown: Boolean) {
+        prefs(ctx).edit().putBoolean(KEY_COACHMARK_DAILY_FORM, shown).apply()
     }
 
     /**
@@ -164,6 +251,14 @@ object AuthPrefs {
             .remove("user_display_name")
             .remove(KEY_LINKED_GOOGLE_EMAIL)
             .remove("son_giris_zamani")
+            .remove(KEY_PAY_PERIOD_MODE)
+            .remove(KEY_SALARY_DAY_OF_MONTH)
+            .remove(KEY_LAST_MANUAL_EXPORT_YEAR)
+            .remove(KEY_LAST_MANUAL_EXPORT_MONTH)
+            .remove(KEY_DASHBOARD_MODULE_ORDER)
+            .remove(KEY_COACHMARK_DASHBOARD)
+            .remove(KEY_COACHMARK_DAILY_FORM)
+            .remove(KEY_ANALYTICS_ANONYMOUS)
             .putString("theme_mode", theme)
             .putString(KEY_APP_LOCALE, locale)
             .apply()

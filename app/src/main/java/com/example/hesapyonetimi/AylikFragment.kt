@@ -48,8 +48,14 @@ import java.util.*
 class AylikFragment : Fragment() {
 
     private val viewModel: AylikViewModel by viewModels()
-    private val tarihFormat = SimpleDateFormat("d MMM yyyy", Locale("tr"))
-    private val ayYilFormat = SimpleDateFormat("MMMM yyyy", Locale("tr"))
+
+    private fun currentLocale(): Locale = resources.configuration.locales.get(0)
+
+    private fun tarihFmt() = SimpleDateFormat("d MMM yyyy", currentLocale())
+
+    private fun ayYilFmt() = SimpleDateFormat("MMMM yyyy", currentLocale())
+
+    private fun monthWordFmt() = SimpleDateFormat("MMMM", currentLocale())
 
     private lateinit var tabCalendar: TextView
     private lateinit var tabTimeline: TextView
@@ -129,12 +135,14 @@ class AylikFragment : Fragment() {
 
         fun refresh() {
             container?.visibility = if (timelineFiltersExpanded) View.VISIBLE else View.GONE
-            btn?.text = if (timelineFiltersExpanded) "Kapat" else "Filtre"
+            btn?.text = getString(
+                if (timelineFiltersExpanded) R.string.aylik_filter_close else R.string.aylik_filter_open
+            )
 
             val state = viewModel.uiState.value
-            val start = tarihFormat.format(Date(state.baslangicMillis))
-            val end = tarihFormat.format(Date(state.bitisMillis))
-            summary?.text = "${state.ayAdi} · $start → $end"
+            val start = tarihFmt().format(Date(state.baslangicMillis))
+            val end = tarihFmt().format(Date(state.bitisMillis))
+            summary?.text = getString(R.string.aylik_filter_range, state.ayAdi, start, end)
         }
 
         btn?.setOnClickListener {
@@ -199,7 +207,7 @@ class AylikFragment : Fragment() {
         lastCalOffset = offset
 
         val cal = Calendar.getInstance().apply { add(Calendar.MONTH, offset) }
-        v.findViewById<TextView>(R.id.tvCalendarMonth).text = ayYilFormat.format(cal.time)
+        v.findViewById<TextView>(R.id.tvCalendarMonth).text = ayYilFmt().format(cal.time)
 
         val txByDay = transactions.groupBy { tx ->
             Calendar.getInstance().apply { timeInMillis = tx.date }.get(Calendar.DAY_OF_MONTH)
@@ -328,9 +336,12 @@ class AylikFragment : Fragment() {
             return
         }
         card.visibility = View.VISIBLE
-        val timeFmt = java.text.SimpleDateFormat("HH:mm", Locale.getDefault())
-        title.text = "$day ${ayYilFormat.format(Calendar.getInstance().time).split(" ")[0]}" +
-                " — ${transactions.size} işlem"
+        val timeFmt = java.text.SimpleDateFormat("HH:mm", currentLocale())
+        val cal = Calendar.getInstance().apply { add(Calendar.MONTH, lastCalOffset) }
+        val monthWord = monthWordFmt().format(cal.time).replaceFirstChar {
+            if (it.isLowerCase()) it.titlecase(currentLocale()) else it.toString()
+        }
+        title.text = getString(R.string.aylik_day_transactions_title, day, monthWord, transactions.size)
         rv.layoutManager = LinearLayoutManager(requireContext())
         // Bireysel işlemleri göster, tıklanabilir
         rv.adapter = com.example.hesapyonetimi.adapter.TransactionAdapter(
@@ -534,8 +545,8 @@ class AylikFragment : Fragment() {
     }
 
     private fun updateDateLabels(v: View, state: AylikUiState) {
-        v.findViewById<TextView>(R.id.tv_baslangic_tarih).text = tarihFormat.format(Date(state.baslangicMillis))
-        v.findViewById<TextView>(R.id.tv_bitis_tarih).text     = tarihFormat.format(Date(state.bitisMillis))
+        v.findViewById<TextView>(R.id.tv_baslangic_tarih).text = tarihFmt().format(Date(state.baslangicMillis))
+        v.findViewById<TextView>(R.id.tv_bitis_tarih).text     = tarihFmt().format(Date(state.bitisMillis))
     }
 
     private fun updateKatList(v: View, state: AylikUiState) {
@@ -563,24 +574,29 @@ class AylikFragment : Fragment() {
                 row.visibility = View.VISIBLE
                 emoji.text = "⚠️"
                 val fark = CurrencyFormatter.format(state.toplamGider - state.toplamGelir)
-                metin.text = "Giderler geliri $fark aştı. ${enCok?.let { "En büyük kalem: ${it.ad}" } ?: ""}"
+                val extra = enCok?.let { getString(R.string.aylik_oneri_largest_category, it.ad) } ?: ""
+                metin.text = getString(R.string.aylik_oneri_expense_over_income, fark, extra)
             }
             enCok != null && enCok.degisimYuzde > 20 -> {
                 row.visibility = View.VISIBLE
                 emoji.text = "📈"
-                metin.text = "${enCok.ad} harcaman geçen aya göre %${enCok.degisimYuzde.toInt()} arttı."
+                metin.text = getString(
+                    R.string.aylik_oneri_category_up,
+                    enCok.ad,
+                    enCok.degisimYuzde.toInt()
+                )
             }
             state.toplamGider < state.toplamGelir * 0.5 -> {
                 row.visibility = View.VISIBLE
                 emoji.text = "💰"
-                metin.text = "Gelirinizin yarısından azını harcadınız. Tasarruf oranınız yüksek!"
+                metin.text = getString(R.string.aylik_oneri_low_spend)
             }
             else -> {
                 row.visibility = View.VISIBLE
                 emoji.text = "💡"
                 val oran = if (state.toplamGelir > 0)
                     (state.toplamGider / state.toplamGelir * 100).toInt() else 0
-                metin.text = "Harcamalar gelirin %$oran'i."
+                metin.text = getString(R.string.aylik_oneri_spend_ratio, oran)
             }
         }
     }
