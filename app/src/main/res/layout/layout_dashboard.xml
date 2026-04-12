@@ -21,65 +21,6 @@
     android:orientation="vertical"
     android:background="@color/background">
 
-    <!-- ══════════════════════════════════════════ -->
-    <!-- STICKY HEADER — scroll etmez              -->
-    <!-- ══════════════════════════════════════════ -->
-    <androidx.constraintlayout.widget.ConstraintLayout
-        android:id="@+id/header_container"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:background="@drawable/gradient_header"
-        android:paddingStart="20dp"
-        android:paddingEnd="20dp"
-        android:paddingTop="52dp"
-        android:paddingBottom="16dp">
-
-        <TextView
-            android:id="@+id/tv_greeting"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:text="@string/greeting_morning"
-            android:textColor="#CCFFFFFF"
-            android:textSize="13sp"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintEnd_toStartOf="@id/iv_profile"
-            app:layout_constraintTop_toTopOf="parent" />
-
-        <TextView
-            android:id="@+id/tv_dashboard_username"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:text="Hakan 👋"
-            android:textColor="#FFFFFF"
-            android:textSize="20sp"
-            android:textStyle="bold"
-            android:layout_marginTop="2dp"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintEnd_toStartOf="@id/iv_profile"
-            app:layout_constraintTop_toBottomOf="@id/tv_greeting" />
-
-        <!-- Profil avatarı — baş harf ile -->
-        <TextView
-            android:id="@+id/iv_profile"
-            android:layout_width="44dp"
-            android:layout_height="44dp"
-            android:gravity="center"
-            android:textColor="#FFFFFF"
-            android:textSize="18sp"
-            android:textStyle="bold"
-            android:background="@drawable/shape_circle_blue"
-            android:backgroundTint="#40FFFFFF"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintTop_toTopOf="parent"
-            android:contentDescription="Profil"
-            android:clickable="true"
-            android:focusable="true" />
-
-    </androidx.constraintlayout.widget.ConstraintLayout>
-
-    <!-- ══════════════════════════════════════════ -->
-    <!-- SCROLL ALANI                              -->
-    <!-- ══════════════════════════════════════════ -->
     <androidx.swiperefreshlayout.widget.SwipeRefreshLayout
         android:id="@+id/swipe_refresh"
         android:layout_width="match_parent"
@@ -157,6 +98,17 @@
                         android:textStyle="bold" />
                 </LinearLayout>
 
+                <TextView
+                    android:id="@+id/tv_exchange_rates"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="10dp"
+                    android:lineSpacingExtra="2dp"
+                    android:paddingHorizontal="4dp"
+                    android:textColor="#CCFFFFFF"
+                    android:textSize="11sp"
+                    android:visibility="gone" />
+
                 <!-- Gider | FAB | Gelir -->
                 <LinearLayout
                     android:layout_width="match_parent"
@@ -181,7 +133,7 @@
                             android:layout_height="wrap_content"
                             android:text="@string/expense"
                             android:textSize="13sp"
-                            android:textColor="#CCFFFFFF" />
+                            android:textColor="#F2FFFFFF" />
 
                         <TextView
                             android:id="@+id/tv_dashboard_expense_val"
@@ -205,7 +157,8 @@
                         app:backgroundTint="#FFFFFF"
                         app:fabSize="mini"
                         app:elevation="4dp"
-                        app:borderWidth="0dp"
+                        app:borderWidth="1dp"
+                        app:strokeColor="@color/green_primary"
                         android:contentDescription="@string/add_transaction" />
 
                     <LinearLayout
@@ -225,7 +178,7 @@
                             android:layout_height="wrap_content"
                             android:text="@string/income"
                             android:textSize="13sp"
-                            android:textColor="#CCFFFFFF" />
+                            android:textColor="#F2FFFFFF" />
 
                         <TextView
                             android:id="@+id/tv_dashboard_income_val"
@@ -303,6 +256,173 @@
                         android:textColor="#FFFFFF"
                         android:textSize="22sp" />
                 </LinearLayout>
+
+                <!-- Anasayfa modülleri (Profilden taşındı) -->
+                <androidx.cardview.widget.CardView
+                    android:id="@+id/dashboard_home_prefs_card"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="12dp"
+                    app:cardBackgroundColor="@color/card_background"
+                    app:cardCornerRadius="14dp"
+                    app:cardElevation="0dp">
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical"
+                        android:padding="14dp">
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="@string/dashboard_home_modules_title"
+                            android:textColor="@color/text_primary"
+                            android:textSize="14sp"
+                            android:textStyle="bold"
+                            android:layout_marginBottom="8dp" />
+
+                        <com.google.android.material.materialswitch.MaterialSwitch
+                            android:id="@+id/switch_dashboard_fx_home"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:text="@string/profile_toggle_fx"
+                            android:textSize="13sp" />
+
+                        <com.google.android.material.materialswitch.MaterialSwitch
+                            android:id="@+id/switch_dashboard_reminders_home"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="4dp"
+                            android:text="@string/profile_toggle_reminders"
+                            android:textSize="13sp" />
+
+                        <com.google.android.material.materialswitch.MaterialSwitch
+                            android:id="@+id/switch_dashboard_insights_home"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="4dp"
+                            android:text="@string/profile_toggle_insights"
+                            android:textSize="13sp" />
+                    </LinearLayout>
+                </androidx.cardview.widget.CardView>
+
+                <!-- Mini pasta (aç/kapa) -->
+                <androidx.cardview.widget.CardView
+                    android:id="@+id/dashboard_mini_pie_card"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="12dp"
+                    app:cardBackgroundColor="@color/card_background"
+                    app:cardCornerRadius="14dp"
+                    app:cardElevation="0dp">
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical"
+                        android:padding="12dp">
+
+                        <LinearLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:gravity="center_vertical"
+                            android:orientation="horizontal">
+
+                            <TextView
+                                android:layout_width="0dp"
+                                android:layout_height="wrap_content"
+                                android:layout_weight="1"
+                                android:text="@string/dashboard_mini_pie_title"
+                                android:textColor="@color/text_primary"
+                                android:textSize="14sp"
+                                android:textStyle="bold" />
+
+                            <ImageButton
+                                android:id="@+id/btn_toggle_mini_pie"
+                                android:layout_width="40dp"
+                                android:layout_height="40dp"
+                                android:background="?attr/selectableItemBackgroundBorderless"
+                                android:contentDescription="@string/dashboard_mini_pie_toggle"
+                                android:src="@drawable/ic_expand_more_24"
+                                app:tint="@color/green_primary" />
+                        </LinearLayout>
+
+                        <com.example.hesapyonetimi.ui.PieChartView
+                            android:id="@+id/dashboard_mini_pie"
+                            android:layout_width="match_parent"
+                            android:layout_height="200dp"
+                            android:visibility="visible" />
+                    </LinearLayout>
+                </androidx.cardview.widget.CardView>
+
+                <!-- Mock döviz / altın (tercihle gizlenir) -->
+                <androidx.cardview.widget.CardView
+                    android:id="@+id/dashboard_fx_card"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="12dp"
+                    app:cardBackgroundColor="@color/card_background"
+                    app:cardCornerRadius="14dp"
+                    app:cardElevation="0dp">
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical"
+                        android:padding="14dp">
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="@string/dashboard_fx_title"
+                            android:textColor="@color/text_primary"
+                            android:textSize="14sp"
+                            android:textStyle="bold" />
+
+                        <TextView
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="4dp"
+                            android:text="@string/dashboard_fx_subtitle"
+                            android:textColor="@color/text_secondary"
+                            android:textSize="11sp" />
+
+                        <LinearLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="10dp"
+                            android:orientation="horizontal">
+
+                            <TextView
+                                android:id="@+id/tv_fx_usd"
+                                android:layout_width="0dp"
+                                android:layout_height="wrap_content"
+                                android:layout_weight="1"
+                                android:text="USD 32,45 ▲"
+                                android:textColor="@color/text_primary"
+                                android:textSize="12sp" />
+
+                            <TextView
+                                android:id="@+id/tv_fx_eur"
+                                android:layout_width="0dp"
+                                android:layout_height="wrap_content"
+                                android:layout_weight="1"
+                                android:text="EUR 35,10 ▼"
+                                android:textColor="@color/text_primary"
+                                android:textSize="12sp" />
+
+                            <TextView
+                                android:id="@+id/tv_fx_gold"
+                                android:layout_width="0dp"
+                                android:layout_height="wrap_content"
+                                android:layout_weight="1"
+                                android:text="Gram altın 3.120 ₺"
+                                android:textColor="@color/text_primary"
+                                android:textSize="12sp" />
+                        </LinearLayout>
+                    </LinearLayout>
+                </androidx.cardview.widget.CardView>
 
                 <!-- ── Takvim + İşlemler — birleşik kart ─────────────── -->
                 <androidx.cardview.widget.CardView
@@ -421,6 +541,12 @@
 
                 <!-- ── Öneri + En çok harcama ─────────────────────────── -->
                 <LinearLayout
+                    android:id="@+id/dashboard_section_insights"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical">
+
+                <LinearLayout
                     android:id="@+id/suggestion_container"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
@@ -519,7 +645,7 @@
                                 android:textSize="13sp"
                                 android:lineSpacingExtra="2dp"
                                 android:textColor="@color/text_secondary"
-                                android:maxLines="3"
+                                android:maxLines="16"
                                 android:ellipsize="end"
                                 android:visibility="gone" />
 
@@ -577,7 +703,15 @@
 
                 </LinearLayout>
 
+                </LinearLayout>
+
                 <!-- ── Yaklaşan ödemeler ───────────────────────────────── -->
+                <LinearLayout
+                    android:id="@+id/dashboard_section_reminders"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical">
+
                 <LinearLayout
                     android:id="@+id/yaklasan_odeme_container"
                     android:layout_width="match_parent"
@@ -631,6 +765,8 @@
                         app:strokeColor="@color/green_primary"
                         android:textColor="@color/green_primary"
                         app:cornerRadius="12dp" />
+                </LinearLayout>
+
                 </LinearLayout>
 
                 <View

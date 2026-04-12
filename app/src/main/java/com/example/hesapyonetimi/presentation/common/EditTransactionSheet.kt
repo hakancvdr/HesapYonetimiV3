@@ -23,7 +23,9 @@ import com.example.hesapyonetimi.presentation.transactions.TransactionViewModel
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment
 import com.google.android.material.button.MaterialButton
 import com.google.android.material.textfield.TextInputEditText
-import androidx.fragment.app.viewModels
+import android.os.Build
+import androidx.core.os.bundleOf
+import androidx.fragment.app.activityViewModels
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
@@ -36,7 +38,8 @@ class EditTransactionSheet : BottomSheetDialogFragment() {
     @Inject
     lateinit var walletDao: WalletDao
 
-    private val viewModel: TransactionViewModel by viewModels()
+    /** Activity scope: sheet dismiss sonrası Snackbar "Geri Al" güvenli kalır */
+    private val viewModel: TransactionViewModel by activityViewModels()
     private lateinit var categoryAdapter: CategoryChipAdapter
     private var selectedCategory: Category? = null
     private var isIncome: Boolean = false
@@ -44,15 +47,37 @@ class EditTransactionSheet : BottomSheetDialogFragment() {
     private var selectedWalletId: Long? = null
 
     companion object {
-        private const val ARG_TRANSACTION_ID = "transaction_id"
+        private const val ARG_TX = "arg_transaction"
 
         fun newInstance(transaction: Transaction): EditTransactionSheet {
             return EditTransactionSheet().apply {
-                this.transaction = transaction
-                arguments = Bundle().apply {
-                    putLong(ARG_TRANSACTION_ID, transaction.id)
-                }
+                arguments = bundleOf(ARG_TX to transaction)
             }
+        }
+    }
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        val fromState = readTx(savedInstanceState)
+        val fromArgs = readTx(arguments)
+        transaction = fromState ?: fromArgs
+            ?: throw IllegalStateException("EditTransactionSheet requires transaction argument")
+    }
+
+    override fun onSaveInstanceState(outState: Bundle) {
+        super.onSaveInstanceState(outState)
+        if (::transaction.isInitialized) {
+            outState.putParcelable(ARG_TX, transaction)
+        }
+    }
+
+    private fun readTx(bundle: Bundle?): Transaction? {
+        if (bundle == null) return null
+        return if (Build.VERSION.SDK_INT >= 33) {
+            bundle.getParcelable(ARG_TX, Transaction::class.java)
+        } else {
+            @Suppress("DEPRECATION")
+            bundle.getParcelable(ARG_TX) as? Transaction
         }
     }
 
@@ -99,13 +124,15 @@ class EditTransactionSheet : BottomSheetDialogFragment() {
         val rvEditWallets = view.findViewById<RecyclerView>(R.id.rvEditWallets)
         rvEditWallets.layoutManager = LinearLayoutManager(requireContext(), LinearLayoutManager.HORIZONTAL, false)
         viewLifecycleOwner.lifecycleScope.launch {
-            walletDao.getAllWallets().collect { wallets ->
-                rvEditWallets.adapter = WalletChipAdapter(wallets, selectedWalletId) { wallet ->
-                    selectedWalletId = wallet.id
-                    rvEditWallets.adapter?.notifyDataSetChanged()
-                }
-                if (selectedWalletId == null) {
-                    selectedWalletId = wallets.firstOrNull { it.isDefault }?.id ?: wallets.firstOrNull()?.id
+            viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
+                walletDao.getAllWallets().collect { wallets ->
+                    rvEditWallets.adapter = WalletChipAdapter(wallets, selectedWalletId) { wallet ->
+                        selectedWalletId = wallet.id
+                        rvEditWallets.adapter?.notifyDataSetChanged()
+                    }
+                    if (selectedWalletId == null) {
+                        selectedWalletId = wallets.firstOrNull { it.isDefault }?.id ?: wallets.firstOrNull()?.id
+                    }
                 }
             }
         }

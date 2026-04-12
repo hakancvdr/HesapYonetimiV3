@@ -15,6 +15,8 @@ import com.example.hesapyonetimi.R
 import com.example.hesapyonetimi.data.local.entity.RecurringType
 import com.example.hesapyonetimi.domain.model.Category
 import com.example.hesapyonetimi.domain.model.Reminder
+import com.example.hesapyonetimi.domain.model.ReminderNotificationPolicy
+import com.google.android.material.chip.ChipGroup
 import com.example.hesapyonetimi.adapter.CategoryChipAdapter
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment
 import com.google.android.material.textfield.TextInputEditText
@@ -33,6 +35,8 @@ class HatirlaticiEkleSheet : BottomSheetDialogFragment() {
     private var selectedRecurring: RecurringType? = null
     private var selectedDonem: Int = 1
     private var selectedCategoryId: Long = 0L
+    private var selectedNotificationPolicy: ReminderNotificationPolicy =
+        ReminderNotificationPolicy.ONE_DAY_BEFORE
     private val dateFormat = SimpleDateFormat("d MMMM yyyy", Locale("tr"))
 
     // Düzenleme modu için (Reminder Parcelable olmadığından instance alanı)
@@ -170,6 +174,31 @@ class HatirlaticiEkleSheet : BottomSheetDialogFragment() {
         // Tekrar butonları
         setupTekrar(view)
 
+        val chipGroup = view.findViewById<ChipGroup>(R.id.chip_notify_policy)
+        fun policyForChip(id: Int): ReminderNotificationPolicy = when (id) {
+            R.id.chip_pol_legacy -> ReminderNotificationPolicy.LEGACY_MULTI
+            R.id.chip_pol_due -> ReminderNotificationPolicy.DUE_DAY
+            R.id.chip_pol_1d -> ReminderNotificationPolicy.ONE_DAY_BEFORE
+            R.id.chip_pol_2d -> ReminderNotificationPolicy.TWO_DAYS_BEFORE
+            R.id.chip_pol_1w -> ReminderNotificationPolicy.ONE_WEEK_BEFORE
+            else -> ReminderNotificationPolicy.ONE_DAY_BEFORE
+        }
+        chipGroup.setOnCheckedStateChangeListener { _, checkedIds ->
+            val cid = checkedIds.firstOrNull() ?: return@setOnCheckedStateChangeListener
+            selectedNotificationPolicy = policyForChip(cid)
+        }
+        editReminder?.let { r ->
+            selectedNotificationPolicy = r.notificationPolicy
+            val chipId = when (r.notificationPolicy) {
+                ReminderNotificationPolicy.LEGACY_MULTI -> R.id.chip_pol_legacy
+                ReminderNotificationPolicy.DUE_DAY -> R.id.chip_pol_due
+                ReminderNotificationPolicy.ONE_DAY_BEFORE -> R.id.chip_pol_1d
+                ReminderNotificationPolicy.TWO_DAYS_BEFORE -> R.id.chip_pol_2d
+                ReminderNotificationPolicy.ONE_WEEK_BEFORE -> R.id.chip_pol_1w
+            }
+            chipGroup.check(chipId)
+        }
+
         // Kaydet
         btnKaydet.setOnClickListener {
             val aciklama = etAciklama.text?.toString()?.trim() ?: ""
@@ -190,14 +219,16 @@ class HatirlaticiEkleSheet : BottomSheetDialogFragment() {
                 viewModel.updateReminder(editReminder!!.copy(
                     title = aciklama, amount = tutar,
                     dueDate = selectedDateMillis, categoryId = selectedCategoryId,
-                    isRecurring = selectedRecurring != null, recurringType = selectedRecurring
+                    isRecurring = selectedRecurring != null, recurringType = selectedRecurring,
+                    notificationPolicy = selectedNotificationPolicy
                 ))
                 Toast.makeText(requireContext(), "✅ Güncellendi", Toast.LENGTH_SHORT).show()
             } else {
                 viewModel.addReminder(
                     title = aciklama, amount = tutar,
                     dueDate = selectedDateMillis, categoryId = selectedCategoryId,
-                    recurringType = selectedRecurring, donemSayisi = selectedDonem
+                    recurringType = selectedRecurring, donemSayisi = selectedDonem,
+                    notificationPolicy = selectedNotificationPolicy
                 )
                 Toast.makeText(requireContext(), "✅ Hatırlatıcı eklendi", Toast.LENGTH_SHORT).show()
             }

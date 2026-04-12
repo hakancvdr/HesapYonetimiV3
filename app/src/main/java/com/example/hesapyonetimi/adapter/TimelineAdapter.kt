@@ -28,32 +28,50 @@ class TimelineAdapter(
     private var rows: List<TimelineRow> = emptyList()
     private var allTransactions: List<Transaction> = emptyList()
     private var lastFilterQuery: String = ""
+    /** Boş = tüm etiketler; dolu = virgül listesinde tam eşleşen etiket */
+    private var lastTagFilter: String = ""
     private val dateFmt = SimpleDateFormat("d MMMM yyyy  —  EEEE", Locale("tr"))
     private val timeFmt = SimpleDateFormat("HH:mm", Locale.getDefault())
 
     fun submitList(transactions: List<Transaction>) {
         allTransactions = transactions
-        val filtered = if (lastFilterQuery.isBlank()) transactions
-        else transactions.filter {
-            it.description.contains(lastFilterQuery, ignoreCase = true) ||
-                it.categoryName.contains(lastFilterQuery, ignoreCase = true)
-        }
-        rebuildRows(filtered)
+        applyFilters()
     }
 
     fun filter(query: String) {
         lastFilterQuery = query.trim()
-        val filtered = if (lastFilterQuery.isBlank()) allTransactions
-        else allTransactions.filter {
-            it.description.contains(lastFilterQuery, ignoreCase = true) ||
-            it.categoryName.contains(lastFilterQuery, ignoreCase = true)
-        }
+        applyFilters()
+    }
+
+    fun filterByTag(tag: String?) {
+        lastTagFilter = (tag ?: "").trim()
+        applyFilters()
+    }
+
+    private fun matchesSearch(tx: Transaction): Boolean {
+        if (lastFilterQuery.isBlank()) return true
+        return tx.description.contains(lastFilterQuery, ignoreCase = true) ||
+            tx.categoryName.contains(lastFilterQuery, ignoreCase = true)
+    }
+
+    private fun matchesTag(tx: Transaction): Boolean {
+        if (lastTagFilter.isBlank()) return true
+        return tx.tags.split(",").any { it.trim().equals(lastTagFilter, ignoreCase = true) }
+    }
+
+    private fun applyFilters() {
+        val filtered = allTransactions.filter { matchesSearch(it) && matchesTag(it) }
         rebuildRows(filtered)
     }
 
-    /** Arama metni dolu, dönemde işlem var ama eşleşme yok */
+    /** Arama veya etiket dolu, dönemde işlem var ama eşleşme yok */
     fun shouldShowSearchEmpty(): Boolean =
-        lastFilterQuery.isNotEmpty() && allTransactions.isNotEmpty() && rows.isEmpty()
+        (lastFilterQuery.isNotEmpty() || lastTagFilter.isNotEmpty()) &&
+            allTransactions.isNotEmpty() && rows.isEmpty()
+
+    /** Dönemde hiç işlem yok (filtre boş) */
+    fun shouldShowPeriodEmpty(): Boolean =
+        lastFilterQuery.isBlank() && lastTagFilter.isBlank() && allTransactions.isEmpty()
 
     private fun rebuildRows(transactions: List<Transaction>) {
         val newRows = mutableListOf<TimelineRow>()

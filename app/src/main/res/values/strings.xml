@@ -1,7 +1,10 @@
 <resources>
+    <!-- Google Cloud Console → Kimlik bilgileri → Web uygulaması OAuth istemci kimliği -->
+    <string name="default_web_client_id">208700103369-sakn818ku05cbs026u8f2mdnb1cnlbs2.apps.googleusercontent.com</string>
+
     <string name="app_name">Hesap Yönetimi</string>
     <string name="baslik_gunluk">Günlük Harcama Takibi</string>
-    <string name="hint_tutar">Tutar Girin (TL)</string>
+    <string name="hint_tutar">Tutar girin</string>
     <string name="hint_aciklama">Açıklama (Örn: Market)</string>
     <string name="btn_kaydet">KAYDET</string>
     
@@ -27,4 +30,59 @@
         <item>Diğer</item>
     </string-array>
     <string name="hello_blank_fragment">Hello blank fragment</string>
+
+    <string name="drawer_open">Menüyü aç</string>
+    <string name="drawer_close">Menüyü kapat</string>
+    <string name="drawer_profile">Profil</string>
+    <string name="drawer_wallets">Cüzdanlar</string>
+    <string name="tag_filter_all">Tümü</string>
+    <string name="drawer_theme">Tema</string>
+    <string name="drawer_language">Dil</string>
+    <string name="drawer_pro">PRO</string>
+    <string name="drawer_section_account">Hesap</string>
+    <string name="drawer_section_settings">Görünüm</string>
+    <string name="drawer_link_account">Hesabı bağla</string>
+    <string name="drawer_quick_register">Hızlı kayıt (PIN)</string>
+    <string name="drawer_sign_out">Oturumu kapat</string>
+    <string name="sign_out_message">Giriş ekranına döneceksiniz. Finans verileriniz silinmez.</string>
+    <string name="theme_light">Açık tema</string>
+    <string name="theme_dark">Koyu tema</string>
+    <string name="theme_system">Sistem varsayılanı</string>
+    <string name="lang_turkish">Türkçe</string>
+    <string name="lang_english">English</string>
+    <string name="account_google_no_email">Bağlı e-posta görünmüyor</string>
+
+    <string name="nav_plan">Plan</string>
+    <string name="tab_upcoming">Yaklaşan</string>
+    <string name="tab_goals">Hedefler</string>
+
+    <string name="reminder_notify_policy_label">Bildirim zamanı</string>
+    <string name="reminder_policy_legacy">Çoklu (eski)</string>
+    <string name="reminder_policy_due">Vade günü</string>
+    <string name="reminder_policy_1d">1 gün önce</string>
+    <string name="reminder_policy_2d">2 gün önce</string>
+    <string name="reminder_policy_1w">1 hafta önce</string>
+
+    <string name="profile_week_summary_title">Son 7 gün</string>
+    <string name="profile_week_expense_label">Gider</string>
+    <string name="profile_open_reminders_label">Açık hatırlatıcı</string>
+    <string name="profile_dashboard_modules">Anasayfa modülleri</string>
+    <string name="profile_toggle_fx">Döviz / altın kartı</string>
+    <string name="profile_toggle_reminders">Yaklaşan ödemeler bölümü</string>
+    <string name="profile_toggle_insights">Öneri ve akıllı ipuçları</string>
+    <string name="profile_category_budget_hint">Kategori bazlı limitler veritabanında (Budget) mevcut; ayrıntılı ekran yakında eklenecek.</string>
+    <string name="dashboard_fx_title">Kurlar (örnek)</string>
+    <string name="dashboard_fx_subtitle">Önceki güne göre gösterim — gerçek veri için ağ bağlantısı gerekir</string>
+
+    <string name="dashboard_home_modules_title">Anasayfa modülleri</string>
+    <string name="dashboard_mini_pie_title">Bu ay gider dağılımı</string>
+    <string name="dashboard_mini_pie_toggle">Pastayı göster veya gizle</string>
+    <string name="close">Kapat</string>
+    <string name="tags_dialog_title">Etiketler</string>
+    <string name="drawer_sign_in">Oturum aç</string>
+    <string name="profile_quick_snapshot_title">Hızlı özet</string>
+    <string name="profile_account_drawer_hint">Oturum açma, kayıt ve çıkış için sol menüyü kullanın.</string>
+    <string name="membership_free">Ücretsiz</string>
+    <string name="membership_premium">Premium</string>
+    <string name="profile_membership_line">%1$s · İlk işlem: %2$s</string>
 </resources>

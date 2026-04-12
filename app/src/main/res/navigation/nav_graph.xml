@@ -28,9 +28,14 @@
     </fragment>
 
     <fragment
-        android:id="@+id/nav_yaklasan"
-        android:name="com.example.hesapyonetimi.YaklasanFragment"
-        android:label="Yaklaşan" />
+        android:id="@+id/nav_plan"
+        android:name="com.example.hesapyonetimi.PlanFragment"
+        android:label="@string/nav_plan">
+        <argument
+            android:name="initialTab"
+            app:argType="integer"
+            android:defaultValue="0" />
+    </fragment>
 
     <fragment
         android:id="@+id/nav_profil"
@@ -42,7 +47,18 @@
             app:enterAnim="@anim/slide_in_right"
             app:exitAnim="@anim/slide_out_left"
             app:popEnterAnim="@anim/slide_in_left"
-            app:popExitAnim="@anim/slide_out_right" />
+            app:popExitAnim="@anim/slide_out_right"
+            app:popUpTo="@id/nav_profil"
+            app:popUpToInclusive="true" />
+        <action
+            android:id="@+id/action_profil_to_pro"
+            app:destination="@id/proFragment"
+            app:enterAnim="@anim/slide_in_right"
+            app:exitAnim="@anim/slide_out_left"
+            app:popEnterAnim="@anim/slide_in_left"
+            app:popExitAnim="@anim/slide_out_right"
+            app:popUpTo="@id/nav_profil"
+            app:popUpToInclusive="true" />
     </fragment>
 
     <fragment
@@ -62,11 +78,6 @@
         android:id="@+id/walletFragment"
         android:name="com.example.hesapyonetimi.presentation.wallet.WalletFragment"
         android:label="Cüzdanlar" />
-
-    <fragment
-        android:id="@+id/nav_hedefler"
-        android:name="com.example.hesapyonetimi.presentation.goals.GoalFragment"
-        android:label="Hedefler" />
 
     <fragment
         android:id="@+id/proFragment"

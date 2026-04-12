@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Budget Manager</string>
+    <string name="drawer_open">Open menu</string>
+    <string name="drawer_close">Close menu</string>
+    <string name="drawer_profile">Profile</string>
+    <string name="drawer_wallets">Wallets</string>
+    <string name="tag_filter_all">All</string>
+    <string name="drawer_theme">Theme</string>
+    <string name="drawer_language">Language</string>
+    <string name="theme_light">Light</string>
+    <string name="theme_dark">Dark</string>
+    <string name="theme_system">System default</string>
+    <string name="lang_turkish">Turkish</string>
+    <string name="lang_english">English</string>
+    <string name="account_google_no_email">No email on file</string>
+    <string name="profile_category_budget_hint">Per-category limits exist in the database (Budget); a dedicated screen is planned.</string>
+    <string name="drawer_pro">PRO</string>
+    <string name="drawer_section_account">Account</string>
+    <string name="drawer_section_settings">Appearance</string>
+    <string name="drawer_link_account">Link account</string>
+    <string name="drawer_quick_register">Quick register (PIN)</string>
+    <string name="drawer_sign_out">Sign out</string>
+    <string name="drawer_sign_in">Sign in</string>
+    <string name="sign_out_message">You will return to the welcome screen. Your finance data is not deleted.</string>
+    <string name="nav_plan">Plan</string>
+    <string name="tab_upcoming">Reminders</string>
+    <string name="tab_goals">Goals</string>
+    <string name="dashboard_home_modules_title">Home modules</string>
+    <string name="dashboard_mini_pie_title">This month expense split</string>
+    <string name="dashboard_mini_pie_toggle">Show or hide chart</string>
+    <string name="close">Close</string>
+    <string name="tags_dialog_title">Tags</string>
+    <string name="profile_quick_snapshot_title">Quick snapshot</string>
+    <string name="profile_account_drawer_hint">Use the side menu for sign-in, registration, and sign-out.</string>
+    <string name="membership_free">Free</string>
+    <string name="membership_premium">Premium</string>
+    <string name="profile_membership_line">%1$s · First activity: %2$s</string>
+</resources>

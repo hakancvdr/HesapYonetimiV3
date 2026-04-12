@@ -15,8 +15,10 @@ data class Reminder(
     val isRecurring: Boolean = false,
     val recurringType: RecurringType? = null,
     val daysUntilDue: Int = 0,
+    /** 0 = sınırsız tekrar; 1 = tek dönem; 1'den büyük = en fazla bu kadar dönem */
     val totalDonem: Int = 0,
-    val donemIndex: Int = 0
+    val donemIndex: Int = 0,
+    val notificationPolicy: ReminderNotificationPolicy = ReminderNotificationPolicy.LEGACY_MULTI
 ) {
     val isOverdue: Boolean
         get() = !isPaid && dueDate < System.currentTimeMillis()

@@ -11,10 +11,10 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.FrameLayout
 import android.widget.GridLayout
+import android.widget.HorizontalScrollView
 import android.widget.ImageButton
 import android.widget.TextView
 import androidx.core.content.ContextCompat
-import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
@@ -22,6 +22,8 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import com.example.hesapyonetimi.presentation.aylik.KategoriIslemleriSheet
+import com.google.android.material.chip.Chip
+import com.google.android.material.chip.ChipGroup
 import com.google.android.material.button.MaterialButton
 import com.google.android.material.button.MaterialButtonToggleGroup
 import androidx.recyclerview.widget.LinearLayoutManager
@@ -87,20 +89,6 @@ class AylikFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
-        ViewCompat.setOnApplyWindowInsetsListener(view.findViewById(R.id.aylik_header)) { v, insets ->
-            val sb = insets.getInsets(WindowInsetsCompat.Type.statusBars()).top
-            val dp = { n: Int -> (n * resources.displayMetrics.density).toInt() }
-            v.setPadding(dp(20), sb + dp(12), dp(20), dp(16))
-            insets
-        }
-
-        view.findViewById<android.widget.TextView>(R.id.iv_profile_aylik)?.apply {
-            val name = requireContext().getSharedPreferences("HesapPrefs", android.content.Context.MODE_PRIVATE)
-                .getString("user_display_name", "K") ?: "K"
-            text = name.firstOrNull()?.uppercaseChar()?.toString() ?: "K"
-            setOnClickListener { (activity as? MainActivity)?.gosterProfil() }
-        }
-
         view.findViewById<SwipeRefreshLayout>(R.id.swipe_refresh)?.apply {
             setColorSchemeResources(R.color.green_primary)
             setOnRefreshListener { viewModel.refresh(); isRefreshing = false }
@@ -118,6 +106,10 @@ class AylikFragment : Fragment() {
         view.findViewById<RecyclerView>(R.id.rvTimeline).apply {
             layoutManager = LinearLayoutManager(requireContext())
             adapter = timelineAdapter
+        }
+
+        view.findViewById<MaterialButton>(R.id.btnTimelineGoAddTransaction)?.setOnClickListener {
+            (activity as? MainActivity)?.gosterGunluk()
         }
 
         savedInstanceState?.let {
@@ -175,6 +167,13 @@ class AylikFragment : Fragment() {
         tabTimelineContent.visibility = if (index == 0) View.VISIBLE else View.GONE
         tabCalendarContent.visibility = if (index == 1) View.VISIBLE else View.GONE
         tabKategoriContent.visibility = if (index == 2) View.VISIBLE else View.GONE
+
+        if (index != 0) {
+            view?.findViewById<View>(R.id.timeline_empty_state)?.visibility = View.GONE
+            view?.findViewById<View>(R.id.timeline_no_data_state)?.visibility = View.GONE
+        } else {
+            view?.let { refreshTimelineEmptyState(it) }
+        }
 
         val tabs = listOf(tabTimeline, tabCalendar, tabKategori)
         tabs.forEachIndexed { i, tv ->
@@ -370,10 +369,52 @@ class AylikFragment : Fragment() {
         }
     }
 
+    private fun updateTimelineTagChips(v: View, transactions: List<Transaction>) {
+        val scroll = v.findViewById<HorizontalScrollView>(R.id.timeline_tag_scroll) ?: return
+        val group = v.findViewById<ChipGroup>(R.id.chipGroupTimelineTags) ?: return
+        group.setOnCheckedChangeListener(null)
+        group.removeAllViews()
+        val tagSet = transactions.flatMap { tx ->
+            tx.tags.split(",").map { it.trim() }.filter { it.isNotEmpty() }
+        }.toMutableSet()
+        val tags = tagSet.toSortedSet(String.CASE_INSENSITIVE_ORDER).toList()
+        if (tags.isEmpty()) {
+            scroll.visibility = View.GONE
+            timelineAdapter.filterByTag(null)
+            return
+        }
+        scroll.visibility = View.VISIBLE
+        val ctx = requireContext()
+        fun addChip(label: String, tagValue: String) {
+            val chip = Chip(ctx)
+            chip.text = label
+            chip.tag = tagValue
+            chip.isCheckable = true
+            chip.id = View.generateViewId()
+            group.addView(chip)
+        }
+        addChip(getString(R.string.tag_filter_all), "")
+        tags.forEach { addChip(it, it) }
+        group.check(group.getChildAt(0).id)
+        group.setOnCheckedChangeListener { _, checkedId ->
+            if (checkedId == View.NO_ID) {
+                timelineAdapter.filterByTag(null)
+            } else {
+                val chip = group.findViewById<Chip>(checkedId)
+                val raw = chip?.tag as? String
+                timelineAdapter.filterByTag(raw?.ifBlank { null })
+            }
+        }
+    }
+
     private fun refreshTimelineEmptyState(v: View) {
         if (selectedTab != 0) return
+        val searchEmpty = timelineAdapter.shouldShowSearchEmpty()
+        val periodEmpty = timelineAdapter.shouldShowPeriodEmpty()
         v.findViewById<View>(R.id.timeline_empty_state).visibility =
-            if (timelineAdapter.shouldShowSearchEmpty()) View.VISIBLE else View.GONE
+            if (searchEmpty) View.VISIBLE else View.GONE
+        v.findViewById<View>(R.id.timeline_no_data_state).visibility =
+            if (periodEmpty && !searchEmpty) View.VISIBLE else View.GONE
     }
 
     // ── Kategori tabı ─────────────────────────────────────────────────────────
@@ -459,6 +500,7 @@ class AylikFragment : Fragment() {
                         updateHeader(view, state)
                         updateDateLabels(view, state)
                         timelineAdapter.submitList(state.transactions)
+                        updateTimelineTagChips(view, state.transactions)
                         refreshTimelineEmptyState(view)
                         updateKatList(view, state)
                         updateOneri(view, state)

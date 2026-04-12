@@ -12,13 +12,9 @@
         android:icon="@drawable/calendar_month_24px"
         android:title="Aylık" />
     <item
-        android:id="@+id/nav_yaklasan"
+        android:id="@+id/nav_plan"
         android:icon="@drawable/notifications_active_24px"
-        android:title="Yaklaşan" />
-    <item
-        android:id="@+id/nav_hedefler"
-        android:icon="@drawable/ic_goals"
-        android:title="Hedefler" />
+        android:title="@string/nav_plan" />
     <!-- nav_profil alt bardan kaldırıldı (max 5 limit).
          Profil erişimi: her sayfanın header'ındaki avatar ikonuyla. -->
 </menu>

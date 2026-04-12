@@ -7,61 +7,35 @@
     android:orientation="vertical"
     android:background="@color/background">
 
-    <!-- ═══ STICKY HEADER ═══ -->
     <androidx.constraintlayout.widget.ConstraintLayout
         android:id="@+id/aylik_header"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:background="@drawable/gradient_header"
+        android:background="@color/background"
         android:paddingStart="20dp"
         android:paddingEnd="20dp"
-        android:paddingTop="52dp"
-        android:paddingBottom="16dp">
+        android:paddingTop="8dp"
+        android:paddingBottom="12dp">
 
         <TextView
             android:id="@+id/tv_aylik_baslik"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:minHeight="34dp"
-            android:text="Analiz"
-            android:textColor="#FFFFFF"
-            android:textSize="20sp"
-            android:textStyle="bold"
+            android:visibility="gone"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintEnd_toStartOf="@id/iv_profile_aylik"
             app:layout_constraintTop_toTopOf="parent" />
-
-        <TextView
-            android:id="@+id/iv_profile_aylik"
-            android:layout_width="34dp"
-            android:layout_height="34dp"
-            android:layout_marginStart="8dp"
-            android:gravity="center"
-            android:includeFontPadding="false"
-            android:padding="0dp"
-            android:textColor="#FFFFFF"
-            android:textSize="15sp"
-            android:textStyle="bold"
-            android:background="@drawable/shape_circle_blue"
-            android:backgroundTint="#40FFFFFF"
-            android:clickable="true"
-            android:focusable="true"
-            android:contentDescription="Profil"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintTop_toTopOf="parent"
-            app:layout_constraintBottom_toBottomOf="@id/tv_aylik_baslik" />
 
         <TextView
             android:id="@+id/tv_ay_ozet_line"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:layout_marginTop="8dp"
-            android:textColor="#D8FFFFFF"
+            android:layout_marginTop="4dp"
+            android:textColor="@color/text_secondary"
             android:textSize="12sp"
             android:lineSpacingExtra="2dp"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@id/tv_aylik_baslik" />
+            app:layout_constraintTop_toTopOf="parent" />
 
         <LinearLayout
             android:id="@+id/ozet_row"
@@ -75,32 +49,32 @@
 
             <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content"
                 android:layout_weight="1" android:orientation="vertical"
-                android:background="@drawable/btn_header_card" android:padding="10dp" android:layout_marginEnd="6dp">
+                android:background="@color/card_background" android:padding="10dp" android:layout_marginEnd="6dp">
                 <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
-                    android:text="Gelir" android:textSize="12sp" android:textColor="#AAFFFFFF"/>
+                    android:text="Gelir" android:textSize="12sp" android:textColor="@color/text_secondary"/>
                 <TextView android:id="@+id/tv_toplam_gelir" android:layout_width="wrap_content"
                     android:layout_height="wrap_content" android:text="0 ₺" android:textSize="13sp"
-                    android:textStyle="bold" android:textColor="#FFFFFF" android:layout_marginTop="2dp"/>
+                    android:textStyle="bold" android:textColor="@color/income_green" android:layout_marginTop="2dp"/>
             </LinearLayout>
 
             <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content"
                 android:layout_weight="1" android:orientation="vertical"
-                android:background="@drawable/btn_header_card" android:padding="10dp" android:layout_marginEnd="6dp">
+                android:background="@color/card_background" android:padding="10dp" android:layout_marginEnd="6dp">
                 <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
-                    android:text="Gider" android:textSize="12sp" android:textColor="#AAFFFFFF"/>
+                    android:text="Gider" android:textSize="12sp" android:textColor="@color/text_secondary"/>
                 <TextView android:id="@+id/tv_toplam_gider" android:layout_width="wrap_content"
                     android:layout_height="wrap_content" android:text="0 ₺" android:textSize="13sp"
-                    android:textStyle="bold" android:textColor="#FFFFFF" android:layout_marginTop="2dp"/>
+                    android:textStyle="bold" android:textColor="@color/expense_red" android:layout_marginTop="2dp"/>
             </LinearLayout>
 
             <LinearLayout android:layout_width="0dp" android:layout_height="wrap_content"
                 android:layout_weight="1" android:orientation="vertical"
-                android:background="@drawable/btn_header_card" android:padding="10dp">
+                android:background="@color/card_background" android:padding="10dp">
                 <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
-                    android:text="Net" android:textSize="12sp" android:textColor="#AAFFFFFF"/>
+                    android:text="Net" android:textSize="12sp" android:textColor="@color/text_secondary"/>
                 <TextView android:id="@+id/tv_net" android:layout_width="wrap_content"
                     android:layout_height="wrap_content" android:text="0 ₺" android:textSize="13sp"
-                    android:textStyle="bold" android:textColor="#FFFFFF" android:layout_marginTop="2dp"/>
+                    android:textStyle="bold" android:textColor="@color/text_primary" android:layout_marginTop="2dp"/>
             </LinearLayout>
         </LinearLayout>
     </androidx.constraintlayout.widget.ConstraintLayout>
@@ -460,6 +434,23 @@
                     android:textSize="14sp" />
             </com.google.android.material.textfield.TextInputLayout>
 
+            <HorizontalScrollView
+                android:id="@+id/timeline_tag_scroll"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:paddingHorizontal="8dp"
+                android:paddingTop="4dp"
+                android:scrollbars="none"
+                android:visibility="gone">
+
+                <com.google.android.material.chip.ChipGroup
+                    android:id="@+id/chipGroupTimelineTags"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    app:singleLine="true"
+                    app:singleSelection="true" />
+            </HorizontalScrollView>
+
             <FrameLayout
                 android:layout_width="match_parent"
                 android:layout_height="0dp"
@@ -506,6 +497,41 @@
                         android:layout_height="wrap_content"
                         android:layout_marginTop="16dp"
                         android:text="Aramayı temizle" />
+                </LinearLayout>
+
+                <LinearLayout
+                    android:id="@+id/timeline_no_data_state"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:gravity="center"
+                    android:orientation="vertical"
+                    android:padding="24dp"
+                    android:visibility="gone">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Bu dönemde işlem yok"
+                        android:textColor="@color/text_primary"
+                        android:textSize="16sp"
+                        android:textStyle="bold" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="6dp"
+                        android:gravity="center"
+                        android:text="Analiz ve grafikler için önce işlem ekleyin."
+                        android:textColor="@color/text_secondary"
+                        android:textSize="13sp" />
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btnTimelineGoAddTransaction"
+                        style="@style/Widget.Material3.Button.TonalButton"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="16dp"
+                        android:text="Günlük sekmesine git" />
                 </LinearLayout>
             </FrameLayout>
         </LinearLayout>

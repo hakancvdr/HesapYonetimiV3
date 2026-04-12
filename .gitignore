@@ -13,3 +13,7 @@
 .externalNativeBuild
 .cxx
 local.properties
+
+# Yerel kimlik / Firebase (repoya koymayın)
+google-services.json
+secrets.properties

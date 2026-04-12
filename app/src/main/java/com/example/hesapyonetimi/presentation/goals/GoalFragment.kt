@@ -4,7 +4,8 @@ import android.animation.ObjectAnimator
 import android.app.DatePickerDialog
 import android.graphics.Canvas
 import android.graphics.Color
-import android.graphics.drawable.ColorDrawable
+import android.graphics.Paint
+import android.graphics.RectF
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
@@ -12,7 +13,6 @@ import android.view.ViewGroup
 import android.widget.TextView
 import androidx.cardview.widget.CardView
 import androidx.core.content.ContextCompat
-import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
@@ -22,7 +22,6 @@ import androidx.lifecycle.repeatOnLifecycle
 import androidx.recyclerview.widget.ItemTouchHelper
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
-import com.example.hesapyonetimi.MainActivity
 import com.example.hesapyonetimi.R
 import com.example.hesapyonetimi.ui.IconPickerHelper
 import com.example.hesapyonetimi.ui.EmojiPickerSheet
@@ -54,13 +53,6 @@ class GoalFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
-        ViewCompat.setOnApplyWindowInsetsListener(view.findViewById(R.id.goals_header)) { v, insets ->
-            val sb = insets.getInsets(WindowInsetsCompat.Type.statusBars()).top
-            val dp = { n: Int -> (n * resources.displayMetrics.density).toInt() }
-            v.setPadding(dp(20), sb + dp(12), dp(20), dp(16))
-            insets
-        }
-
         val rv = view.findViewById<RecyclerView>(R.id.rvGoals)
         val emptyView = view.findViewById<View>(R.id.emptyGoalsView)
         rv.layoutManager = LinearLayoutManager(requireContext())
@@ -82,13 +74,6 @@ class GoalFragment : Fragment() {
 
         view.findViewById<TextView>(R.id.btnSortDeadline).setOnClickListener { setGoalSort(view, GoalSort.DEADLINE) }
         view.findViewById<TextView>(R.id.btnSortProgress).setOnClickListener { setGoalSort(view, GoalSort.PROGRESS) }
-
-        view.findViewById<android.widget.TextView>(R.id.iv_profile_goals)?.apply {
-            val name = requireContext().getSharedPreferences("HesapPrefs", android.content.Context.MODE_PRIVATE)
-                .getString("user_display_name", "K") ?: "K"
-            text = name.firstOrNull()?.uppercaseChar()?.toString() ?: "K"
-            setOnClickListener { (activity as? MainActivity)?.gosterProfil() }
-        }
 
         viewLifecycleOwner.lifecycleScope.launch {
             viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
@@ -138,8 +123,10 @@ class GoalFragment : Fragment() {
     }
 
     private fun setupGoalSwipe(rootView: View, rv: RecyclerView) {
-        val deleteBackground = ColorDrawable(ContextCompat.getColor(requireContext(), R.color.expense_red))
-        val deleteIcon = ContextCompat.getDrawable(requireContext(), android.R.drawable.ic_menu_delete)
+        val paint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            style = Paint.Style.FILL
+            textAlign = Paint.Align.CENTER
+        }
         val callback = object : ItemTouchHelper.SimpleCallback(0, ItemTouchHelper.LEFT or ItemTouchHelper.RIGHT) {
             override fun onMove(rv: RecyclerView, vh: RecyclerView.ViewHolder, t: RecyclerView.ViewHolder) = false
 
@@ -147,8 +134,20 @@ class GoalFragment : Fragment() {
                 val pos = viewHolder.adapterPosition
                 if (pos == RecyclerView.NO_POSITION) return
                 val goal = goalAdapter.getGoalAt(pos)
-                viewModel.deleteGoal(goal)
-                Snackbar.make(rootView, "${goal.title} silindi", Snackbar.LENGTH_LONG).show()
+                when (direction) {
+                    ItemTouchHelper.LEFT -> {
+                        goalAdapter.notifyItemChanged(pos)
+                        viewModel.deleteGoal(goal)
+                        Snackbar.make(rootView, "${goal.title} silindi", Snackbar.LENGTH_LONG)
+                            .setAction("Geri Al") { viewModel.restoreGoal(goal) }
+                            .setActionTextColor(ContextCompat.getColor(requireContext(), R.color.green_primary))
+                            .show()
+                    }
+                    ItemTouchHelper.RIGHT -> {
+                        goalAdapter.notifyItemChanged(pos)
+                        showEditGoalDialog(goal)
+                    }
+                }
             }
 
             override fun onChildDraw(
@@ -156,21 +155,29 @@ class GoalFragment : Fragment() {
                 dX: Float, dY: Float, actionState: Int, isCurrentlyActive: Boolean
             ) {
                 val itemView = viewHolder.itemView
-                val iconMargin = (itemView.height - (deleteIcon?.intrinsicHeight ?: 0)) / 2
+                val itemHeight = itemView.bottom - itemView.top
+                val cornerRadius = 28f
+                val swipeWidth = 220f
                 if (dX < 0) {
-                    deleteBackground.setBounds(itemView.right + dX.toInt(), itemView.top, itemView.right, itemView.bottom)
-                    deleteBackground.draw(c)
-                    val iconLeft = itemView.right - iconMargin - (deleteIcon?.intrinsicWidth ?: 0)
-                    val iconRight = itemView.right - iconMargin
-                    deleteIcon?.setBounds(iconLeft, itemView.top + iconMargin, iconRight, itemView.bottom - iconMargin)
-                    deleteIcon?.draw(c)
+                    val left = (itemView.right + dX).coerceAtLeast(itemView.right - swipeWidth)
+                    val rect = RectF(left, itemView.top.toFloat(), itemView.right.toFloat(), itemView.bottom.toFloat())
+                    paint.color = Color.parseColor("#EF5350")
+                    c.drawRoundRect(rect, cornerRadius, cornerRadius, paint)
+                    paint.color = Color.WHITE
+                    paint.textSize = 32f
+                    val textX = (left + itemView.right) / 2f
+                    val textY = itemView.top + itemHeight / 2f + 10f
+                    c.drawText("🗑", textX, textY, paint)
                 } else if (dX > 0) {
-                    deleteBackground.setBounds(itemView.left, itemView.top, itemView.left + dX.toInt(), itemView.bottom)
-                    deleteBackground.draw(c)
-                    val iconLeft = itemView.left + iconMargin
-                    val iconRight = itemView.left + iconMargin + (deleteIcon?.intrinsicWidth ?: 0)
-                    deleteIcon?.setBounds(iconLeft, itemView.top + iconMargin, iconRight, itemView.bottom - iconMargin)
-                    deleteIcon?.draw(c)
+                    val right = (itemView.left + dX).coerceAtMost(itemView.left + swipeWidth)
+                    val rect = RectF(itemView.left.toFloat(), itemView.top.toFloat(), right, itemView.bottom.toFloat())
+                    paint.color = Color.parseColor("#2C3E8C")
+                    c.drawRoundRect(rect, cornerRadius, cornerRadius, paint)
+                    paint.color = Color.WHITE
+                    paint.textSize = 32f
+                    val textX = (itemView.left + right) / 2f
+                    val textY = itemView.top + itemHeight / 2f + 10f
+                    c.drawText("✏", textX, textY, paint)
                 }
                 super.onChildDraw(c, recyclerView, viewHolder, dX, dY, actionState, isCurrentlyActive)
             }
@@ -187,6 +194,7 @@ class GoalFragment : Fragment() {
             ViewGroup.LayoutParams.WRAP_CONTENT
         )
 
+        dialog.findViewById<TextView>(R.id.tvGoalDialogTitle)?.text = "Yeni hedef"
         val etTitle = dialog.findViewById<TextInputEditText>(R.id.etGoalTitle)
         val etTarget = dialog.findViewById<TextInputEditText>(R.id.etGoalTarget)
         val tvDeadline = dialog.findViewById<TextView>(R.id.tvGoalDeadlineValue)
@@ -261,6 +269,7 @@ class GoalFragment : Fragment() {
             ViewGroup.LayoutParams.WRAP_CONTENT
         )
 
+        dialog.findViewById<TextView>(R.id.tvGoalDialogTitle)?.text = "Hedefi düzenle"
         dialog.findViewById<TextView>(R.id.tvSelectedGoalIcon)?.text = goal.icon
         dialog.findViewById<TextInputEditText>(R.id.etGoalTitle)?.setText(goal.title)
         dialog.findViewById<TextInputEditText>(R.id.etGoalTarget)?.setText(
@@ -372,6 +381,5 @@ private class GoalAdapter(
 
         v.setOnClickListener { onRowClick(goal) }
         v.findViewById<MaterialButton>(R.id.btnAddContribution).setOnClickListener { onContribution(goal) }
-        v.setOnLongClickListener { onEdit(goal); true }
     }
 }

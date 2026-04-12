@@ -57,4 +57,11 @@ class GoalViewModel @Inject constructor(
             goalDao.delete(goal)
         }
     }
+
+    /** Silinen hedefi (katkılar olmadan) geri yükler — geri al snackbar için */
+    fun restoreGoal(goal: GoalEntity) {
+        viewModelScope.launch {
+            goalDao.insert(goal)
+        }
+    }
 }

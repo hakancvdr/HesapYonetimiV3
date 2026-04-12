@@ -41,15 +41,17 @@ object CurrencyFormatter {
     private fun getSymbol() = currencies[activeCurrencyCode]?.symbol ?: "₺"
     private fun isSuffix() = currencies[activeCurrencyCode]?.suffix ?: true
 
-    private val decimalFmt = DecimalFormat("#,##0.00", DecimalFormatSymbols(turkishLocale)).apply {
+    /** DecimalFormat eşzamanlı kullanıma uygun değil; çağrı başına yeni örnek. */
+    private fun intFormatter() = DecimalFormat("#,##0", DecimalFormatSymbols(turkishLocale)).apply {
         groupingSize = 3; isGroupingUsed = true
     }
-    private val intFmt = DecimalFormat("#,##0", DecimalFormatSymbols(turkishLocale)).apply {
+
+    private fun decimalFormatter() = DecimalFormat("#,##0.00", DecimalFormatSymbols(turkishLocale)).apply {
         groupingSize = 3; isGroupingUsed = true
     }
 
     fun format(amount: Double, showCurrency: Boolean = true): String {
-        val formatted = if (amount % 1.0 == 0.0) intFmt.format(amount) else decimalFmt.format(amount)
+        val formatted = if (amount % 1.0 == 0.0) intFormatter().format(amount) else decimalFormatter().format(amount)
         if (!showCurrency) return formatted
         val sym = getSymbol()
         return if (isSuffix()) "$formatted $sym" else "$sym$formatted"
@@ -57,7 +59,7 @@ object CurrencyFormatter {
 
     fun formatWithSign(amount: Double, isIncome: Boolean, showCurrency: Boolean = true): String {
         val sign = if (isIncome) "+" else "-"
-        val formatted = if (amount % 1.0 == 0.0) intFmt.format(amount) else decimalFmt.format(amount)
+        val formatted = if (amount % 1.0 == 0.0) intFormatter().format(amount) else decimalFormatter().format(amount)
         if (!showCurrency) return "$sign$formatted"
         val sym = getSymbol()
         return if (isSuffix()) "$sign$formatted $sym" else "$sign$sym$formatted"
@@ -68,7 +70,7 @@ object CurrencyFormatter {
         val formatted = when {
             abs >= 1_000_000 -> String.format(turkishLocale, "%.1fM", abs / 1_000_000)
             abs >= 1_000     -> String.format(turkishLocale, "%.1fK", abs / 1_000)
-            else             -> decimalFmt.format(abs)
+            else             -> decimalFormatter().format(abs)
         }
         if (!showCurrency) return formatted
         val sym = getSymbol()

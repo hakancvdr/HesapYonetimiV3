@@ -4,6 +4,7 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import androidx.work.OneTimeWorkRequestBuilder
+import androidx.work.OutOfQuotaPolicy
 import androidx.work.WorkManager
 import androidx.work.workDataOf
 
@@ -43,6 +44,7 @@ class ReminderAlarmReceiver : BroadcastReceiver() {
         WorkManager.getInstance(context).enqueue(
             OneTimeWorkRequestBuilder<ReminderNotificationWorker>()
                 .setInputData(data)
+                .setExpedited(OutOfQuotaPolicy.RUN_AS_NON_EXPEDITED_WORK_REQUEST)
                 .addTag("reminder_${reminderId}")
                 .build()
         )

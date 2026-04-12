@@ -6,14 +6,21 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.TextView
 import androidx.fragment.app.FragmentManager
+import androidx.fragment.app.viewModels
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.example.hesapyonetimi.R
 import com.example.hesapyonetimi.adapter.HatirlaticiAdapter
 import com.example.hesapyonetimi.domain.model.Reminder
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment
+import dagger.hilt.android.AndroidEntryPoint
 
+@AndroidEntryPoint
 class DayRemindersSheet : BottomSheetDialogFragment() {
+
+    private val viewModel: ReminderViewModel by viewModels(
+        ownerProducer = { requireParentFragment() }
+    )
 
     companion object {
         private const val KEY_YEAR = "year"
@@ -48,16 +55,29 @@ class DayRemindersSheet : BottomSheetDialogFragment() {
         val rv = view.findViewById<RecyclerView>(R.id.rvDayReminders)
         rv.layoutManager = LinearLayoutManager(requireContext())
 
+        val parentFm = requireParentFragment().childFragmentManager
         val adapter = HatirlaticiAdapter(
             cache.sortedBy { it.dueDate },
-            onOdendi = { /* read-only sheet: no-op */ },
-            onDuzenle = { /* read-only sheet: no-op */ },
-            onSil = { /* no-op */ },
-            onSilWithUndo = { /* no-op */ }
+            onOdendi = { id ->
+                viewModel.markAsPaid(id)
+                dismiss()
+            },
+            onDuzenle = { reminder ->
+                dismiss()
+                parentFm.executePendingTransactions()
+                HatirlaticiEkleSheet.newInstance(reminder).show(parentFm, "HatirlaticiDuzenle")
+            },
+            onSil = { id ->
+                viewModel.deleteReminder(id)
+                dismiss()
+            },
+            onSilWithUndo = { reminder ->
+                viewModel.deleteReminder(reminder.id)
+                dismiss()
+            }
         )
         rv.adapter = adapter
 
         view.findViewById<View>(R.id.btnDayRemindersClose).setOnClickListener { dismiss() }
     }
 }
-

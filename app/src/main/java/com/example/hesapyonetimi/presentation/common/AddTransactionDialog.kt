@@ -91,14 +91,16 @@ class AddTransactionDialog : BottomSheetDialogFragment() {
         val rvWallets = view.findViewById<RecyclerView>(R.id.rvWallets)
         rvWallets.layoutManager = LinearLayoutManager(requireContext(), LinearLayoutManager.HORIZONTAL, false)
         viewLifecycleOwner.lifecycleScope.launch {
-            walletDao.getAllWallets().collect { wallets ->
-                val walletAdapter = WalletChipAdapter(wallets, selectedWalletId) { wallet ->
-                    selectedWalletId = wallet.id
-                    rvWallets.adapter?.notifyDataSetChanged()
-                }
-                rvWallets.adapter = walletAdapter
-                if (selectedWalletId == null) {
-                    selectedWalletId = wallets.firstOrNull { it.isDefault }?.id ?: wallets.firstOrNull()?.id
+            viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
+                walletDao.getAllWallets().collect { wallets ->
+                    val walletAdapter = WalletChipAdapter(wallets, selectedWalletId) { wallet ->
+                        selectedWalletId = wallet.id
+                        rvWallets.adapter?.notifyDataSetChanged()
+                    }
+                    rvWallets.adapter = walletAdapter
+                    if (selectedWalletId == null) {
+                        selectedWalletId = wallets.firstOrNull { it.isDefault }?.id ?: wallets.firstOrNull()?.id
+                    }
                 }
             }
         }

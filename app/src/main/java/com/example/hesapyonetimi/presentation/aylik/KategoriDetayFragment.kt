@@ -5,7 +5,6 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.TextView
-import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.fragment.app.Fragment
 import androidx.gridlayout.widget.GridLayout
@@ -41,13 +40,6 @@ class KategoriDetayFragment : Fragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-
-        ViewCompat.setOnApplyWindowInsetsListener(view.findViewById(R.id.kategori_detay_header)) { v, insets ->
-            val sb = insets.getInsets(WindowInsetsCompat.Type.statusBars()).top
-            val dp = { n: Int -> (n * resources.displayMetrics.density).toInt() }
-            v.setPadding(dp(20), sb + dp(12), dp(20), dp(16))
-            insets
-        }
 
         view.findViewById<TextView>(R.id.btn_geri).setOnClickListener {
             findNavController().popBackStack()

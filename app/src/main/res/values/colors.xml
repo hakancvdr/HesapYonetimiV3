@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- Primary Colors - New Blue/Purple Palette -->
+    <!-- Primary brand (adı historical "green_primary"; renk lacivert/mavi) -->
     <color name="green_primary">#2C3E8C</color>
     <color name="green_light">#0099CC</color>
     <color name="green_dark">#1E2D6B</color>

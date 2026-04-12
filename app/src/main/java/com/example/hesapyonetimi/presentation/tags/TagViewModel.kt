@@ -19,6 +19,14 @@ class TagViewModel @Inject constructor(
     val tags: StateFlow<List<TagEntity>> = tagDao.observeActive()
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 
+    init {
+        viewModelScope.launch {
+            DEFAULT_TAG_NAMES.forEach { name ->
+                tagDao.insertIgnore(TagEntity(name = name))
+            }
+        }
+    }
+
     fun addTag(nameRaw: String) {
         val name = nameRaw.trim()
         if (name.isBlank()) return
@@ -31,6 +39,12 @@ class TagViewModel @Inject constructor(
         viewModelScope.launch {
             tagDao.deleteById(id)
         }
+    }
+
+    companion object {
+        val DEFAULT_TAG_NAMES = listOf(
+            "Fatura", "Market", "Yemek", "Ulaşım", "Kira", "Abonelik", "Sağlık", "Eğlence"
+        )
     }
 }
 

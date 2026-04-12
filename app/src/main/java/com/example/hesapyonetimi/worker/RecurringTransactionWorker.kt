@@ -21,6 +21,7 @@ class RecurringTransactionWorker @AssistedInject constructor(
         return try {
             val now = System.currentTimeMillis()
             val recurring = transactionDao.getRecurringTransactions()
+            var insertedThisRun = 0
 
             for (tx in recurring) {
                 val intervalMs = TimeUnit.DAYS.toMillis(tx.recurringDays.toLong())
@@ -39,10 +40,17 @@ class RecurringTransactionWorker @AssistedInject constructor(
                         recurringDays = tx.recurringDays
                     )
                     transactionDao.insert(newTx)
+                    insertedThisRun++
 
                     // Update the original transaction's date so it won't trigger again until next cycle
                     transactionDao.update(tx.copy(date = now, updatedAt = now))
                 }
+            }
+            if (insertedThisRun > 0) {
+                applicationContext.getSharedPreferences("HesapPrefs", Context.MODE_PRIVATE)
+                    .edit()
+                    .putInt("recurring_worker_last_added", insertedThisRun)
+                    .apply()
             }
             Result.success()
         } catch (e: Exception) {

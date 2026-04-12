@@ -12,8 +12,6 @@ import android.view.inputmethod.InputMethodManager
 import android.widget.TextView
 import android.widget.Toast
 import androidx.core.content.ContextCompat
-import androidx.core.view.ViewCompat
-import androidx.core.view.WindowInsetsCompat
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
 import androidx.lifecycle.Lifecycle
@@ -32,6 +30,7 @@ import com.example.hesapyonetimi.domain.model.Category
 import com.example.hesapyonetimi.domain.model.Transaction
 import com.example.hesapyonetimi.model.TransactionModel
 import com.example.hesapyonetimi.presentation.common.CurrencyFormatter
+import com.example.hesapyonetimi.presentation.tags.TagViewModel
 import com.example.hesapyonetimi.presentation.transactions.TransactionViewModel
 import com.google.android.material.chip.Chip
 import com.google.android.material.chip.ChipGroup
@@ -50,6 +49,7 @@ class GunlukFragment : Fragment() {
     lateinit var walletDao: WalletDao
 
     private val viewModel: TransactionViewModel by viewModels()
+    private val tagViewModel: TagViewModel by viewModels()
     private lateinit var categoryAdapter: CategoryChipAdapter
     private var isGider = true
     private var selectedCategory: Category? = null
@@ -58,10 +58,6 @@ class GunlukFragment : Fragment() {
     private val selectedTagFilters = mutableSetOf<String>()
     private var isFormExpanded = false
     private var currentDayTransactions: List<Transaction> = emptyList()
-
-    private val inputTagPresets = listOf(
-        "Fatura", "Market", "Yemek", "Ulaşım", "Kira", "Abonelik", "Sağlık", "Eğlence"
-    )
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
         return inflater.inflate(R.layout.fragment_gunluk, container, false)
@@ -73,20 +69,6 @@ class GunlukFragment : Fragment() {
         view.findViewById<SwipeRefreshLayout>(R.id.swipe_refresh)?.apply {
             setColorSchemeResources(R.color.green_primary)
             setOnRefreshListener { isRefreshing = false }
-        }
-
-        view.findViewById<TextView>(R.id.iv_profile_gunluk)?.apply {
-            val name = requireContext().getSharedPreferences("HesapPrefs", android.content.Context.MODE_PRIVATE)
-                .getString("user_display_name", "K") ?: "K"
-            text = name.firstOrNull()?.uppercaseChar()?.toString() ?: "K"
-            setOnClickListener { (activity as? MainActivity)?.gosterProfil() }
-        }
-
-        ViewCompat.setOnApplyWindowInsetsListener(view.findViewById(R.id.gunluk_header)) { v, insets ->
-            val sb = insets.getInsets(WindowInsetsCompat.Type.statusBars()).top
-            val dp = { n: Int -> (n * resources.displayMetrics.density).toInt() }
-            v.setPadding(dp(20), sb + dp(12), dp(20), dp(16))
-            insets
         }
 
         val tarihFormat = SimpleDateFormat("d MMMM yyyy", Locale("tr"))
@@ -114,14 +96,21 @@ class GunlukFragment : Fragment() {
         }
 
         val chipGroupInputTags = view.findViewById<ChipGroup>(R.id.chipGroupInputTags)
-        inputTagPresets.forEach { tag ->
-            val chip = Chip(requireContext()).apply {
-                text = tag
-                isCheckable = true
-                isChecked = false
-                textSize = 12f
+        viewLifecycleOwner.lifecycleScope.launch {
+            viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
+                tagViewModel.tags.collect { tagList ->
+                    chipGroupInputTags.removeAllViews()
+                    tagList.forEach { entity ->
+                        val chip = Chip(requireContext()).apply {
+                            text = entity.name
+                            isCheckable = true
+                            isChecked = false
+                            textSize = 12f
+                        }
+                        chipGroupInputTags.addView(chip)
+                    }
+                }
             }
-            chipGroupInputTags.addView(chip)
         }
 
         // Hızlı ekle (+) → formu aç
@@ -248,13 +237,15 @@ class GunlukFragment : Fragment() {
         val rvWallets = view.findViewById<RecyclerView>(R.id.rvGunlukWallets)
         rvWallets.layoutManager = LinearLayoutManager(requireContext(), LinearLayoutManager.HORIZONTAL, false)
         viewLifecycleOwner.lifecycleScope.launch {
-            walletDao.getAllWallets().collect { wallets ->
-                rvWallets.adapter = WalletChipAdapter(wallets, selectedWalletId) { wallet ->
-                    selectedWalletId = wallet.id
-                    rvWallets.adapter?.notifyDataSetChanged()
-                }
-                if (selectedWalletId == null) {
-                    selectedWalletId = wallets.firstOrNull { it.isDefault }?.id ?: wallets.firstOrNull()?.id
+            viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
+                walletDao.getAllWallets().collect { wallets ->
+                    rvWallets.adapter = WalletChipAdapter(wallets, selectedWalletId) { wallet ->
+                        selectedWalletId = wallet.id
+                        rvWallets.adapter?.notifyDataSetChanged()
+                    }
+                    if (selectedWalletId == null) {
+                        selectedWalletId = wallets.firstOrNull { it.isDefault }?.id ?: wallets.firstOrNull()?.id
+                    }
                 }
             }
         }

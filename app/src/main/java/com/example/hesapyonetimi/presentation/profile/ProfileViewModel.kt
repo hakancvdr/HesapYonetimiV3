@@ -12,6 +12,7 @@ import com.example.hesapyonetimi.data.local.dao.UserProfileDao
 import com.example.hesapyonetimi.data.local.entity.CategoryEntity
 import com.example.hesapyonetimi.data.local.entity.TransactionEntity
 import com.example.hesapyonetimi.data.local.entity.UserProfileEntity
+import com.example.hesapyonetimi.auth.AuthPrefs
 import com.example.hesapyonetimi.data.local.dao.CategoryDao
 import com.example.hesapyonetimi.domain.model.Category
 import com.example.hesapyonetimi.domain.model.Transaction
@@ -28,7 +29,10 @@ data class ProfileStats(
     val totalTransactions: Int = 0,
     val memberSince: String = "",
     val categoryCount: Int = 0,
-    val activeDays: Int = 0
+    val activeDays: Int = 0,
+    val weekExpenseTotal: Double = 0.0,
+    val openRemindersCount: Int = 0,
+    val membershipTier: String = "FREE"
 )
 
 sealed class ProfileUiEvent {
@@ -107,18 +111,26 @@ class ProfileViewModel @Inject constructor(
 
         val memberSince = firstDate?.let {
             SimpleDateFormat("MMM yyyy", Locale("tr")).format(Date(it))
-        } ?: "Bu ay"
+        }.orEmpty()
 
         val activeDays = firstDate?.let {
             val diff = System.currentTimeMillis() - it
             (diff / (1000 * 60 * 60 * 24)).toInt().coerceAtLeast(1)
         } ?: 0
 
+        val weekStart = System.currentTimeMillis() - 7L * 24 * 60 * 60 * 1000
+        val weekExpense = transactionDao.getTotalExpense(weekStart, System.currentTimeMillis()) ?: 0.0
+        val openRem = reminderDao.countUnpaidReminders()
+        val tier = if (AuthPrefs.isProMember(appContext)) "PREMIUM" else "FREE"
+
         _stats.value = ProfileStats(
             totalTransactions = totalTx,
             memberSince = memberSince,
             categoryCount = catCount,
-            activeDays = activeDays
+            activeDays = activeDays,
+            weekExpenseTotal = weekExpense,
+            openRemindersCount = openRem,
+            membershipTier = tier
         )
     }
 
@@ -181,9 +193,11 @@ class ProfileViewModel @Inject constructor(
         viewModelScope.launch {
             userProfileDao.updateThemeMode("SYSTEM")
             userProfileDao.updateBudgetLimit(0.0)
-            appContext.getSharedPreferences("HesapPrefs", Context.MODE_PRIVATE).edit()
+            appContext.getSharedPreferences(AuthPrefs.PREFS_NAME, Context.MODE_PRIVATE).edit()
                 .remove("kullanici_pin")
                 .putBoolean("biometric_enabled", false)
+                .putBoolean("pin_enabled", false)
+                .putLong("pin_lock_timeout_ms", AuthPrefs.DEFAULT_PIN_LOCK_TIMEOUT_MS)
                 .apply()
             _uiEvent.emit(ProfileUiEvent.ThemeChanged("SYSTEM"))
             _uiEvent.emit(ProfileUiEvent.ShowMessage("PIN, biyometrik ve tema varsayılana alındı."))

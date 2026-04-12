@@ -7,7 +7,7 @@ import com.example.hesapyonetimi.data.mapper.toEntity
 import com.example.hesapyonetimi.domain.model.Transaction
 import com.example.hesapyonetimi.domain.repository.TransactionRepository
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.combine
 import javax.inject.Inject
 
 class TransactionRepositoryImpl @Inject constructor(
@@ -28,29 +28,32 @@ class TransactionRepositoryImpl @Inject constructor(
     }
     
     override fun getAllTransactions(): Flow<List<Transaction>> {
-        return transactionDao.getAllTransactions().map { entities ->
-            entities.map { entity ->
-                val category = categoryDao.getCategoryById(entity.categoryId)
-                entity.toDomain(category)
-            }
+        return combine(
+            transactionDao.getAllTransactions(),
+            categoryDao.getAllCategories()
+        ) { entities, categories ->
+            val byId = categories.associateBy { it.id }
+            entities.map { entity -> entity.toDomain(byId[entity.categoryId]) }
         }
     }
-    
+
     override fun getTransactionsByDateRange(startDate: Long, endDate: Long): Flow<List<Transaction>> {
-        return transactionDao.getTransactionsByDateRange(startDate, endDate).map { entities ->
-            entities.map { entity ->
-                val category = categoryDao.getCategoryById(entity.categoryId)
-                entity.toDomain(category)
-            }
+        return combine(
+            transactionDao.getTransactionsByDateRange(startDate, endDate),
+            categoryDao.getAllCategories()
+        ) { entities, categories ->
+            val byId = categories.associateBy { it.id }
+            entities.map { entity -> entity.toDomain(byId[entity.categoryId]) }
         }
     }
-    
+
     override fun getTransactionsByCategory(categoryId: Long): Flow<List<Transaction>> {
-        return transactionDao.getTransactionsByCategory(categoryId).map { entities ->
-            entities.map { entity ->
-                val category = categoryDao.getCategoryById(entity.categoryId)
-                entity.toDomain(category)
-            }
+        return combine(
+            transactionDao.getTransactionsByCategory(categoryId),
+            categoryDao.getAllCategories()
+        ) { entities, categories ->
+            val byId = categories.associateBy { it.id }
+            entities.map { entity -> entity.toDomain(byId[entity.categoryId]) }
         }
     }
     

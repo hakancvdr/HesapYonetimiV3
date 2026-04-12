@@ -1,9 +1,11 @@
 package com.example.hesapyonetimi
 
 import android.app.Application
+import android.content.Context
 import androidx.hilt.work.HiltWorkerFactory
 import androidx.work.*
 import com.example.hesapyonetimi.presentation.common.CurrencyFormatter
+import com.example.hesapyonetimi.util.LocaleHelper
 import com.example.hesapyonetimi.worker.BudgetAlertWorker
 import com.example.hesapyonetimi.worker.RecurringTransactionWorker
 import com.example.hesapyonetimi.worker.WeeklySummaryWorker
@@ -17,6 +19,10 @@ class HesapYonetimiApp : Application(), Configuration.Provider {
 
     @Inject
     lateinit var workerFactory: HiltWorkerFactory
+
+    override fun attachBaseContext(base: Context) {
+        super.attachBaseContext(LocaleHelper.wrap(base))
+    }
 
     override fun onCreate() {
         super.onCreate()

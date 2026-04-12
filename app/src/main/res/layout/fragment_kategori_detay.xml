@@ -7,17 +7,16 @@
     android:orientation="vertical"
     android:background="@color/background">
 
-    <!-- HEADER -->
     <LinearLayout
         android:id="@+id/kategori_detay_header"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="vertical"
-        android:background="@drawable/gradient_header"
+        android:background="@color/background"
         android:paddingStart="20dp"
         android:paddingEnd="20dp"
-        android:paddingTop="52dp"
-        android:paddingBottom="16dp">
+        android:paddingTop="8dp"
+        android:paddingBottom="12dp">
 
         <!-- Geri + Başlık -->
         <LinearLayout
@@ -34,8 +33,9 @@
                 android:gravity="center"
                 android:text="‹"
                 android:textSize="24sp"
-                android:textColor="#FFFFFF"
+                android:textColor="@color/green_primary"
                 android:background="@drawable/btn_header_card"
+                android:backgroundTint="@color/card_background"
                 android:layout_marginEnd="14dp"
                 android:clickable="true"
                 android:focusable="true"/>
@@ -47,7 +47,7 @@
                 android:layout_weight="1"
                 android:textSize="20sp"
                 android:textStyle="bold"
-                android:textColor="#FFFFFF"/>
+                android:textColor="@color/text_primary"/>
         </LinearLayout>
 
         <!-- İstatistikler -->
@@ -61,15 +61,15 @@
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
                 android:orientation="vertical"
-                android:background="@drawable/btn_header_card"
+                android:background="@color/card_background"
                 android:padding="10dp"
                 android:layout_marginEnd="6dp">
                 <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
-                    android:text="Toplam" android:textSize="12sp" android:textColor="#AAFFFFFF"/>
+                    android:text="Toplam" android:textSize="12sp" android:textColor="@color/text_secondary"/>
                 <TextView android:id="@+id/tv_stat_toplam"
                     android:layout_width="wrap_content" android:layout_height="wrap_content"
                     android:textSize="14sp" android:textStyle="bold"
-                    android:textColor="#FFFFFF" android:layout_marginTop="2dp"/>
+                    android:textColor="@color/text_primary" android:layout_marginTop="2dp"/>
             </LinearLayout>
 
             <LinearLayout
@@ -77,15 +77,15 @@
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
                 android:orientation="vertical"
-                android:background="@drawable/btn_header_card"
+                android:background="@color/card_background"
                 android:padding="10dp"
                 android:layout_marginEnd="6dp">
                 <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
-                    android:text="Pay" android:textSize="12sp" android:textColor="#AAFFFFFF"/>
+                    android:text="Pay" android:textSize="12sp" android:textColor="@color/text_secondary"/>
                 <TextView android:id="@+id/tv_stat_pay"
                     android:layout_width="wrap_content" android:layout_height="wrap_content"
                     android:textSize="14sp" android:textStyle="bold"
-                    android:textColor="#FFFFFF" android:layout_marginTop="2dp"/>
+                    android:textColor="@color/text_primary" android:layout_marginTop="2dp"/>
             </LinearLayout>
 
             <LinearLayout
@@ -93,14 +93,14 @@
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
                 android:orientation="vertical"
-                android:background="@drawable/btn_header_card"
+                android:background="@color/card_background"
                 android:padding="10dp">
                 <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
-                    android:text="İşlem" android:textSize="12sp" android:textColor="#AAFFFFFF"/>
+                    android:text="İşlem" android:textSize="12sp" android:textColor="@color/text_secondary"/>
                 <TextView android:id="@+id/tv_stat_islem"
                     android:layout_width="wrap_content" android:layout_height="wrap_content"
                     android:textSize="14sp" android:textStyle="bold"
-                    android:textColor="#FFFFFF" android:layout_marginTop="2dp"/>
+                    android:textColor="@color/text_primary" android:layout_marginTop="2dp"/>
             </LinearLayout>
         </LinearLayout>
 

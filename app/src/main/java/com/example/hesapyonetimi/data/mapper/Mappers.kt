@@ -2,6 +2,7 @@ package com.example.hesapyonetimi.data.mapper
 
 import com.example.hesapyonetimi.data.local.entity.*
 import com.example.hesapyonetimi.domain.model.*
+import com.example.hesapyonetimi.domain.model.ReminderNotificationPolicy
 
 // Transaction Mappers
 fun TransactionEntity.toDomain(category: CategoryEntity? = null): Transaction {
@@ -105,7 +106,8 @@ fun ReminderEntity.toDomain(category: CategoryEntity? = null): Reminder {
         recurringType = recurringType,
         daysUntilDue = daysUntil,
         totalDonem = totalDonem,
-        donemIndex = donemIndex
+        donemIndex = donemIndex,
+        notificationPolicy = ReminderNotificationPolicy.fromStored(notificationPolicy)
     )
 }
 
@@ -122,6 +124,7 @@ fun Reminder.toEntity(): ReminderEntity {
         recurringType = recurringType,
         totalDonem = totalDonem,
         donemIndex = donemIndex,
-        updatedAt = System.currentTimeMillis()
+        updatedAt = System.currentTimeMillis(),
+        notificationPolicy = notificationPolicy.name
     )
 }

@@ -18,10 +18,16 @@ import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import com.google.android.material.textfield.TextInputEditText
 import com.google.android.material.textfield.TextInputLayout
+import com.example.hesapyonetimi.auth.AuthPrefs
+import com.example.hesapyonetimi.util.LocaleHelper
 import dagger.hilt.android.AndroidEntryPoint
 
 @AndroidEntryPoint
 class PinActivity : AppCompatActivity() {
+
+    override fun attachBaseContext(newBase: Context) {
+        super.attachBaseContext(LocaleHelper.wrap(newBase))
+    }
 
     private var girilenSifre = ""
     private lateinit var dots: Array<View>
@@ -39,17 +45,25 @@ class PinActivity : AppCompatActivity() {
 
         val prefs = getSharedPreferences("HesapPrefs", Context.MODE_PRIVATE)
 
-        // İlk kez kullanıyorsa → Kayıt ekranına yönlendir
+        // İlk kez kullanıyorsa → kurulum seçimi
         val isRegistered = prefs.getBoolean("is_registered", false)
         if (!isRegistered) {
-            startActivity(Intent(this, RegistrationActivity::class.java))
+            startActivity(Intent(this, WelcomeActivity::class.java))
             finish()
             return
         }
 
-        // 30 dakika kontrolü
+        // PIN kapalıysa veya süre dolmadıysa ana ekran
+        if (!AuthPrefs.shouldEnforceAppPinLock(this)) {
+            prefs.edit().putLong("son_giris_zamani", System.currentTimeMillis()).apply()
+            startActivity(Intent(this, MainActivity::class.java))
+            finish()
+            return
+        }
+
         val sonGiris = prefs.getLong("son_giris_zamani", 0L)
-        if (System.currentTimeMillis() - sonGiris < 30 * 60 * 1000L) {
+        val lockWindow = AuthPrefs.getPinLockTimeoutMs(this)
+        if (System.currentTimeMillis() - sonGiris < lockWindow) {
             startActivity(Intent(this, MainActivity::class.java))
             finish()
             return
@@ -79,7 +93,8 @@ class PinActivity : AppCompatActivity() {
 
         // "Şifremi Unuttum" butonu
         val tvForgot = findViewById<TextView>(R.id.tv_forgot_pin)
-        if (kayitliPin != null) {
+        val canRecovery = AuthPrefs.hasSecurityRecovery(this)
+        if (kayitliPin != null && canRecovery) {
             tvForgot?.visibility = View.VISIBLE
             tvForgot?.setOnClickListener { showForgotPinDialog() }
         } else {
@@ -119,7 +134,7 @@ class PinActivity : AppCompatActivity() {
     override fun onPause() {
         super.onPause()
         val prefs = getSharedPreferences("HesapPrefs", Context.MODE_PRIVATE)
-        if (prefs.getString("kullanici_pin", null) != null) {
+        if (AuthPrefs.shouldEnforceAppPinLock(this) && prefs.getString("kullanici_pin", null) != null) {
             prefs.edit().putLong("son_giris_zamani", System.currentTimeMillis()).apply()
         }
     }

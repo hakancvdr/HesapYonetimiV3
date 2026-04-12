@@ -2,6 +2,7 @@ package com.example.hesapyonetimi.data.local.entity
 
 import androidx.room.Entity
 import androidx.room.PrimaryKey
+import com.example.hesapyonetimi.domain.model.ReminderNotificationPolicy
 
 @Entity(tableName = "reminders")
 data class ReminderEntity(
@@ -15,10 +16,12 @@ data class ReminderEntity(
     val paidAt: Long? = null,
     val isRecurring: Boolean = false,
     val recurringType: RecurringType? = null,
-    val totalDonem: Int = 0,      // 0 = sonsuz değil, sınırlı dönem sayısı
+    val totalDonem: Int = 0,      // 0 = sınırsız tekrar; 1 = tek dönem; >1 = en fazla bu kadar dönem
     val donemIndex: Int = 0,      // bu hatırlatıcı kaçıncı dönem (1-based)
     val createdAt: Long = System.currentTimeMillis(),
-    val updatedAt: Long = System.currentTimeMillis()
+    val updatedAt: Long = System.currentTimeMillis(),
+    /** [ReminderNotificationPolicy] adı */
+    val notificationPolicy: String = ReminderNotificationPolicy.LEGACY_MULTI.name
 )
 
 enum class RecurringType {

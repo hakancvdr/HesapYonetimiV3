@@ -8,62 +8,36 @@
     android:orientation="vertical"
     android:background="@color/background">
 
-    <!-- HEADER -->
     <LinearLayout
         android:id="@+id/yaklasan_header"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="vertical"
-        android:background="@drawable/gradient_header"
+        android:background="@color/background"
         android:paddingStart="20dp"
         android:paddingEnd="20dp"
-        android:paddingTop="52dp"
-        android:paddingBottom="16dp">
+        android:paddingTop="8dp"
+        android:paddingBottom="12dp">
 
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="horizontal"
-            android:gravity="center_vertical"
-            android:layout_marginBottom="12dp">
-
-            <TextView
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:text="Hatırlatıcılar"
-                android:textColor="#FFFFFF"
-                android:textSize="20sp"
-                android:textStyle="bold"/>
+            android:gravity="end|center_vertical"
+            android:layout_marginBottom="8dp">
 
             <TextView
                 android:id="@+id/btn_hatirlatici_ekle"
-                android:layout_width="36dp"
-                android:layout_height="36dp"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
                 android:gravity="center"
                 android:text="+"
                 android:textSize="24sp"
-                android:textColor="#FFFFFF"
-                android:background="@drawable/btn_header_card"
+                android:textColor="@color/green_primary"
+                android:background="@drawable/bg_circle_outline_primary"
                 android:clickable="true"
                 android:focusable="true"
-                android:layout_marginEnd="8dp"/>
-
-            <TextView
-                android:id="@+id/iv_profile_yaklasan"
-                android:layout_width="34dp"
-                android:layout_height="34dp"
-                android:gravity="center"
-                android:textColor="#FFFFFF"
-                android:textSize="15sp"
-                android:textStyle="bold"
-                android:background="@drawable/shape_circle_blue"
-                android:backgroundTint="#40FFFFFF"
-                android:includeFontPadding="false"
-                android:padding="0dp"
-                android:clickable="true"
-                android:focusable="true"
-                android:contentDescription="Profil" />
+                android:layout_marginEnd="0dp"/>
         </LinearLayout>
 
         <!-- Özet: Toplam bekleyen + toplam tutar -->
@@ -77,15 +51,15 @@
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
                 android:orientation="vertical"
-                android:background="@drawable/btn_header_card"
+                android:background="@color/card_background"
                 android:padding="10dp"
                 android:layout_marginEnd="6dp">
                 <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
-                    android:text="Bekleyen" android:textSize="11sp" android:textColor="#AAFFFFFF"/>
+                    android:text="Bekleyen" android:textSize="11sp" android:textColor="@color/text_secondary"/>
                 <TextView android:id="@+id/tv_bekleyen_sayi"
                     android:layout_width="wrap_content" android:layout_height="wrap_content"
                     android:text="0 adet" android:textSize="14sp" android:textStyle="bold"
-                    android:textColor="#FFFFFF" android:layout_marginTop="2dp"/>
+                    android:textColor="@color/text_primary" android:layout_marginTop="2dp"/>
             </LinearLayout>
 
             <LinearLayout
@@ -93,15 +67,15 @@
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
                 android:orientation="vertical"
-                android:background="@drawable/btn_header_card"
+                android:background="@color/card_background"
                 android:padding="10dp"
                 android:layout_marginEnd="6dp">
                 <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
-                    android:text="Toplam tutar (30 gün)" android:textSize="11sp" android:textColor="#AAFFFFFF"/>
+                    android:text="30 gün toplamı" android:textSize="11sp" android:textColor="@color/text_secondary"/>
                 <TextView android:id="@+id/tv_bekleyen_toplam"
                     android:layout_width="wrap_content" android:layout_height="wrap_content"
                     android:text="0 ₺" android:textSize="14sp" android:textStyle="bold"
-                    android:textColor="#FFFFFF" android:layout_marginTop="2dp"/>
+                    android:textColor="@color/text_primary" android:layout_marginTop="2dp"/>
             </LinearLayout>
 
             <LinearLayout
@@ -110,10 +84,10 @@
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
                 android:orientation="vertical"
-                android:background="@drawable/btn_header_card"
+                android:background="@color/card_background"
                 android:padding="10dp">
                 <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
-                    android:text="Gecikmiş" android:textSize="11sp" android:textColor="#AAFFFFFF"/>
+                    android:text="Gecikmiş" android:textSize="11sp" android:textColor="@color/text_secondary"/>
                 <TextView android:id="@+id/tv_gecikmus_sayi"
                     android:layout_width="wrap_content" android:layout_height="wrap_content"
                     android:text="0 adet" android:textSize="14sp" android:textStyle="bold"

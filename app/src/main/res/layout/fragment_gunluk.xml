@@ -7,190 +7,6 @@
     android:orientation="vertical"
     android:background="@color/background">
 
-    <!-- ══════════════════════════════════════════ -->
-    <!-- STICKY HEADER                             -->
-    <!-- ══════════════════════════════════════════ -->
-    <LinearLayout
-        android:id="@+id/gunluk_header"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="vertical"
-        android:background="@drawable/gradient_header"
-        android:paddingStart="20dp"
-        android:paddingEnd="20dp"
-        android:paddingTop="52dp"
-        android:paddingBottom="12dp">
-
-        <!-- Başlık + seçili tarih -->
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            android:gravity="center_vertical"
-            android:layout_marginBottom="4dp">
-
-            <LinearLayout
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:orientation="vertical">
-
-                <TextView
-                    android:id="@+id/tv_gunluk_baslik"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="Günlük Takip"
-                    android:textColor="#FFFFFF"
-                    android:textSize="20sp"
-                    android:textStyle="bold" />
-
-                <!-- Seçili tarih etiketi -->
-                <TextView
-                    android:id="@+id/tv_selected_day_label"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:textColor="#CCFFFFFF"
-                    android:textSize="13sp"
-                    android:layout_marginTop="1dp" />
-            </LinearLayout>
-
-            <!-- Profil avatar -->
-            <TextView
-                android:id="@+id/iv_profile_gunluk"
-                android:layout_width="34dp"
-                android:layout_height="34dp"
-                android:gravity="center"
-                android:textColor="#FFFFFF"
-                android:textSize="15sp"
-                android:textStyle="bold"
-                android:background="@drawable/shape_circle_blue"
-                android:backgroundTint="#40FFFFFF"
-                android:includeFontPadding="false"
-                android:padding="0dp"
-                android:clickable="true"
-                android:focusable="true"
-                android:layout_marginEnd="8dp"
-                android:contentDescription="Profil" />
-
-            <!-- Hızlı ekle — Hatırlatıcılar ile aynı boyut/stil -->
-            <TextView
-                android:id="@+id/btn_quick_add"
-                android:layout_width="36dp"
-                android:layout_height="36dp"
-                android:gravity="center"
-                android:text="+"
-                android:textSize="24sp"
-                android:textColor="#FFFFFF"
-                android:background="@drawable/btn_header_card"
-                android:clickable="true"
-                android:focusable="true"
-                android:contentDescription="İşlem ekle" />
-        </LinearLayout>
-
-        <!-- Günlük özet satırı -->
-        <LinearLayout
-            android:id="@+id/daily_summary_row"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            android:background="@drawable/btn_header_card"
-            android:padding="10dp"
-            android:layout_marginTop="8dp"
-            android:layout_marginBottom="8dp"
-            android:gravity="center">
-
-            <TextView
-                android:id="@+id/tv_daily_income"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:gravity="center"
-                android:text="+0 ₺"
-                android:textColor="#FFFFFF"
-                android:textSize="13sp"
-                android:textStyle="bold" />
-
-            <View
-                android:layout_width="1dp"
-                android:layout_height="16dp"
-                android:background="#40FFFFFF" />
-
-            <TextView
-                android:id="@+id/tv_daily_expense"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:gravity="center"
-                android:text="-0 ₺"
-                android:textColor="#FFFFFF"
-                android:textSize="13sp"
-                android:textStyle="bold" />
-
-            <View
-                android:layout_width="1dp"
-                android:layout_height="16dp"
-                android:background="#40FFFFFF" />
-
-            <TextView
-                android:id="@+id/tv_daily_net"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:gravity="center"
-                android:text="= 0 ₺"
-                android:textColor="#FFFFFF"
-                android:textSize="13sp"
-                android:textStyle="bold" />
-        </LinearLayout>
-
-        <!-- Gider/Gelir toggle -->
-        <LinearLayout
-            android:id="@+id/toggle_pill"
-            android:layout_width="match_parent"
-            android:layout_height="40dp"
-            android:orientation="horizontal"
-            android:background="@drawable/toggle_pill_bg"
-            android:padding="4dp">
-
-            <TextView
-                android:id="@+id/btn_gider"
-                android:layout_width="0dp"
-                android:layout_height="match_parent"
-                android:layout_weight="1"
-                android:gravity="center"
-                android:text="💸  Gider"
-                android:textSize="13sp"
-                android:textStyle="bold"
-                android:textColor="@color/green_primary"
-                android:background="@drawable/toggle_pill_selected"
-                android:clickable="true"
-                android:focusable="true"/>
-
-            <TextView
-                android:id="@+id/btn_gelir"
-                android:layout_width="0dp"
-                android:layout_height="match_parent"
-                android:layout_weight="1"
-                android:gravity="center"
-                android:text="💰  Gelir"
-                android:textSize="13sp"
-                android:textStyle="bold"
-                android:textColor="#80FFFFFF"
-                android:clickable="true"
-                android:focusable="true"/>
-        </LinearLayout>
-
-        <TextView
-            android:id="@+id/tv_gunluk_tarih"
-            android:layout_width="0dp"
-            android:layout_height="0dp"
-            android:visibility="gone"/>
-
-    </LinearLayout>
-
-    <!-- ══════════════════════════════════════════ -->
-    <!-- SCROLL İÇERİK                             -->
-    <!-- ══════════════════════════════════════════ -->
     <androidx.swiperefreshlayout.widget.SwipeRefreshLayout
         android:id="@+id/swipe_refresh"
         android:layout_width="match_parent"
@@ -207,6 +23,142 @@
             android:layout_height="wrap_content"
             android:orientation="vertical"
             android:padding="16dp">
+
+            <LinearLayout
+                android:id="@+id/gunluk_header"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:background="@color/background"
+                android:paddingBottom="12dp">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical"
+                    android:layout_marginBottom="4dp">
+
+                    <TextView
+                        android:id="@+id/tv_selected_day_label"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:textColor="@color/text_primary"
+                        android:textSize="15sp"
+                        android:textStyle="bold" />
+
+                    <TextView
+                        android:id="@+id/btn_quick_add"
+                        android:layout_width="40dp"
+                        android:layout_height="40dp"
+                        android:gravity="center"
+                        android:text="+"
+                        android:textSize="24sp"
+                        android:textColor="@color/green_primary"
+                        android:background="@drawable/bg_circle_outline_primary"
+                        android:clickable="true"
+                        android:focusable="true"
+                        android:contentDescription="İşlem ekle" />
+                </LinearLayout>
+
+                <LinearLayout
+                    android:id="@+id/daily_summary_row"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:background="@drawable/bg_card_outline_light"
+                    android:padding="10dp"
+                    android:layout_marginTop="8dp"
+                    android:layout_marginBottom="8dp"
+                    android:gravity="center">
+
+                    <TextView
+                        android:id="@+id/tv_daily_income"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:gravity="center"
+                        android:text="+0 ₺"
+                        android:textColor="@color/income_green"
+                        android:textSize="13sp"
+                        android:textStyle="bold" />
+
+                    <View
+                        android:layout_width="1dp"
+                        android:layout_height="16dp"
+                        android:background="@color/divider" />
+
+                    <TextView
+                        android:id="@+id/tv_daily_expense"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:gravity="center"
+                        android:text="-0 ₺"
+                        android:textColor="@color/expense_red"
+                        android:textSize="13sp"
+                        android:textStyle="bold" />
+
+                    <View
+                        android:layout_width="1dp"
+                        android:layout_height="16dp"
+                        android:background="@color/divider" />
+
+                    <TextView
+                        android:id="@+id/tv_daily_net"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:gravity="center"
+                        android:text="= 0 ₺"
+                        android:textColor="@color/text_primary"
+                        android:textSize="13sp"
+                        android:textStyle="bold" />
+                </LinearLayout>
+
+                <LinearLayout
+                    android:id="@+id/toggle_pill"
+                    android:layout_width="match_parent"
+                    android:layout_height="40dp"
+                    android:orientation="horizontal"
+                    android:background="@drawable/toggle_pill_bg"
+                    android:padding="4dp">
+
+                    <TextView
+                        android:id="@+id/btn_gider"
+                        android:layout_width="0dp"
+                        android:layout_height="match_parent"
+                        android:layout_weight="1"
+                        android:gravity="center"
+                        android:text="💸  Gider"
+                        android:textSize="13sp"
+                        android:textStyle="bold"
+                        android:textColor="@color/green_primary"
+                        android:background="@drawable/toggle_pill_selected"
+                        android:clickable="true"
+                        android:focusable="true"/>
+
+                    <TextView
+                        android:id="@+id/btn_gelir"
+                        android:layout_width="0dp"
+                        android:layout_height="match_parent"
+                        android:layout_weight="1"
+                        android:gravity="center"
+                        android:text="💰  Gelir"
+                        android:textSize="13sp"
+                        android:textStyle="bold"
+                        android:textColor="@color/text_secondary"
+                        android:clickable="true"
+                        android:focusable="true"/>
+                </LinearLayout>
+
+                <TextView
+                    android:id="@+id/tv_gunluk_tarih"
+                    android:layout_width="0dp"
+                    android:layout_height="0dp"
+                    android:visibility="gone"/>
+            </LinearLayout>
 
             <!-- ══ FORM KARTI (katlanabilir) ══ -->
             <androidx.cardview.widget.CardView

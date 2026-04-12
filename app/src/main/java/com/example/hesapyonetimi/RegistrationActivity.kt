@@ -2,6 +2,7 @@ package com.example.hesapyonetimi
 
 import android.content.Context
 import android.content.Intent
+import com.example.hesapyonetimi.util.LocaleHelper
 import android.os.Bundle
 import android.view.View
 import android.view.inputmethod.EditorInfo
@@ -13,6 +14,7 @@ import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.lifecycle.lifecycleScope
 import android.widget.ScrollView
+import com.example.hesapyonetimi.auth.AuthPrefs
 import com.example.hesapyonetimi.data.local.dao.UserProfileDao
 import com.example.hesapyonetimi.data.local.entity.UserProfileEntity
 import com.google.android.material.textfield.TextInputEditText
@@ -23,6 +25,10 @@ import javax.inject.Inject
 
 @AndroidEntryPoint
 class RegistrationActivity : AppCompatActivity() {
+
+    companion object {
+        const val EXTRA_LINK_ACCOUNT = "extra_link_account"
+    }
 
     @Inject
     lateinit var userProfileDao: UserProfileDao
@@ -41,51 +47,37 @@ class RegistrationActivity : AppCompatActivity() {
         "En sevdiğiniz film nedir?"
     )
 
+    override fun attachBaseContext(newBase: Context) {
+        super.attachBaseContext(LocaleHelper.wrap(newBase))
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        // Edge-to-edge: içerik sistem barlarının arkasına uzansın
+        // adjustNothing: pencere pan/resize olmaz (siyah boşluk / çift ölçüm yok). IME yüksekliği
+        // yalnızca regRoot alt padding ile uygulanır; cevap alanı kaydırılabilir alanda kalır.
         WindowCompat.setDecorFitsSystemWindows(window, false)
         setContentView(R.layout.activity_registration)
 
         val dp16 = (16 * resources.displayMetrics.density).toInt()
 
-        // Header: status bar yüksekliğini dinamik ekle
         val header = findViewById<View>(R.id.regHeader)
         ViewCompat.setOnApplyWindowInsetsListener(header) { v, insets ->
-            val statusBarHeight = insets.getInsets(WindowInsetsCompat.Type.statusBars()).top
-            v.setPadding(dp16 + dp16/2, statusBarHeight + dp16, dp16 + dp16/2, dp16 + dp16/2)
+            val top = insets.getInsets(WindowInsetsCompat.Type.statusBars()).top
+            v.setPadding(dp16 + dp16 / 2, top + dp16, dp16 + dp16 / 2, dp16 + dp16 / 2)
             insets
         }
 
-        // Alt buton çubuğu: navigasyon barı yüksekliğini dinamik ekle
-        val bottomBar = findViewById<View>(R.id.bottomButtonBar)
-        ViewCompat.setOnApplyWindowInsetsListener(bottomBar) { v, insets ->
-            val navBarHeight = insets.getInsets(WindowInsetsCompat.Type.navigationBars()).bottom
-            // IME (klavye) için ayrıca padding verme: adjustResize zaten pencereyi küçültür.
-            // Burada sadece navigation bar padding'i yeterli; aksi halde içerik iki kez yukarı itilir.
-            v.setPadding(dp16, dp16, dp16, navBarHeight + dp16)
-            insets
-        }
-
-        // Klavye açılınca ScrollView altına IME padding ver (tek kaynak) ve odaklanan alanı görünür yap.
-        // Bottom bar IME padding almadığı için "çift yukarı itme" bug'ı oluşmaz.
-        val scrollView = findViewById<ScrollView>(R.id.regScrollView)
-        ViewCompat.setOnApplyWindowInsetsListener(scrollView) { v, insets ->
+        val regRoot = findViewById<View>(R.id.regRoot)
+        ViewCompat.setOnApplyWindowInsetsListener(regRoot) { v, insets ->
             val imeBottom = insets.getInsets(WindowInsetsCompat.Type.ime()).bottom
             v.setPadding(0, 0, 0, imeBottom)
+            insets
+        }
 
-            if (imeBottom > 0) {
-                val focused = currentFocus
-                if (focused != null) {
-                    scrollView.postDelayed({
-                        scrollView.requestChildRectangleOnScreen(
-                            focused,
-                            android.graphics.Rect(0, 0, focused.width, focused.height),
-                            true
-                        )
-                    }, 120)
-                }
-            }
+        val bottomBar = findViewById<View>(R.id.bottomButtonBar)
+        ViewCompat.setOnApplyWindowInsetsListener(bottomBar) { v, insets ->
+            val navBottom = insets.getInsets(WindowInsetsCompat.Type.navigationBars()).bottom
+            v.setPadding(dp16, dp16, dp16, navBottom + dp16)
             insets
         }
 
@@ -110,6 +102,11 @@ class RegistrationActivity : AppCompatActivity() {
         )
         containers.forEachIndexed { i, id ->
             findViewById<View>(id).visibility = if (i + 1 == step) View.VISIBLE else View.GONE
+        }
+        if (step == 2) {
+            findViewById<ScrollView>(R.id.regScrollView).post {
+                findViewById<ScrollView>(R.id.regScrollView).scrollTo(0, 0)
+            }
         }
         updateStepIndicator(step)
 
@@ -155,12 +152,20 @@ class RegistrationActivity : AppCompatActivity() {
                     findViewById<TextInputLayout>(R.id.tilAnswer).error = "Lütfen cevap girin"
                     return
                 }
-                savedAnswer = answer   // step 4'e geçmeden önce sakla
-                selectedQuestionIndex = when (
-                    findViewById<RadioGroup>(R.id.radioQuestions).checkedRadioButtonId
-                ) {
-                    R.id.rq0 -> 0; R.id.rq1 -> 1; R.id.rq2 -> 2; else -> 3
+                val rg = findViewById<RadioGroup>(R.id.radioQuestions)
+                val checkedId = rg.checkedRadioButtonId
+                selectedQuestionIndex = when (checkedId) {
+                    R.id.rq0 -> 0
+                    R.id.rq1 -> 1
+                    R.id.rq2 -> 2
+                    R.id.rq3 -> 3
+                    else -> {
+                        findViewById<TextInputLayout>(R.id.tilAnswer).error = null
+                        Toast.makeText(this, "Lütfen listeden bir güvenlik sorusu seçin.", Toast.LENGTH_SHORT).show()
+                        return
+                    }
                 }
+                savedAnswer = answer   // step 4'e geçmeden önce sakla
                 showStep(3)
             }
         }
@@ -179,26 +184,37 @@ class RegistrationActivity : AppCompatActivity() {
         }
     }
 
-    private fun setupKeyboardAutoScroll() {
+    /** Klavye açıldığında tüm kutunun (TextInputLayout) görünmesi için kaydır. */
+    private fun scrollFieldIntoView(anchor: View) {
         val scrollView = findViewById<ScrollView>(R.id.regScrollView)
+        val padBottom = (56 * resources.displayMetrics.density).toInt()
+        scrollView.post {
+            val r = android.graphics.Rect()
+            anchor.getDrawingRect(r)
+            r.bottom += padBottom
+            scrollView.requestChildRectangleOnScreen(anchor, r, false)
+        }
+    }
+
+    private fun setupKeyboardAutoScroll() {
         val etName = findViewById<TextInputEditText>(R.id.etName)
         val etAnswer = findViewById<TextInputEditText>(R.id.etAnswer)
+        val tilName = findViewById<TextInputLayout>(R.id.tilName)
+        val tilAnswer = findViewById<TextInputLayout>(R.id.tilAnswer)
 
-        fun scrollTo(v: View) {
-            scrollView.postDelayed({
-                scrollView.requestChildRectangleOnScreen(
-                    v,
-                    android.graphics.Rect(0, 0, v.width, v.height),
-                    true
-                )
-            }, 120)
+        etName.setOnEditorActionListener { _, actionId, _ ->
+            if (actionId == EditorInfo.IME_ACTION_NEXT) {
+                etAnswer.requestFocus()
+                scrollFieldIntoView(tilAnswer)
+                true
+            } else false
         }
 
-        etName.setOnFocusChangeListener { v, hasFocus ->
-            if (hasFocus) scrollTo(v)
+        etName.setOnFocusChangeListener { _, hasFocus ->
+            if (hasFocus) scrollFieldIntoView(tilName)
         }
-        etAnswer.setOnFocusChangeListener { v, hasFocus ->
-            if (hasFocus) scrollTo(v)
+        etAnswer.setOnFocusChangeListener { _, hasFocus ->
+            if (hasFocus) scrollFieldIntoView(tilAnswer)
         }
     }
 
@@ -251,6 +267,9 @@ class RegistrationActivity : AppCompatActivity() {
             .putInt("security_question_index", selectedQuestionIndex)
             .putString("security_answer", answer)
             .putBoolean("is_registered", true)
+            .putString("auth_method", AuthPrefs.AUTH_METHOD_LOCAL)
+            .putBoolean("pin_enabled", true)
+            .putLong("pin_lock_timeout_ms", AuthPrefs.DEFAULT_PIN_LOCK_TIMEOUT_MS)
             .putLong("son_giris_zamani", System.currentTimeMillis())
             // SharedPreferences'a da kaydet (Room yavaş gelirse fallback)
             .putString("user_display_name", name)

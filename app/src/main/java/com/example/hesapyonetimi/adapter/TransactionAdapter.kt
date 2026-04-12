@@ -1,9 +1,10 @@
 package com.example.hesapyonetimi.adapter
 
-import android.graphics.Color
 import android.view.LayoutInflater
 import android.view.ViewGroup
+import androidx.core.content.ContextCompat
 import androidx.recyclerview.widget.RecyclerView
+import com.example.hesapyonetimi.R
 import com.example.hesapyonetimi.databinding.ItemIslemBinding
 import com.example.hesapyonetimi.domain.model.Transaction
 import com.example.hesapyonetimi.model.TransactionModel
@@ -31,23 +32,16 @@ class TransactionAdapter(
         else
             "${islem.category}$recurringTag"
 
+        val ctx = holder.itemView.context
+        val incomeC = ContextCompat.getColor(ctx, R.color.income_green)
+        val expenseC = ContextCompat.getColor(ctx, R.color.expense_red)
         holder.binding.tvIslemTutar.text = islem.amount
-        holder.binding.tvIslemTutar.setTextColor(
-            if (islem.isIncome) Color.parseColor("#388E3C") else Color.parseColor("#D32F2F")
-        )
+        holder.binding.tvIslemTutar.setTextColor(if (islem.isIncome) incomeC else expenseC)
 
-        val ikonResId = when (islem.category) {
-            "Market"   -> android.R.drawable.ic_menu_add
-            "Kira"     -> android.R.drawable.ic_menu_directions
-            "Faturalar"-> android.R.drawable.ic_menu_agenda
-            "Maaş"     -> android.R.drawable.ic_menu_save
-            "Eğlence"  -> android.R.drawable.ic_menu_slideshow
-            else       -> android.R.drawable.ic_menu_help
-        }
-        holder.binding.ivIslemIkon.setImageResource(ikonResId)
-        holder.binding.ivIslemIkon.setColorFilter(
-            if (islem.isIncome) Color.parseColor("#388E3C") else Color.parseColor("#D32F2F")
-        )
+        val emoji = islem.transaction?.categoryIcon?.trim()?.takeIf { it.isNotEmpty() }
+            ?: categoryFallbackEmoji(islem.category)
+        holder.binding.tvIslemIkon.text = emoji
+        holder.binding.tvIslemIkon.setTextColor(if (islem.isIncome) incomeC else expenseC)
 
         // Tıklama — edit sheet aç
         if (onItemClick != null && islem.transaction != null) {
@@ -58,4 +52,16 @@ class TransactionAdapter(
     override fun getItemCount(): Int = transactionList.size
 
     fun getItem(position: Int): TransactionModel = transactionList[position]
+
+    private fun categoryFallbackEmoji(categoryLabel: String): String {
+        val c = categoryLabel.trim().lowercase()
+        return when {
+            "market" in c -> "🛒"
+            "kira" in c || "fatura" in c -> "🏠"
+            "maaş" in c || "maas" in c -> "💼"
+            "eğlence" in c || "eglence" in c || "hobi" in c -> "🎮"
+            "ulaşım" in c || "ulasim" in c -> "🚗"
+            else -> "📋"
+        }
+    }
 }

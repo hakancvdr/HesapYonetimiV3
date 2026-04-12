@@ -5,6 +5,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.hesapyonetimi.data.local.entity.RecurringType
 import com.example.hesapyonetimi.domain.model.Reminder
+import com.example.hesapyonetimi.domain.model.ReminderNotificationPolicy
 import com.example.hesapyonetimi.domain.model.Transaction
 import com.example.hesapyonetimi.domain.repository.ReminderRepository
 import com.example.hesapyonetimi.domain.model.Category
@@ -79,7 +80,8 @@ class ReminderViewModel @Inject constructor(
         dueDate: Long,
         categoryId: Long,
         recurringType: RecurringType? = null,
-        donemSayisi: Int = 1
+        donemSayisi: Int = 1,
+        notificationPolicy: ReminderNotificationPolicy = ReminderNotificationPolicy.ONE_DAY_BEFORE
     ) {
         viewModelScope.launch {
             try {
@@ -93,7 +95,8 @@ class ReminderViewModel @Inject constructor(
                     recurringType = recurringType,
                     // totalDonem: 0=sınırsız, 1=tek seferlik, >1=sınırlı dönem sayısı
                     totalDonem = if (recurringType == null) 1 else donemSayisi,
-                    donemIndex = 1
+                    donemIndex = 1,
+                    notificationPolicy = notificationPolicy
                 )
                 val id = reminderRepository.insertReminder(reminder)
                 ReminderScheduler.schedule(context, reminder.copy(id = id))
@@ -146,15 +149,16 @@ class ReminderViewModel @Inject constructor(
                     )
                 )
 
-                // Tekrarlayansa bir sonraki dönemi oluştur — ama dönem sınırını aşmamak lazım
+                    // Tekrarlayansa bir sonraki dönemi oluştur — ama dönem sınırını aşmamak lazım
                 if (reminder.isRecurring && reminder.recurringType != null) {
                     val sonrakiIndex = reminder.donemIndex + 1
+                    // totalDonem: 0 = sınırsız tekrar, 1 = tek dönem (sonraki oluşmaz), >1 = en fazla totalDonem dönem
                     val devamEder = when {
                         !reminder.isRecurring -> false
                         reminder.recurringType == null -> false
-                        reminder.totalDonem == 1 -> false  // tek seferlik
-                        reminder.totalDonem == 0 -> false  // 0 = tanımsız, güvenli taraf: devam etme
-                        else -> sonrakiIndex <= reminder.totalDonem  // sınırlı dönem
+                        reminder.totalDonem == 1 -> false
+                        reminder.totalDonem <= 0 -> true
+                        else -> sonrakiIndex <= reminder.totalDonem
                     }
                     if (devamEder) {
                         val nextDate = when (reminder.recurringType) {
@@ -170,7 +174,8 @@ class ReminderViewModel @Inject constructor(
                             isRecurring = true,
                             recurringType = reminder.recurringType,
                             totalDonem = reminder.totalDonem,
-                            donemIndex = sonrakiIndex
+                            donemIndex = sonrakiIndex,
+                            notificationPolicy = reminder.notificationPolicy
                         )
                         val nextId = reminderRepository.insertReminder(next)
                         ReminderScheduler.schedule(context, next.copy(id = nextId))

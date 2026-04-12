@@ -1,17 +1,22 @@
 package com.example.hesapyonetimi
 
 import android.app.Dialog
+import android.content.Intent
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.FrameLayout
+import android.widget.ImageButton
 import android.widget.Toast
 import android.widget.LinearLayout
 import android.widget.TextView
+import androidx.core.view.ViewCompat
+import androidx.core.view.WindowInsetsCompat
+import androidx.core.view.updatePadding
 import androidx.fragment.app.Fragment
 import androidx.navigation.fragment.findNavController
-import com.example.hesapyonetimi.BuildConfig
+import com.example.hesapyonetimi.auth.AuthPrefs
 import com.example.hesapyonetimi.util.CsvExporter
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.google.android.material.textfield.TextInputEditText
@@ -27,9 +32,11 @@ import com.example.hesapyonetimi.domain.model.Category
 import com.example.hesapyonetimi.presentation.profile.ProfileCategoryAdapter
 import com.example.hesapyonetimi.presentation.profile.ProfileUiEvent
 import com.example.hesapyonetimi.presentation.profile.ProfileViewModel
-import com.example.hesapyonetimi.presentation.tags.TagManageDialog
+import com.example.hesapyonetimi.presentation.tags.TagRowAdapter
+import com.example.hesapyonetimi.presentation.tags.TagViewModel
 import com.example.hesapyonetimi.ui.EmojiPickerSheet
 import com.google.android.material.progressindicator.LinearProgressIndicator
+import com.google.android.material.materialswitch.MaterialSwitch
 import com.google.android.material.snackbar.Snackbar
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.Job
@@ -39,12 +46,11 @@ import kotlinx.coroutines.launch
 import java.text.NumberFormat
 import java.util.*
 
-private enum class ProFeature { WALLET, BIOMETRIC, EXPORT, CURRENCY }
-
 @AndroidEntryPoint
 class ProfileFragment : Fragment() {
 
     private val viewModel: ProfileViewModel by viewModels()
+    private val tagViewModel: TagViewModel by viewModels()
 
     /** Kategori ekle/düzenle diyaloglarında gösterilen modern emoji seti */
     private val categoryIconPresets = listOf(
@@ -56,6 +62,8 @@ class ProfileFragment : Fragment() {
     private lateinit var tvAvatar: TextView
     private lateinit var tvUserName: TextView
     private lateinit var tvMemberSince: TextView
+    private lateinit var tvWeekExpense: TextView
+    private lateinit var tvOpenRemindersCount: TextView
     private lateinit var tvTotalTransactions: TextView
     private lateinit var tvCategoryCount: TextView
     private lateinit var tvActiveDays: TextView
@@ -66,10 +74,16 @@ class ProfileFragment : Fragment() {
     private lateinit var tvBudgetPercent: TextView
     private lateinit var tvCategorySubtitle: TextView
     private lateinit var tvThemeSubtitle: TextView
-    private lateinit var tvAppVersion: TextView
+    private lateinit var switchPinLock: MaterialSwitch
+    private lateinit var cardPinLockTimeout: View
+    private lateinit var tvPinLockTimeoutSubtitle: TextView
+    private lateinit var cardSecurityQ: View
+
+    private var suppressPinSwitchCallback = false
 
     private val currencyFormat = NumberFormat.getCurrencyInstance(Locale("tr", "TR"))
     private var categoryDialogJob: Job? = null
+    private var tagDialogJob: Job? = null
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?
@@ -78,16 +92,30 @@ class ProfileFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         bindViews(view)
+        ViewCompat.setOnApplyWindowInsetsListener(view.findViewById(R.id.profile_scroll)) { v, insets ->
+            val nav = insets.getInsets(WindowInsetsCompat.Type.navigationBars()).bottom
+            val extra = (12 * resources.displayMetrics.density).toInt()
+            v.updatePadding(bottom = nav + extra)
+            insets
+        }
         setupClicks(view)
         observe()
 
-        tvAppVersion.text = "v${BuildConfig.VERSION_NAME}"
+        setupPinLockSwitchListener()
+        refreshPinSecurityVisibility()
+    }
+
+    override fun onResume() {
+        super.onResume()
+        refreshPinSecurityVisibility()
     }
 
     private fun bindViews(v: View) {
         tvAvatar = v.findViewById(R.id.tvAvatar)
         tvUserName = v.findViewById(R.id.tvUserName)
         tvMemberSince = v.findViewById(R.id.tvMemberSince)
+        tvWeekExpense = v.findViewById(R.id.tvWeekExpense)
+        tvOpenRemindersCount = v.findViewById(R.id.tvOpenRemindersCount)
         tvTotalTransactions = v.findViewById(R.id.tvTotalTransactions)
         tvCategoryCount = v.findViewById(R.id.tvCategoryCount)
         tvActiveDays = v.findViewById(R.id.tvActiveDays)
@@ -98,31 +126,29 @@ class ProfileFragment : Fragment() {
         tvBudgetPercent = v.findViewById(R.id.tvBudgetPercent)
         tvCategorySubtitle = v.findViewById(R.id.tvCategorySubtitle)
         tvThemeSubtitle = v.findViewById(R.id.tvThemeSubtitle)
-        tvAppVersion = v.findViewById(R.id.tvAppVersion)
+        switchPinLock = v.findViewById(R.id.switchPinLock)
+        cardPinLockTimeout = v.findViewById(R.id.cardPinLockTimeout)
+        tvPinLockTimeoutSubtitle = v.findViewById(R.id.tvPinLockTimeoutSubtitle)
+        cardSecurityQ = v.findViewById(R.id.cardSecurityQ)
     }
 
     private fun setupClicks(v: View) {
+        v.findViewById<View>(R.id.btn_profile_close).setOnClickListener {
+            findNavController().popBackStack()
+        }
         v.findViewById<View>(R.id.btnEditName).setOnClickListener { showEditNameDialog() }
         v.findViewById<View>(R.id.tvUserName).setOnClickListener { showEditNameDialog() }
         v.findViewById<View>(R.id.btnEditBudget).setOnClickListener { showEditBudgetDialog() }
         v.findViewById<View>(R.id.cardCategories).setOnClickListener { showCategoryDialog() }
-        v.findViewById<View>(R.id.cardTags).setOnClickListener {
-            TagManageDialog().show(childFragmentManager, "TagManageDialog")
-        }
         v.findViewById<View>(R.id.cardProPage).setOnClickListener {
-            findNavController().navigate(R.id.proFragment)
+            findNavController().navigate(R.id.action_profil_to_pro)
         }
-        v.findViewById<View>(R.id.cardWallets).setOnClickListener { showProDialog(ProFeature.WALLET) }
-        v.findViewById<View>(R.id.cardBiometric).setOnClickListener { showProDialog(ProFeature.BIOMETRIC) }
+        v.findViewById<View>(R.id.cardPinLockTimeout).setOnClickListener { showPinLockTimeoutDialog() }
         v.findViewById<View>(R.id.cardChangePin).setOnClickListener { showChangePinDialog() }
         v.findViewById<View>(R.id.cardResetSettings).setOnClickListener { showResetSettingsDialog() }
         v.findViewById<View>(R.id.cardSecurityQ).setOnClickListener { showChangeSecurityQDialog() }
-        v.findViewById<View>(R.id.cardTheme).setOnClickListener { showThemeDialog() }
-        v.findViewById<View>(R.id.cardExportCsv).setOnClickListener { showProDialog(ProFeature.EXPORT) }
-        v.findViewById<View>(R.id.cardCurrency).setOnClickListener { showProDialog(ProFeature.CURRENCY) }
         v.findViewById<View>(R.id.cardWipeFinancialData).setOnClickListener { showWipeFinancialDataDialog() }
-        // Para birimi altyazısını güncelle
-        updateCurrencySubtitle(v)
+
     }
 
     private fun observe() {
@@ -163,25 +189,21 @@ class ProfileFragment : Fragment() {
                     viewModel.stats.collectLatest { stats ->
                         tvTotalTransactions.text = "${stats.totalTransactions} İşlem"
                         tvCategoryCount.text = "${stats.categoryCount} Kategori"
-                        // Ay özeti alt satırında "Üye: Tarih" yeterli; activeDays buraya gelmez
                         tvActiveDays.text = if (stats.totalTransactions > 0) "✓ Aktif" else "Yeni"
-                        tvMemberSince.text = "Üye: ${stats.memberSince}"
-                        tvCategorySubtitle.text = "${stats.categoryCount} kategori"
-                    }
-                }
-
-                // Bu ay gelir/gider/net
-                launch {
-                    kotlinx.coroutines.flow.combine(
-                        viewModel.currentMonthIncome,
-                        viewModel.currentMonthExpense
-                    ) { income, expense -> income to expense }.collectLatest { (income, expense) ->
-                        view?.findViewById<TextView>(R.id.tvMonthIncome)?.text = currencyFormat.format(income)
-                        view?.findViewById<TextView>(R.id.tvMonthExpense)?.text = currencyFormat.format(expense)
-                        val net = income - expense
-                        val tvNet = view?.findViewById<TextView>(R.id.tvMonthNet)
-                        tvNet?.text = currencyFormat.format(net)
-                        tvNet?.setTextColor(resources.getColor(if (net >= 0) R.color.income_green else R.color.expense_red, null))
+                        val tierLabel = if (AuthPrefs.isProMember(requireContext())) {
+                            getString(R.string.membership_premium)
+                        } else {
+                            getString(R.string.membership_free)
+                        }
+                        tvMemberSince.text = if (stats.memberSince.isNotBlank()) {
+                            getString(R.string.profile_membership_line, tierLabel, stats.memberSince)
+                        } else {
+                            tierLabel
+                        }
+                        tvWeekExpense.text = currencyFormat.format(stats.weekExpenseTotal)
+                        tvOpenRemindersCount.text = stats.openRemindersCount.toString()
+                        tvCategorySubtitle.text =
+                            "${stats.categoryCount} kategori · etiketler aynı diyalogda"
                     }
                 }
 
@@ -246,45 +268,85 @@ class ProfileFragment : Fragment() {
             (resources.displayMetrics.widthPixels * 0.95).toInt(),
             (resources.displayMetrics.heightPixels * 0.82).toInt()
         )
+        dialog.findViewById<ImageButton>(R.id.btnCloseCategoriesDialog).setOnClickListener { dialog.dismiss() }
 
-        val rv         = dialog.findViewById<RecyclerView>(R.id.rvCategories)
-        val fabAdd     = dialog.findViewById<com.google.android.material.floatingactionbutton.FloatingActionButton>(R.id.fabAddCategory)
+        val rv = dialog.findViewById<RecyclerView>(R.id.rvCategories)
+        val fabAdd = dialog.findViewById<com.google.android.material.floatingactionbutton.FloatingActionButton>(R.id.fabAddCategory)
         val btnExpense = dialog.findViewById<TextView>(R.id.btnExpenseTab)
-        val btnIncome  = dialog.findViewById<TextView>(R.id.btnIncomeTab)
+        val btnIncome = dialog.findViewById<TextView>(R.id.btnIncomeTab)
+        val btnTags = dialog.findViewById<TextView>(R.id.btnTagsTab)
+        val panelTags = dialog.findViewById<View>(R.id.panelTags)
+        val rvTags = dialog.findViewById<RecyclerView>(R.id.rvProfileDialogTags)
+        val etNewTag = dialog.findViewById<TextInputEditText>(R.id.etProfileDialogNewTag)
+        val btnAddTag = dialog.findViewById<View>(R.id.btnProfileDialogAddTag)
 
         val adapter = ProfileCategoryAdapter(
-            onEdit   = { cat -> dialog.dismiss(); showEditCategoryDialog(cat) },
+            onEdit = { cat -> dialog.dismiss(); showEditCategoryDialog(cat) },
             onDelete = { cat -> viewModel.deleteCategory(cat) }
         )
         rv.layoutManager = LinearLayoutManager(requireContext())
         rv.adapter = adapter
 
-        fun selectTab(isIncome: Boolean) {
-            adapter.showIncome = isIncome
-            if (isIncome) {
-                btnIncome.setBackgroundResource(R.drawable.kategori_item_selected_bg)
-                btnIncome.setTextColor(requireContext().getColor(R.color.green_primary))
-                btnExpense.setBackgroundResource(R.drawable.kategori_item_bg)
-                btnExpense.setTextColor(requireContext().getColor(R.color.text_secondary))
-            } else {
-                btnExpense.setBackgroundResource(R.drawable.kategori_item_selected_bg)
-                btnExpense.setTextColor(requireContext().getColor(R.color.green_primary))
-                btnIncome.setBackgroundResource(R.drawable.kategori_item_bg)
-                btnIncome.setTextColor(requireContext().getColor(R.color.text_secondary))
-            }
-        }
-        btnExpense.setOnClickListener { selectTab(false) }
-        btnIncome.setOnClickListener  { selectTab(true) }
+        val tagAdapter = TagRowAdapter { id -> tagViewModel.deleteTag(id) }
+        rvTags.layoutManager = LinearLayoutManager(requireContext())
+        rvTags.adapter = tagAdapter
 
-        // Anında mevcut veriyi göster (empty bug fix: isShowing kontrolü yok)
-        adapter.submitFullList(viewModel.categories.value)
+        val grn = requireContext().getColor(R.color.green_primary)
+        val sec = requireContext().getColor(R.color.text_secondary)
+        var mode = 0 // 0 gider, 1 gelir, 2 etiket
+
+        fun styleTabs() {
+            btnExpense.setBackgroundResource(if (mode == 0) R.drawable.kategori_item_selected_bg else R.drawable.kategori_item_bg)
+            btnExpense.setTextColor(if (mode == 0) grn else sec)
+            btnIncome.setBackgroundResource(if (mode == 1) R.drawable.kategori_item_selected_bg else R.drawable.kategori_item_bg)
+            btnIncome.setTextColor(if (mode == 1) grn else sec)
+            btnTags.setBackgroundResource(if (mode == 2) R.drawable.kategori_item_selected_bg else R.drawable.kategori_item_bg)
+            btnTags.setTextColor(if (mode == 2) grn else sec)
+        }
+
+        fun applyMode(m: Int) {
+            mode = m
+            when (m) {
+                0, 1 -> {
+                    fabAdd.visibility = View.VISIBLE
+                    rv.visibility = View.VISIBLE
+                    panelTags.visibility = View.GONE
+                    adapter.showIncome = (m == 1)
+                    adapter.submitFullList(viewModel.categories.value)
+                }
+                2 -> {
+                    fabAdd.visibility = View.GONE
+                    rv.visibility = View.GONE
+                    panelTags.visibility = View.VISIBLE
+                }
+            }
+            styleTabs()
+        }
+
+        btnExpense.setOnClickListener { applyMode(0) }
+        btnIncome.setOnClickListener { applyMode(1) }
+        btnTags.setOnClickListener { applyMode(2) }
+        btnAddTag.setOnClickListener {
+            tagViewModel.addTag(etNewTag.text?.toString().orEmpty())
+            etNewTag.setText("")
+        }
 
         categoryDialogJob?.cancel()
         categoryDialogJob = viewLifecycleOwner.lifecycleScope.launch {
-            viewModel.categories.collect { list -> adapter.submitFullList(list) }
+            viewModel.categories.collect { list ->
+                if (mode != 2) adapter.submitFullList(list)
+            }
         }
-        dialog.setOnDismissListener { categoryDialogJob?.cancel() }
+        tagDialogJob?.cancel()
+        tagDialogJob = viewLifecycleOwner.lifecycleScope.launch {
+            tagViewModel.tags.collect { tagAdapter.submit(it) }
+        }
+        dialog.setOnDismissListener {
+            categoryDialogJob?.cancel()
+            tagDialogJob?.cancel()
+        }
 
+        applyMode(0)
         fabAdd.setOnClickListener { dialog.dismiss(); showAddCategoryDialog() }
         dialog.show()
     }
@@ -354,20 +416,6 @@ class ProfileFragment : Fragment() {
         dialog.show()
     }
 
-    private fun showThemeDialog() {
-        val dialog = buildDialog(R.layout.dialog_profile_theme)
-        val currentMode = viewModel.profile.value?.themeMode ?: "SYSTEM"
-
-        dialog.findViewById<TextView>(R.id.ivLightCheck).visibility = if (currentMode == "LIGHT") View.VISIBLE else View.GONE
-        dialog.findViewById<TextView>(R.id.ivDarkCheck).visibility = if (currentMode == "DARK") View.VISIBLE else View.GONE
-        dialog.findViewById<TextView>(R.id.ivSystemCheck).visibility = if (currentMode == "SYSTEM") View.VISIBLE else View.GONE
-
-        dialog.findViewById<View>(R.id.cardLight).setOnClickListener { viewModel.updateThemeMode("LIGHT"); dialog.dismiss() }
-        dialog.findViewById<View>(R.id.cardDark).setOnClickListener { viewModel.updateThemeMode("DARK"); dialog.dismiss() }
-        dialog.findViewById<View>(R.id.cardSystem).setOnClickListener { viewModel.updateThemeMode("SYSTEM"); dialog.dismiss() }
-        dialog.show()
-    }
-
     private fun buildDialog(layoutRes: Int, widthRatio: Double = 0.90): Dialog {
         val dialog = Dialog(requireContext())
         dialog.setContentView(layoutRes)
@@ -378,24 +426,6 @@ class ProfileFragment : Fragment() {
 
     private fun showWalletDialog() {
         findNavController().navigate(R.id.action_profil_to_wallet)
-    }
-
-    private fun showProDialog(feature: ProFeature) {
-        val (title, msg) = when (feature) {
-            ProFeature.WALLET ->
-                "Cüzdan (Pro)" to "Birden fazla banka ve nakit hesabını ayrı ayrı takip etmek Pro sürümünde sunulacak."
-            ProFeature.BIOMETRIC ->
-                "Gelişmiş güvenlik (Pro)" to "Ek güvenlik katmanları ve yedekleme seçenekleri Pro ile genişletilecek."
-            ProFeature.EXPORT ->
-                "CSV dışa aktarma (Pro)" to "İşlemlerinizi Excel uyumlu dosya olarak dışa aktarmak Pro özelliği olacak."
-            ProFeature.CURRENCY ->
-                "Para birimi (Pro)" to "Çoklu para birimi ve kur takibi Pro sürümünde planlanıyor."
-        }
-        MaterialAlertDialogBuilder(requireContext())
-            .setTitle("⭐ $title")
-            .setMessage(msg)
-            .setPositiveButton("Tamam", null)
-            .show()
     }
 
     private fun showWipeFinancialDataDialog() {
@@ -420,6 +450,64 @@ class ProfileFragment : Fragment() {
             .show()
     }
 
+    private fun setupPinLockSwitchListener() {
+        switchPinLock.setOnCheckedChangeListener { _, isChecked ->
+            if (suppressPinSwitchCallback) return@setOnCheckedChangeListener
+            val ctx = requireContext()
+            val prefs = AuthPrefs.prefs(ctx)
+            if (isChecked) {
+                val pin = prefs.getString("kullanici_pin", null)
+                if (pin.isNullOrBlank() || pin.length != 4) {
+                    suppressPinSwitchCallback = true
+                    switchPinLock.isChecked = false
+                    suppressPinSwitchCallback = false
+                    showChangePinDialog {
+                        AuthPrefs.setPinEnabled(ctx, true)
+                        suppressPinSwitchCallback = true
+                        switchPinLock.isChecked = true
+                        suppressPinSwitchCallback = false
+                        refreshPinSecurityVisibility()
+                    }
+                } else {
+                    AuthPrefs.setPinEnabled(ctx, true)
+                    cardPinLockTimeout.visibility = View.VISIBLE
+                }
+            } else {
+                AuthPrefs.setPinEnabled(ctx, false)
+                prefs.edit()
+                    .remove("kullanici_pin")
+                    .putBoolean("biometric_enabled", false)
+                    .apply()
+                cardPinLockTimeout.visibility = View.GONE
+            }
+        }
+    }
+
+    private fun refreshPinSecurityVisibility() {
+        val ctx = requireContext()
+        suppressPinSwitchCallback = true
+        switchPinLock.isChecked = AuthPrefs.isPinEnabled(ctx)
+        suppressPinSwitchCallback = false
+        tvPinLockTimeoutSubtitle.text = AuthPrefs.labelForTimeoutMs(AuthPrefs.getPinLockTimeoutMs(ctx))
+        cardPinLockTimeout.visibility =
+            if (AuthPrefs.isPinEnabled(ctx)) View.VISIBLE else View.GONE
+        cardSecurityQ.visibility =
+            if (AuthPrefs.hasSecurityRecovery(ctx)) View.VISIBLE else View.GONE
+    }
+
+    private fun showPinLockTimeoutDialog() {
+        if (!AuthPrefs.isPinEnabled(requireContext())) return
+        val msChoices = AuthPrefs.PIN_TIMEOUT_CHOICES_MS
+        val labels = msChoices.map { AuthPrefs.labelForTimeoutMs(it) }.toTypedArray()
+        MaterialAlertDialogBuilder(requireContext())
+            .setTitle("PIN tekrar sorma süresi")
+            .setItems(labels) { _, which ->
+                AuthPrefs.setPinLockTimeoutMs(requireContext(), msChoices[which])
+                tvPinLockTimeoutSubtitle.text = labels[which]
+            }
+            .show()
+    }
+
     private fun showResetSettingsDialog() {
         MaterialAlertDialogBuilder(requireContext())
             .setTitle("Ayarları sıfırla")
@@ -429,36 +517,7 @@ class ProfileFragment : Fragment() {
             .show()
     }
 
-    // ── PIN değiştirme ────────────────────────────────────────────────────────
-    private fun setupBiometricSwitch(v: View) {
-        val prefs = requireContext().getSharedPreferences("HesapPrefs", android.content.Context.MODE_PRIVATE)
-        val sw = v.findViewById<androidx.appcompat.widget.SwitchCompat>(R.id.switchBiometric) ?: return
-        val tvSub = v.findViewById<TextView>(R.id.tvBiometricSubtitle)
-
-        // Cihaz biyometrik destekliyor mu?
-        val bioMgr = androidx.biometric.BiometricManager.from(requireContext())
-        val supported = bioMgr.canAuthenticate(
-            androidx.biometric.BiometricManager.Authenticators.BIOMETRIC_STRONG or
-            androidx.biometric.BiometricManager.Authenticators.DEVICE_CREDENTIAL
-        ) == androidx.biometric.BiometricManager.BIOMETRIC_SUCCESS
-
-        if (!supported) {
-            sw.isEnabled = false
-            tvSub?.text = "Cihaz biyometrik desteklemiyor"
-            return
-        }
-
-        sw.isChecked = prefs.getBoolean("biometric_enabled", false)
-        tvSub?.text = if (sw.isChecked) "Aktif — parmak izi / yüz tanıma" else "Parmak izi / yüz ile giriş"
-
-        sw.setOnCheckedChangeListener { _, checked ->
-            prefs.edit().putBoolean("biometric_enabled", checked).apply()
-            tvSub?.text = if (checked) "Aktif — parmak izi / yüz tanıma" else "Parmak izi / yüz ile giriş"
-            if (checked) showSnack("✅ Biyometrik giriş aktifleştirildi")
-        }
-    }
-
-    private fun showChangePinDialog() {
+    private fun showChangePinDialog(onPinSaved: (() -> Unit)? = null) {
         val prefs = requireContext().getSharedPreferences("HesapPrefs", android.content.Context.MODE_PRIVATE)
         val currentPin = prefs.getString("kullanici_pin", null)
 
@@ -493,9 +552,13 @@ class ProfileFragment : Fragment() {
             if (new1 != new2) {
                 tilConfirm.error = "PIN'ler eşleşmiyor"; return@setOnClickListener
             }
-            prefs.edit().putString("kullanici_pin", new1).apply()
+            prefs.edit()
+                .putString("kullanici_pin", new1)
+                .putBoolean("pin_enabled", true)
+                .apply()
             showSnack("✅ PIN güncellendi")
             dialog.dismiss()
+            onPinSaved?.invoke()
         }
         dialog.show()
     }
@@ -552,57 +615,6 @@ class ProfileFragment : Fragment() {
                 .apply()
             showSnack("✅ Güvenlik sorusu güncellendi")
             dialog.dismiss()
-        }
-        dialog.show()
-    }
-
-    private fun updateCurrencySubtitle(v: View) {
-        val prefs = requireContext().getSharedPreferences("HesapPrefs", android.content.Context.MODE_PRIVATE)
-        val code = prefs.getString("currency_code", "TRY") ?: "TRY"
-        val sym = com.example.hesapyonetimi.presentation.common.CurrencyFormatter.currencies[code]?.symbol ?: "₺"
-        v.findViewById<TextView>(R.id.tvCurrencySubtitle)?.text = "$code ($sym)"
-    }
-
-    private fun showCurrencyDialog() {
-        val dialog = Dialog(requireContext())
-        dialog.setContentView(R.layout.dialog_currency)
-        dialog.window?.setBackgroundDrawableResource(android.R.color.transparent)
-        dialog.window?.setLayout((resources.displayMetrics.widthPixels * 0.88).toInt(), ViewGroup.LayoutParams.WRAP_CONTENT)
-
-        val rv = dialog.findViewById<androidx.recyclerview.widget.RecyclerView>(R.id.rvCurrencies)
-        rv.layoutManager = LinearLayoutManager(requireContext())
-
-        val prefs = requireContext().getSharedPreferences("HesapPrefs", android.content.Context.MODE_PRIVATE)
-        var selected = prefs.getString("currency_code", "TRY") ?: "TRY"
-        val entries = com.example.hesapyonetimi.presentation.common.CurrencyFormatter.currencies.entries.toList()
-
-        val currencyNames = mapOf(
-            "TRY" to "Türk Lirası", "USD" to "US Dollar", "EUR" to "Euro",
-            "GBP" to "British Pound", "JPY" to "Japanese Yen", "BTC" to "Bitcoin",
-            "ETH" to "Ethereum", "CHF" to "Swiss Franc", "CAD" to "Canadian Dollar", "AUD" to "Australian Dollar"
-        )
-
-        rv.adapter = object : androidx.recyclerview.widget.RecyclerView.Adapter<androidx.recyclerview.widget.RecyclerView.ViewHolder>() {
-            inner class VH(v: View) : androidx.recyclerview.widget.RecyclerView.ViewHolder(v)
-            override fun getItemCount() = entries.size
-            override fun onCreateViewHolder(parent: ViewGroup, vt: Int): VH {
-                val row = LayoutInflater.from(parent.context).inflate(R.layout.item_currency_row, parent, false)
-                return VH(row)
-            }
-            override fun onBindViewHolder(h: androidx.recyclerview.widget.RecyclerView.ViewHolder, pos: Int) {
-                val (code, def) = entries[pos]
-                h.itemView.findViewById<TextView>(R.id.tvCurrencyCode)?.text = "${def.symbol}  $code"
-                h.itemView.findViewById<TextView>(R.id.tvCurrencyName)?.text = currencyNames[code] ?: code
-                val isSelected = code == selected
-                h.itemView.setBackgroundResource(if (isSelected) R.drawable.kategori_item_selected_bg else android.R.color.transparent)
-                h.itemView.setOnClickListener {
-                    selected = code
-                    com.example.hesapyonetimi.presentation.common.CurrencyFormatter.setCode(requireContext(), code)
-                    notifyDataSetChanged()
-                    dialog.dismiss()
-                    requireActivity().recreate()
-                }
-            }
         }
         dialog.show()
     }

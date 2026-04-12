@@ -13,7 +13,6 @@ import android.widget.ImageButton
 import android.widget.LinearLayout
 import android.widget.TextView
 import android.widget.Toast
-import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
@@ -59,13 +58,6 @@ class YaklasanFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
-        ViewCompat.setOnApplyWindowInsetsListener(view.findViewById(R.id.yaklasan_header)) { v, insets ->
-            val sb = insets.getInsets(WindowInsetsCompat.Type.statusBars()).top
-            val dp = { n: Int -> (n * resources.displayMetrics.density).toInt() }
-            v.setPadding(dp(20), sb + dp(12), dp(20), dp(16))
-            insets
-        }
-
         adapterBuAy = HatirlaticiAdapter(
             emptyList(),
             onOdendi = { id -> viewModel.markAsPaid(id) },
@@ -100,13 +92,6 @@ class YaklasanFragment : Fragment() {
 
         view.findViewById<View>(R.id.btn_hatirlatici_ekle).setOnClickListener {
             HatirlaticiEkleSheet.newInstance().show(childFragmentManager, "HatirlaticiEkle")
-        }
-
-        view.findViewById<android.widget.TextView>(R.id.iv_profile_yaklasan)?.apply {
-            val name = requireContext().getSharedPreferences("HesapPrefs", android.content.Context.MODE_PRIVATE)
-                .getString("user_display_name", "K") ?: "K"
-            text = name.firstOrNull()?.uppercaseChar()?.toString() ?: "K"
-            setOnClickListener { (activity as? MainActivity)?.gosterProfil() }
         }
 
         setupFiltre(view)
@@ -416,7 +401,8 @@ class YaklasanFragment : Fragment() {
                     dueDate = reminder.dueDate,
                     categoryId = reminder.categoryId,
                     recurringType = reminder.recurringType,
-                    donemSayisi = 1
+                    donemSayisi = 1,
+                    notificationPolicy = reminder.notificationPolicy
                 )
             }
             .setActionTextColor(androidx.core.content.ContextCompat.getColor(requireContext(), R.color.green_primary))

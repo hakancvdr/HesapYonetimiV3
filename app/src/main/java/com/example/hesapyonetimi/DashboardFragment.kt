@@ -16,8 +16,6 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import androidx.navigation.fragment.findNavController
 import androidx.recyclerview.widget.LinearLayoutManager
-import androidx.core.view.ViewCompat
-import androidx.core.view.WindowInsetsCompat
 import com.example.hesapyonetimi.adapter.CalendarAdapter
 import com.example.hesapyonetimi.adapter.ReminderAdapter
 import com.example.hesapyonetimi.adapter.TransactionAdapter
@@ -28,7 +26,9 @@ import com.example.hesapyonetimi.model.ReminderModel
 import com.example.hesapyonetimi.model.TransactionModel
 import com.example.hesapyonetimi.presentation.common.AddTransactionDialog
 import com.example.hesapyonetimi.presentation.common.CurrencyFormatter
+import com.example.hesapyonetimi.auth.AuthPrefs
 import com.example.hesapyonetimi.presentation.dashboard.DashboardViewModel
+import com.example.hesapyonetimi.ui.PieChartView
 import androidx.core.content.ContextCompat
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout
 import com.google.android.material.snackbar.Snackbar
@@ -59,15 +59,15 @@ class DashboardFragment : Fragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        applyStatusBarInset()
         initUI()
         setupMonthlyCalendar()
+        setupDashboardHomeControls()
         observeViewModel()
-        observeProfile()
         observeBudgetWarning()
         observeSuggestions()
         observeNetBakiye()
         setupClickListeners()
+        applyDashboardModuleVisibility()
 
         val swipeRefresh = binding.root.findViewById<SwipeRefreshLayout>(R.id.swipe_refresh)
         swipeRefresh?.setColorSchemeResources(R.color.green_primary)
@@ -77,24 +77,11 @@ class DashboardFragment : Fragment() {
         }
     }
 
-    private fun applyStatusBarInset() {
-        ViewCompat.setOnApplyWindowInsetsListener(binding.headerContainer) { v, insets ->
-            val statusBarHeight = insets.getInsets(WindowInsetsCompat.Type.statusBars()).top
-            v.setPadding(dpToPx(20), statusBarHeight + dpToPx(12), dpToPx(20), dpToPx(16))
-            insets
-        }
-    }
-
-    private fun dpToPx(dp: Int) = (dp * resources.displayMetrics.density).toInt()
-
     private fun setupClickListeners() {
         binding.fabAddTransaction.setOnClickListener { showAddTransactionDialog(null) }
         binding.cardIncome.setOnClickListener { showAddTransactionDialog(isIncome = true) }
         binding.cardExpense.setOnClickListener { showAddTransactionDialog(isIncome = false) }
 
-        binding.ivProfile.setOnClickListener {
-            (activity as? MainActivity)?.gosterProfil()
-        }
 
         binding.btnAddReminder.setOnClickListener {
             activity?.let { act ->
@@ -117,32 +104,36 @@ class DashboardFragment : Fragment() {
         binding.rvDashboardCalendar.layoutManager =
             LinearLayoutManager(context, LinearLayoutManager.HORIZONTAL, false)
         binding.rvDashboardReminders.layoutManager = LinearLayoutManager(context)
-
-        val hour = Calendar.getInstance().get(Calendar.HOUR_OF_DAY)
-        binding.tvGreeting.text = when (hour) {
-            in 5..11  -> getString(R.string.greeting_morning)
-            in 12..17 -> getString(R.string.greeting_afternoon)
-            else      -> getString(R.string.greeting_evening)
-        }
     }
 
-    private fun observeProfile() {
-        viewLifecycleOwner.lifecycleScope.launch {
-            viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
-                userProfileDao.getProfile().collectLatest { profile ->
-                    val prefs = requireContext().getSharedPreferences("HesapPrefs", android.content.Context.MODE_PRIVATE)
-                    val name = profile?.displayName
-                        ?.takeIf { it.isNotBlank() && it != "Kullanıcı" }
-                        ?: prefs.getString("user_display_name", null)
-                            ?.takeIf { it.isNotBlank() }
-                        ?: "Kullanıcı"
-                    binding.tvDashboardUsername.text = "$name 👋"
+    private fun setupDashboardHomeControls() {
+        val ctx = requireContext()
+        binding.switchDashboardFxHome.isChecked = AuthPrefs.isDashboardFxVisible(ctx)
+        binding.switchDashboardRemindersHome.isChecked = AuthPrefs.isDashboardReminderSectionVisible(ctx)
+        binding.switchDashboardInsightsHome.isChecked = AuthPrefs.isDashboardInsightsVisible(ctx)
+        binding.switchDashboardFxHome.setOnCheckedChangeListener { _, c ->
+            AuthPrefs.setDashboardFxVisible(ctx, c)
+            applyDashboardModuleVisibility()
+        }
+        binding.switchDashboardRemindersHome.setOnCheckedChangeListener { _, c ->
+            AuthPrefs.setDashboardReminderSectionVisible(ctx, c)
+            applyDashboardModuleVisibility()
+        }
+        binding.switchDashboardInsightsHome.setOnCheckedChangeListener { _, c ->
+            AuthPrefs.setDashboardInsightsVisible(ctx, c)
+            applyDashboardModuleVisibility()
+        }
 
-                    // Profil avatarı — baş harf
-                    val initial = name.firstOrNull()?.uppercaseChar()?.toString() ?: "K"
-                    binding.ivProfile.text = initial
-                }
-            }
+        val miniPie = binding.dashboardMiniPie
+        fun applyMiniPieExpanded(expanded: Boolean) {
+            miniPie.visibility = if (expanded) View.VISIBLE else View.GONE
+            binding.btnToggleMiniPie.rotation = if (expanded) 180f else 0f
+        }
+        applyMiniPieExpanded(AuthPrefs.isDashboardMiniPieExpanded(ctx))
+        binding.btnToggleMiniPie.setOnClickListener {
+            val next = miniPie.visibility != View.VISIBLE
+            AuthPrefs.setDashboardMiniPieExpanded(requireContext(), next)
+            applyMiniPieExpanded(next)
         }
     }
 
@@ -168,6 +159,17 @@ class DashboardFragment : Fragment() {
                             updateTransactionList(transactions)
                         }
                 }
+                launch {
+                    viewModel.uiState
+                        .map { it.expensePieSlices }
+                        .distinctUntilChanged()
+                        .collect { slices ->
+                            val entries = slices.map {
+                                PieChartView.PieEntry(it.value, it.color, it.label)
+                            }
+                            binding.dashboardMiniPie.setData(entries)
+                        }
+                }
             }
         }
     }
@@ -179,6 +181,16 @@ class DashboardFragment : Fragment() {
 
         val monthName = SimpleDateFormat("MMMM yyyy", Locale("tr")).format(Date())
         binding.tvMonthTitle.text = "Bu ay — $monthName"
+
+        val bannerLines = listOfNotNull(state.exchangeRatesBanner, state.recurringWorkerBanner)
+            .map { it.trim() }
+            .filter { it.isNotEmpty() }
+        if (bannerLines.isEmpty()) {
+            binding.tvExchangeRates.visibility = View.GONE
+        } else {
+            binding.tvExchangeRates.visibility = View.VISIBLE
+            binding.tvExchangeRates.text = bannerLines.joinToString("\n")
+        }
 
         val suggestionContainer = binding.root.findViewById<View>(R.id.suggestion_container)
         if (state.totalIncome == 0.0 && state.totalExpense == 0.0) {
@@ -404,31 +416,55 @@ class DashboardFragment : Fragment() {
         }
     }
 
-    // ── Akıllı öneri — tv_smart_tip'e yaz (tv_suggestion'dan ayrı) ──────────
+    // ── Akıllı öneri + bütçe satırları — tv_smart_tip çok satır ─────────────
     private fun observeSuggestions() {
         viewLifecycleOwner.lifecycleScope.launch {
             viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
-                viewModel.suggestions.collect { suggestions ->
+                combine(
+                    viewModel.suggestions,
+                    viewModel.budgetInsightLines
+                ) { suggestions, budgetLines ->
+                    suggestions to budgetLines
+                }.collect { (suggestions, budgetLines) ->
                     val tvSmartTip = binding.root.findViewById<TextView>(R.id.tv_smart_tip)
                     val smartTipRow = binding.root.findViewById<View>(R.id.smart_tip_row)
                     val smartTipDivider = binding.root.findViewById<View>(R.id.smart_tip_divider)
-                    if (suggestions.isEmpty()) {
+                    val lines = mutableListOf<String>()
+                    suggestions.take(4).forEach { o ->
+                        lines.add(
+                            "💡 ${o.categoryIcon} ${o.categoryName} — yaklaşık ${CurrencyFormatter.format(o.amount)} (ör. tekrar)"
+                        )
+                    }
+                    budgetLines.forEach { lines.add("📊 $it") }
+                    if (lines.isEmpty()) {
                         tvSmartTip?.visibility = View.GONE
                         smartTipRow?.visibility = View.GONE
                         smartTipDivider?.visibility = View.GONE
                         return@collect
                     }
-                    val first = suggestions.first()
-                    val tipText = "💡 ${first.categoryIcon} ${first.categoryName} — her ay yaklaşık ${
-                        CurrencyFormatter.format(first.amount)
-                    } harcıyorsunuz"
-                    tvSmartTip?.text = tipText
+                    tvSmartTip?.text = lines.joinToString("\n\n")
                     tvSmartTip?.visibility = View.VISIBLE
                     smartTipRow?.visibility = View.VISIBLE
                     smartTipDivider?.visibility = View.VISIBLE
                 }
             }
         }
+    }
+
+    override fun onResume() {
+        super.onResume()
+        applyDashboardModuleVisibility()
+    }
+
+    private fun applyDashboardModuleVisibility() {
+        if (_binding == null) return
+        val ctx = requireContext()
+        binding.root.findViewById<View>(R.id.dashboard_fx_card)?.visibility =
+            if (AuthPrefs.isDashboardFxVisible(ctx)) View.VISIBLE else View.GONE
+        binding.root.findViewById<View>(R.id.dashboard_section_insights)?.visibility =
+            if (AuthPrefs.isDashboardInsightsVisible(ctx)) View.VISIBLE else View.GONE
+        binding.root.findViewById<View>(R.id.dashboard_section_reminders)?.visibility =
+            if (AuthPrefs.isDashboardReminderSectionVisible(ctx)) View.VISIBLE else View.GONE
     }
 
     override fun onDestroyView() {
