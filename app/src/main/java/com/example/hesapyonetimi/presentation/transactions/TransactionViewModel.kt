@@ -14,6 +14,7 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import javax.inject.Inject
+import java.util.Locale
 
 data class TransactionUiState(
     val transactions: List<Transaction> = emptyList(),
@@ -73,8 +74,6 @@ class TransactionViewModel @Inject constructor(
         date: Long,
         isIncome: Boolean,
         walletId: Long? = null,
-        isRecurring: Boolean = false,
-        recurringDays: Int = 30,
         tags: String = "",
         tagIds: List<Long> = emptyList()
     ) {
@@ -87,8 +86,6 @@ class TransactionViewModel @Inject constructor(
                     date = date,
                     isIncome = isIncome,
                     walletId = walletId,
-                    isRecurring = isRecurring,
-                    recurringDays = recurringDays,
                     tags = tags
                 )
                 
@@ -153,6 +150,93 @@ class TransactionViewModel @Inject constructor(
     
     fun getIncomeCategories(): List<Category> {
         return _uiState.value.categories.filter { it.isIncome }
+    }
+
+    /**
+     * Returns the most frequently used categories for the last [days] days.
+     *
+     * - If [includeSubcategories] is false, subcategory usages are attributed to their top-level parent.
+     * - Tie-break: most recently used first, then alphabetical.
+     * - If there is no usage data, returns first-use defaults (expense=6, income=5).
+     */
+    fun getTopCategories(
+        isIncome: Boolean,
+        includeSubcategories: Boolean,
+        limit: Int = 6,
+        days: Int = 90,
+        nowMillis: Long = System.currentTimeMillis()
+    ): List<Category> {
+        val categories = _uiState.value.categories
+            .filter { it.isIncome == isIncome }
+
+        val byId = categories.associateBy { it.id }
+        val windowStart = nowMillis - days.toLong() * 24L * 60L * 60L * 1000L
+
+        val windowTx = _uiState.value.transactions
+            .asSequence()
+            .filter { it.isIncome == isIncome }
+            .filter { it.date >= windowStart }
+            .toList()
+
+        if (windowTx.isEmpty()) {
+            return defaultEntryCategories(isIncome = isIncome, categories = categories)
+        }
+
+        data class Usage(val count: Int, val lastUsed: Long, val name: String, val id: Long)
+
+        val usage = mutableMapOf<Long, Pair<Int, Long>>() // id -> (count, lastUsed)
+        for (t in windowTx) {
+            val rawId = t.categoryId
+            val resolvedId = if (includeSubcategories) {
+                rawId
+            } else {
+                val c = byId[rawId]
+                (c?.parentId ?: c?.id) ?: rawId
+            }
+            val prev = usage[resolvedId]
+            if (prev == null) {
+                usage[resolvedId] = 1 to t.date
+            } else {
+                val newCount = prev.first + 1
+                val newLastUsed = maxOf(prev.second, t.date)
+                usage[resolvedId] = newCount to newLastUsed
+            }
+        }
+
+        val resolvedCategories = usage.keys.mapNotNull { id ->
+            byId[id]?.let { c ->
+                val (count, lastUsed) = usage[id] ?: (0 to 0L)
+                Usage(count = count, lastUsed = lastUsed, name = c.name, id = c.id)
+            }
+        }
+
+        val sorted = resolvedCategories
+            .sortedWith(
+                compareByDescending<Usage> { it.count }
+                    .thenByDescending { it.lastUsed }
+                    .thenBy { it.name.lowercase(Locale("tr")) }
+            )
+            .take(limit)
+            .mapNotNull { byId[it.id] }
+
+        return sorted.ifEmpty {
+            defaultEntryCategories(isIncome = isIncome, categories = categories)
+        }
+    }
+
+    private fun defaultEntryCategories(isIncome: Boolean, categories: List<Category>): List<Category> {
+        val wanted = if (isIncome) {
+            listOf("Maaş", "Freelance", "Yatırım", "Hediye", "Diğer")
+        } else {
+            listOf("Market", "Fatura", "Ulaşım", "Eğitim", "Eğlence", "Diğer")
+        }
+
+        val topLevel = categories.filter { it.parentId == null }
+        val byName = topLevel.associateBy { it.name.lowercase(Locale("tr")) }
+        val picked = wanted.mapNotNull { byName[it.lowercase(Locale("tr"))] }
+
+        // If data is partially missing (older DB), just return what we have.
+        return picked.ifEmpty { topLevel.take(if (isIncome) 5 else 6) }
     }
     
     fun clearMessages() {

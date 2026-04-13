@@ -50,8 +50,25 @@ object ReminderScheduler {
         slots.forEach { slot ->
             if (slot.triggerAtMs <= System.currentTimeMillis()) return@forEach
             val pendingIntent = buildPendingIntent(context, reminder, slot.kind)
-            val info = AlarmManager.AlarmClockInfo(slot.triggerAtMs, null)
-            alarmManager.setAlarmClock(info, pendingIntent)
+            // setAlarmClock bazı cihazlarda/konfiglerde beklenmedik şekilde gecikebiliyor.
+            // Exact alarm izni varsa, Doze'da bile daha deterministik olan exact yolu kullan.
+            if (android.os.Build.VERSION.SDK_INT >= 31) {
+                if (alarmManager.canScheduleExactAlarms()) {
+                    alarmManager.setExactAndAllowWhileIdle(
+                        AlarmManager.RTC_WAKEUP,
+                        slot.triggerAtMs,
+                        pendingIntent
+                    )
+                } else {
+                    alarmManager.setAlarmClock(AlarmManager.AlarmClockInfo(slot.triggerAtMs, null), pendingIntent)
+                }
+            } else {
+                alarmManager.setExactAndAllowWhileIdle(
+                    AlarmManager.RTC_WAKEUP,
+                    slot.triggerAtMs,
+                    pendingIntent
+                )
+            }
             scheduled++
         }
 
@@ -59,7 +76,15 @@ object ReminderScheduler {
         if (scheduled == 0 && due > System.currentTimeMillis()) {
             val pendingIntent = buildPendingIntent(context, reminder, 3)
             val trigger = due.coerceAtLeast(System.currentTimeMillis() + 2_000L)
-            alarmManager.setAlarmClock(AlarmManager.AlarmClockInfo(trigger, null), pendingIntent)
+            if (android.os.Build.VERSION.SDK_INT >= 31) {
+                if (alarmManager.canScheduleExactAlarms()) {
+                    alarmManager.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, trigger, pendingIntent)
+                } else {
+                    alarmManager.setAlarmClock(AlarmManager.AlarmClockInfo(trigger, null), pendingIntent)
+                }
+            } else {
+                alarmManager.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, trigger, pendingIntent)
+            }
         }
     }
 

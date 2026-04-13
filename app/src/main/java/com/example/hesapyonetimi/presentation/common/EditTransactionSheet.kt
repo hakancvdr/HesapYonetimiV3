@@ -31,6 +31,10 @@ import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.launch
+import androidx.navigation.fragment.findNavController
+import com.example.hesapyonetimi.auth.AuthPrefs
+import com.example.hesapyonetimi.presentation.categories.CategoryPickerFragment
+import com.example.hesapyonetimi.presentation.categories.CategorySlotBuilder
 
 @AndroidEntryPoint
 class EditTransactionSheet : BottomSheetDialogFragment() {
@@ -108,6 +112,12 @@ class EditTransactionSheet : BottomSheetDialogFragment() {
         val etAmount      = view.findViewById<TextInputEditText>(R.id.etEditAmount)
         val etDescription = view.findViewById<TextInputEditText>(R.id.etEditDescription)
         val rvCategories  = view.findViewById<RecyclerView>(R.id.rvEditCategories)
+        view.findViewById<View>(R.id.tvEditCategoriesLink)?.setOnClickListener {
+            findNavController().navigate(
+                R.id.categoryPickerFragment,
+                CategoryPickerFragment.args(isIncome = isIncome)
+            )
+        }
         val btnExpense    = view.findViewById<MaterialButton>(R.id.btnEditExpense)
         val btnIncome     = view.findViewById<MaterialButton>(R.id.btnEditIncome)
         val btnSave       = view.findViewById<MaterialButton>(R.id.btnEditSave)
@@ -161,7 +171,13 @@ class EditTransactionSheet : BottomSheetDialogFragment() {
             .setEndIconOnClickListener(tarihClick)
 
         // Kategori adapter
-        categoryAdapter = CategoryChipAdapter(emptyList()) { cat -> selectedCategory = cat }
+        categoryAdapter = CategoryChipAdapter(
+            emptyList(),
+            onSelected = { cat -> selectedCategory = cat },
+            parentNameResolver = { parentId ->
+                viewModel.uiState.value.categories.firstOrNull { it.id == parentId }?.name
+            }
+        )
         rvCategories.layoutManager = GridLayoutManager(requireContext(), 2)
         rvCategories.adapter = categoryAdapter
 
@@ -189,10 +205,22 @@ class EditTransactionSheet : BottomSheetDialogFragment() {
         }
 
         fun loadCategories() {
-            val cats = if (isIncome) viewModel.getIncomeCategories() else viewModel.getExpenseCategories()
-            // Mevcut kategoriyi seç
+            val includeSubcats = AuthPrefs.isProMember(requireContext())
+            val top = viewModel.getTopCategories(
+                isIncome = isIncome,
+                includeSubcategories = includeSubcats,
+                limit = 6
+            )
+            val all = if (isIncome) viewModel.getIncomeCategories() else viewModel.getExpenseCategories()
+            val currentAll = all.firstOrNull { it.id == transaction.categoryId }
+            val cats = CategorySlotBuilder.buildFixedSlots(
+                top = top,
+                selected = currentAll,
+                limit = 6
+            )
             val currentCat = cats.firstOrNull { it.id == transaction.categoryId } ?: cats.firstOrNull()
-            categoryAdapter.setCategories(cats, currentCat?.name ?: "")
+            val defaultName = if (isIncome) "Maaş" else "Market"
+            categoryAdapter.setCategories(cats, currentCat?.name ?: defaultName)
             selectedCategory = currentCat
         }
 
@@ -214,6 +242,33 @@ class EditTransactionSheet : BottomSheetDialogFragment() {
                     }
                 }
             }
+        }
+
+        parentFragmentManager.setFragmentResultListener(
+            CategoryPickerFragment.RESULT_KEY,
+            viewLifecycleOwner
+        ) { _, bundle ->
+            val categoryId = bundle.getLong(CategoryPickerFragment.BUNDLE_CATEGORY_ID, -1L)
+            if (categoryId <= 0L) return@setFragmentResultListener
+            val picked = viewModel.uiState.value.categories.firstOrNull { it.id == categoryId }
+                ?: return@setFragmentResultListener
+            isIncome = picked.isIncome
+            selectedCategory = picked
+            updateToggleVisuals()
+
+            val includeSubcats = AuthPrefs.isProMember(requireContext())
+            val top = viewModel.getTopCategories(
+                isIncome = isIncome,
+                includeSubcategories = includeSubcats,
+                limit = 6
+            )
+            val list = CategorySlotBuilder.buildFixedSlots(
+                top = top,
+                selected = picked,
+                limit = 6
+            )
+            categoryAdapter.setCategories(list, "")
+            categoryAdapter.setSelected(picked.id)
         }
 
         etAmount.setOnEditorActionListener { _, _, _ -> hideKeyboard(); true }

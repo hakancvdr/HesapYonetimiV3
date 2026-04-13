@@ -46,6 +46,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import javax.inject.Inject
+import android.content.res.Configuration
 
 @AndroidEntryPoint
 class MainActivity : AppCompatActivity() {
@@ -81,12 +82,22 @@ class MainActivity : AppCompatActivity() {
         setContentView(R.layout.activity_main)
 
         window.statusBarColor = Color.TRANSPARENT
+        val isLightTheme = (resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK) == Configuration.UI_MODE_NIGHT_NO
         WindowInsetsControllerCompat(window, window.decorView).apply {
-            isAppearanceLightStatusBars = false
+            // Light temada status bar ikonları koyu olmalı; dark temada açık.
+            isAppearanceLightStatusBars = isLightTheme
         }
 
         val toolbar = findViewById<MaterialToolbar>(R.id.toolbar)
         setSupportActionBar(toolbar)
+        // Light temada toolbar arkaplanı açık, ikonlar koyu; dark temada mevcut gradient + beyaz ikonlar.
+        if (isLightTheme) {
+            toolbar.setBackgroundColor(ContextCompat.getColor(this, R.color.card_background))
+            toolbar.setTitleTextColor(ContextCompat.getColor(this, R.color.text_primary))
+        } else {
+            toolbar.setBackgroundResource(R.drawable.gradient_header)
+            toolbar.setTitleTextColor(ContextCompat.getColor(this, android.R.color.white))
+        }
         ViewCompat.setOnApplyWindowInsetsListener(toolbar) { v, insets ->
             val top = insets.getInsets(WindowInsetsCompat.Type.statusBars()).top
             v.setPadding(0, top, 0, 0)
@@ -131,6 +142,10 @@ class MainActivity : AppCompatActivity() {
             drawerLayout
         )
         setupActionBarWithNavController(navController, appBarConfiguration)
+        // Hamburger/back ikonları theme'e göre her zaman okunur olsun.
+        toolbar.navigationIcon?.mutate()?.setTint(
+            ContextCompat.getColor(this, if (isLightTheme) R.color.text_primary else android.R.color.white)
+        )
 
         navDrawer.setNavigationItemSelectedListener { item ->
             when (item.itemId) {
@@ -193,7 +208,12 @@ class MainActivity : AppCompatActivity() {
         navController.addOnDestinationChangedListener { _, destination, _ ->
             if (destination.id !in appBarConfiguration.topLevelDestinations) {
                 val back = AppCompatResources.getDrawable(this, R.drawable.ic_chevron_left)?.mutate()
-                back?.setTint(ContextCompat.getColor(this, android.R.color.white))
+                back?.setTint(
+                    ContextCompat.getColor(
+                        this,
+                        if (isLightTheme) R.color.text_primary else android.R.color.white
+                    )
+                )
                 toolbar.navigationIcon = back
                 toolbar.navigationContentDescription = getString(R.string.toolbar_cd_back)
             }

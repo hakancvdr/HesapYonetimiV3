@@ -17,7 +17,5 @@ data class Transaction(
     val createdAt: Long = System.currentTimeMillis(),
     val walletId: Long? = null,
     val walletName: String? = null,
-    val tags: String = "",
-    val isRecurring: Boolean = false,
-    val recurringDays: Int = 30
+    val tags: String = ""
 ) : Parcelable

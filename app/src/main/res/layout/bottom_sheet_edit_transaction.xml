@@ -139,6 +139,19 @@
             android:nestedScrollingEnabled="false"
             android:layout_marginBottom="16dp" />
 
+        <TextView
+            android:id="@+id/tvEditCategoriesLink"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Kategoriler →"
+            android:textSize="12sp"
+            android:textStyle="bold"
+            android:textColor="@color/green_primary"
+            android:layout_marginBottom="16dp"
+            android:clickable="true"
+            android:focusable="true"
+            android:background="?attr/selectableItemBackgroundBorderless" />
+
         <!-- Açıklama -->
         <com.google.android.material.textfield.TextInputLayout
             android:id="@+id/tilEditDescription"

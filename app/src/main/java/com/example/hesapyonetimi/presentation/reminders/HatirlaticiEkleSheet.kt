@@ -9,9 +9,14 @@ import android.view.ViewGroup
 import android.widget.TextView
 import android.widget.Toast
 import androidx.fragment.app.viewModels
+import androidx.fragment.app.activityViewModels
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.repeatOnLifecycle
 import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.example.hesapyonetimi.R
+import com.example.hesapyonetimi.auth.AuthPrefs
 import com.example.hesapyonetimi.data.local.entity.RecurringType
 import com.example.hesapyonetimi.domain.model.Category
 import com.example.hesapyonetimi.domain.model.Reminder
@@ -22,6 +27,11 @@ import com.google.android.material.bottomsheet.BottomSheetDialogFragment
 import com.google.android.material.textfield.TextInputEditText
 import com.google.android.material.textfield.TextInputLayout
 import dagger.hilt.android.AndroidEntryPoint
+import androidx.navigation.fragment.findNavController
+import com.example.hesapyonetimi.presentation.categories.CategoryPickerFragment
+import com.example.hesapyonetimi.presentation.categories.CategorySlotBuilder
+import com.example.hesapyonetimi.presentation.transactions.TransactionViewModel
+import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.*
 
@@ -29,6 +39,7 @@ import java.util.*
 class HatirlaticiEkleSheet : BottomSheetDialogFragment() {
 
     private val viewModel: ReminderViewModel by viewModels()
+    private val transactionViewModel: TransactionViewModel by activityViewModels()
     private var selectedDateMillis: Long = 0L
     private var selectedHour: Int = 9
     private var selectedMinute: Int = 0
@@ -118,17 +129,71 @@ class HatirlaticiEkleSheet : BottomSheetDialogFragment() {
         val rvKategori = view.findViewById<RecyclerView>(R.id.rv_kategori_secim)
         rvKategori.layoutManager = GridLayoutManager(requireContext(), 2)
 
-        val categoryAdapter = CategoryChipAdapter(emptyList()) { cat ->
-            selectedCategoryId = cat.id
-        }
+        val categoryAdapter = CategoryChipAdapter(
+            emptyList(),
+            onSelected = { cat -> selectedCategoryId = cat.id },
+            parentNameResolver = { parentId ->
+                transactionViewModel.uiState.value.categories.firstOrNull { it.id == parentId }?.name
+            }
+        )
         rvKategori.adapter = categoryAdapter
 
-        viewModel.loadCategories { categories ->
-            val filtered = categories.filter { !it.isIncome }
-            categoryAdapter.setCategories(filtered, "")
-            editReminder?.let { categoryAdapter.setSelected(it.categoryId) }
-                ?: arguments?.getLong(ARG_Q_CATEGORY, 0L)?.takeIf { it > 0 }
-                    ?.let { categoryAdapter.setSelected(it) }
+        view.findViewById<View>(R.id.tvReminderCategoriesLink)?.setOnClickListener {
+            findNavController().navigate(
+                R.id.categoryPickerFragment,
+                CategoryPickerFragment.args(isIncome = false)
+            )
+        }
+
+        parentFragmentManager.setFragmentResultListener(
+            CategoryPickerFragment.RESULT_KEY,
+            viewLifecycleOwner
+        ) { _, bundle ->
+            val categoryId = bundle.getLong(CategoryPickerFragment.BUNDLE_CATEGORY_ID, -1L)
+            if (categoryId <= 0L) return@setFragmentResultListener
+            selectedCategoryId = categoryId
+            val picked = transactionViewModel.uiState.value.categories.firstOrNull { it.id == categoryId }
+            val includeSubcats = AuthPrefs.isProMember(requireContext())
+            val top = transactionViewModel.getTopCategories(
+                isIncome = false,
+                includeSubcategories = includeSubcats,
+                limit = 6
+            )
+            val list = CategorySlotBuilder.buildFixedSlots(
+                top = top,
+                selected = picked,
+                limit = 6
+            )
+            categoryAdapter.setCategories(list, "")
+            categoryAdapter.setSelected(categoryId)
+        }
+
+        fun loadTopCategories() {
+            val includeSubcats = AuthPrefs.isProMember(requireContext())
+            val top = transactionViewModel.getTopCategories(
+                isIncome = false,
+                includeSubcategories = includeSubcats,
+                limit = 6
+            )
+            val picked = transactionViewModel.uiState.value.categories.firstOrNull { it.id == selectedCategoryId }
+            val list = CategorySlotBuilder.buildFixedSlots(
+                top = top,
+                selected = picked,
+                limit = 6
+            )
+            categoryAdapter.setCategories(list, "")
+            if (selectedCategoryId > 0L) categoryAdapter.setSelected(selectedCategoryId)
+        }
+
+        // When reminder categories are needed, use the same dynamic top list as entry screens.
+        viewLifecycleOwner.lifecycleScope.launch {
+            viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
+                transactionViewModel.uiState.collect { state ->
+                    if (state.categories.isNotEmpty() && categoryAdapter.itemCount == 0) {
+                        loadTopCategories()
+                    }
+                }
+            }
         }
 
         // Saat seçici

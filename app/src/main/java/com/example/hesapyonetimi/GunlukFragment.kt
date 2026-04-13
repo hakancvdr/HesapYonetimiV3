@@ -33,6 +33,8 @@ import com.example.hesapyonetimi.model.TransactionModel
 import com.example.hesapyonetimi.presentation.common.CurrencyFormatter
 import com.example.hesapyonetimi.presentation.tags.TagViewModel
 import com.example.hesapyonetimi.presentation.transactions.TransactionViewModel
+import com.example.hesapyonetimi.presentation.categories.CategoryPickerFragment
+import com.example.hesapyonetimi.presentation.categories.CategorySlotBuilder
 import com.google.android.material.chip.Chip
 import com.google.android.material.chip.ChipGroup
 import com.google.android.material.snackbar.Snackbar
@@ -42,6 +44,7 @@ import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.*
+import androidx.navigation.fragment.findNavController
 
 @AndroidEntryPoint
 class GunlukFragment : Fragment() {
@@ -179,28 +182,86 @@ class GunlukFragment : Fragment() {
 
         // ── Kategori chip ──────────────────────────────────────────────────
         val rvKategoriler = view.findViewById<RecyclerView>(R.id.rv_kategoriler)
-        categoryAdapter = CategoryChipAdapter(emptyList()) { cat -> selectedCategory = cat }
+        categoryAdapter = CategoryChipAdapter(
+            emptyList(),
+            onSelected = { cat -> selectedCategory = cat },
+            parentNameResolver = { parentId ->
+                viewModel.uiState.value.categories.firstOrNull { it.id == parentId }?.name
+            }
+        )
         rvKategoriler.layoutManager = GridLayoutManager(requireContext(), 2)
         rvKategoriler.adapter = categoryAdapter
 
+        view.findViewById<View>(R.id.tv_categories_link)?.setOnClickListener {
+            val income = !isGider
+            findNavController().navigate(
+                R.id.categoryPickerFragment,
+                CategoryPickerFragment.args(isIncome = income)
+            )
+        }
+
+        parentFragmentManager.setFragmentResultListener(
+            CategoryPickerFragment.RESULT_KEY,
+            viewLifecycleOwner
+        ) { _, bundle ->
+            val categoryId = bundle.getLong(CategoryPickerFragment.BUNDLE_CATEGORY_ID, -1L)
+            if (categoryId <= 0L) return@setFragmentResultListener
+            val picked = viewModel.uiState.value.categories.firstOrNull { it.id == categoryId }
+                ?: return@setFragmentResultListener
+            selectedCategory = picked
+
+            val includeSubcats = AuthPrefs.isProMember(requireContext())
+            val top = viewModel.getTopCategories(
+                isIncome = picked.isIncome,
+                includeSubcategories = includeSubcats,
+                limit = 6
+            )
+            val list = CategorySlotBuilder.buildFixedSlots(
+                top = top,
+                selected = picked,
+                limit = 6
+            )
+            categoryAdapter.setCategories(list, "")
+            categoryAdapter.setSelected(picked.id)
+        }
+
         fun updateToggle() {
             val greenColor = ContextCompat.getColor(requireContext(), R.color.green_primary)
-            val dimWhite = 0x80FFFFFF.toInt()
+            val dimInactiveColor = run {
+                val nightMask = resources.configuration.uiMode and android.content.res.Configuration.UI_MODE_NIGHT_MASK
+                if (nightMask == android.content.res.Configuration.UI_MODE_NIGHT_NO) {
+                    ContextCompat.getColor(requireContext(), R.color.text_secondary)
+                } else {
+                    0x80FFFFFF.toInt()
+                }
+            }
             if (isGider) {
                 btnGider.setBackgroundResource(R.drawable.toggle_pill_selected)
                 btnGider.setTextColor(greenColor)
                 btnGelir.background = null
-                btnGelir.setTextColor(dimWhite)
+                btnGelir.setTextColor(dimInactiveColor)
                 btnKaydet.text = getString(R.string.gunluk_add_expense)
             } else {
                 btnGelir.setBackgroundResource(R.drawable.toggle_pill_selected)
                 btnGelir.setTextColor(greenColor)
                 btnGider.background = null
-                btnGider.setTextColor(dimWhite)
+                btnGider.setTextColor(dimInactiveColor)
                 btnKaydet.text = getString(R.string.gunluk_add_income)
             }
-            val cats = if (isGider) viewModel.getExpenseCategories() else viewModel.getIncomeCategories()
-            categoryAdapter.setCategories(cats, if (isGider) "Market" else "Maaş")
+            val isIncome = !isGider
+            val includeSubcats = AuthPrefs.isProMember(requireContext())
+            val top = viewModel.getTopCategories(
+                isIncome = isIncome,
+                includeSubcategories = includeSubcats,
+                limit = 6
+            )
+            val cats = CategorySlotBuilder.buildFixedSlots(
+                top = top,
+                selected = selectedCategory?.takeIf { it.isIncome == isIncome },
+                limit = 6
+            )
+            val defaultName = if (isGider) "Market" else "Maaş"
+            categoryAdapter.setCategories(cats, defaultName)
         }
 
         btnGider.setOnClickListener { isGider = true; updateToggle() }

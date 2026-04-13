@@ -113,15 +113,17 @@
             android:layout_marginBottom="4dp" />
 
         <TextView
-            android:id="@+id/tvNewCategoryLink"
+            android:id="@+id/tvDialogCategoriesLink"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginBottom="14dp"
-            android:background="?attr/selectableItemBackground"
-            android:paddingVertical="4dp"
-            android:text="@string/add_transaction_new_category"
+            android:text="Kategoriler →"
+            android:textSize="12sp"
+            android:textStyle="bold"
             android:textColor="@color/green_primary"
-            android:textSize="12sp" />
+            android:layout_marginBottom="14dp"
+            android:clickable="true"
+            android:focusable="true"
+            android:background="?attr/selectableItemBackgroundBorderless" />
 
         <!-- Açıklama -->
         <com.google.android.material.textfield.TextInputLayout
@@ -150,91 +152,33 @@
                 android:textSize="14sp" />
         </com.google.android.material.textfield.TextInputLayout>
 
-        <!-- Cüzdan seçimi -->
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Cüzdan"
-            android:textColor="@color/text_secondary"
-            android:textSize="12sp"
-            android:layout_marginBottom="6dp" />
-
-        <androidx.recyclerview.widget.RecyclerView
-            android:id="@+id/rvWallets"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            android:nestedScrollingEnabled="false"
-            android:layout_marginBottom="16dp" />
-
-        <!-- Etiketler -->
-        <TextView
-            android:id="@+id/tvTagsTitle"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Etiketler"
-            android:textColor="@color/text_secondary"
-            android:textSize="12sp"
-            android:layout_marginBottom="6dp" />
-
-        <com.google.android.material.chip.ChipGroup
-            android:id="@+id/chipGroupTags"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginBottom="16dp"
-            app:singleSelection="false" />
-
-        <!-- Tekrarlayan İşlem Toggle -->
+        <!-- Cüzdan seçimi (PRO) -->
         <LinearLayout
+            android:id="@+id/walletSection"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            android:gravity="center_vertical"
-            android:layout_marginBottom="16dp"
-            android:background="@drawable/kategori_item_bg"
-            android:padding="12dp">
+            android:orientation="vertical">
 
             <TextView
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:text="↻  Tekrarlayan İşlem"
-                android:textColor="@color/text_primary"
-                android:textSize="13sp"
-                android:textStyle="bold" />
-
-            <androidx.appcompat.widget.SwitchCompat
-                android:id="@+id/switchRecurring"
                 android:layout_width="wrap_content"
-                android:layout_height="wrap_content" />
-        </LinearLayout>
+                android:layout_height="wrap_content"
+                android:text="Cüzdan"
+                android:textColor="@color/text_secondary"
+                android:textSize="12sp"
+                android:layout_marginBottom="6dp" />
 
-        <!-- Tekrar aralığı (gün) -->
-        <com.google.android.material.textfield.TextInputLayout
-            android:id="@+id/tilRecurringDays"
-            style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginBottom="16dp"
-            android:hint="Tekrar aralığı (gün)"
-            android:visibility="gone"
-            app:boxBackgroundColor="@color/card_background"
-            app:boxStrokeColor="@color/green_primary"
-            app:hintTextColor="@color/green_primary"
-            app:boxCornerRadiusTopStart="14dp"
-            app:boxCornerRadiusTopEnd="14dp"
-            app:boxCornerRadiusBottomStart="14dp"
-            app:boxCornerRadiusBottomEnd="14dp">
-
-            <com.google.android.material.textfield.TextInputEditText
-                android:id="@+id/etRecurringDays"
+            <androidx.recyclerview.widget.RecyclerView
+                android:id="@+id/rvWallets"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:inputType="number"
-                android:text="30"
-                android:textColor="@color/text_primary"
-                android:textSize="15sp" />
-        </com.google.android.material.textfield.TextInputLayout>
+                android:orientation="horizontal"
+                android:nestedScrollingEnabled="false"
+                android:layout_marginBottom="16dp" />
+        </LinearLayout>
+
+        <!-- Etiketler (popup'tan kaldırıldı) -->
+
+        <!-- Tekrarlayan işlem (özellik kaldırıldı) -->
 
         <!-- Butonlar -->
         <LinearLayout

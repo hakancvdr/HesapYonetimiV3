@@ -6,5 +6,7 @@ data class Category(
     val icon: String,
     val color: String,
     val isIncome: Boolean,
-    val isDefault: Boolean = false
+    val isDefault: Boolean = false,
+    val parentId: Long? = null,
+    val isLocked: Boolean = false
 )

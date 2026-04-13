@@ -17,6 +17,12 @@ data class CategoryEntity(
     val isIncome: Boolean, // Gelir kategorisi mi, gider mi?
     
     val isDefault: Boolean = false, // Varsayılan kategori mi? (silinemesin)
+
+    /** Alt kategori ise parent category id (null = üst kategori). */
+    val parentId: Long? = null,
+
+    /** Sistem kilitli kategori (örn: "Diğer") */
+    val isLocked: Boolean = false,
     
     val createdAt: Long = System.currentTimeMillis()
 )

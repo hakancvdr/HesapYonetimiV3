@@ -148,7 +148,8 @@
                         android:text="@string/gunluk_toggle_income"
                         android:textSize="13sp"
                         android:textStyle="bold"
-                        android:textColor="@color/text_secondary"
+                        android:textColor="@color/text_primary"
+                        android:alpha="0.75"
                         android:clickable="true"
                         android:focusable="true"/>
                 </LinearLayout>
@@ -273,6 +274,19 @@
                             android:layout_height="wrap_content"
                             android:nestedScrollingEnabled="false"
                             android:layout_marginBottom="10dp" />
+
+                        <TextView
+                            android:id="@+id/tv_categories_link"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Kategoriler →"
+                            android:textSize="12sp"
+                            android:textStyle="bold"
+                            android:textColor="@color/green_primary"
+                            android:layout_marginBottom="12dp"
+                            android:clickable="true"
+                            android:focusable="true"
+                            android:background="?attr/selectableItemBackgroundBorderless" />
 
                         <LinearLayout
                             android:id="@+id/form_details_toggle_row"

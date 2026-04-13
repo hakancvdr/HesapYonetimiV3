@@ -355,13 +355,21 @@ class RegistrationActivity : AppCompatActivity() {
 
     private fun updateContinueActionsVisibility() {
         val grp = findViewById<View>(R.id.group_continue_actions)
+        val btnBack = findViewById<Button>(R.id.btnBack)
         regPin = findViewById<TextInputEditText>(R.id.etPin).text?.toString().orEmpty()
         val pinNo = findViewById<RadioButton>(R.id.rb_pin_no).isChecked
         val pinYes = findViewById<RadioButton>(R.id.rb_pin_yes).isChecked
-        grp.visibility = when {
+        val actionsVisible = when {
             pinNo -> View.VISIBLE
             pinYes && isSecurityReady() && regPin.length == 4 -> View.VISIBLE
             else -> View.GONE
+        }
+        grp.visibility = actionsVisible
+
+        // Step-2'de aynı anda 3 CTA görünmesin:
+        // “İlk Harcama Ekle / Keşfet” görünürken alttaki “Geri” butonunu gizle.
+        if (currentStep == 2) {
+            btnBack.visibility = if (actionsVisible == View.VISIBLE) View.GONE else View.VISIBLE
         }
     }
 

@@ -179,15 +179,66 @@ class ProfileViewModel @Inject constructor(
     }
 
     fun addCategory(category: Category) {
-        viewModelScope.launch { categoryRepository.insertCategory(category) }
+        viewModelScope.launch {
+            val isPro = AuthPrefs.isProMember(appContext)
+            if (!isPro) {
+                if (category.parentId != null) {
+                    _uiEvent.emit(ProfileUiEvent.ShowMessage("Alt kategori özelliği PRO'da"))
+                    return@launch
+                }
+                val count = categoryDao.countUserAddedTopLevel(category.isIncome)
+                if (count >= 5) {
+                    _uiEvent.emit(ProfileUiEvent.ShowMessage("Ücretsiz sürümde en fazla 5 yeni kategori ekleyebilirsin"))
+                    return@launch
+                }
+            }
+            categoryRepository.insertCategory(category)
+        }
     }
 
     fun updateCategory(category: Category) {
-        viewModelScope.launch { categoryRepository.updateCategory(category) }
+        viewModelScope.launch {
+            if (category.isLocked || category.name.equals("Diğer", ignoreCase = true)) {
+                _uiEvent.emit(ProfileUiEvent.ShowMessage("Diğer kategorisi düzenlenemez"))
+                return@launch
+            }
+            categoryRepository.updateCategory(category)
+        }
     }
 
     fun deleteCategory(category: Category) {
-        viewModelScope.launch { categoryRepository.deleteCategory(category) }
+        viewModelScope.launch {
+            if (category.isLocked || category.name.equals("Diğer", ignoreCase = true)) {
+                _uiEvent.emit(ProfileUiEvent.ShowMessage("Diğer kategorisi silinemez"))
+                return@launch
+            }
+
+            val other = categoryDao.getOtherLockedCategory(isIncome = category.isIncome)
+            if (other == null) {
+                _uiEvent.emit(ProfileUiEvent.ShowMessage("Diğer kategorisi bulunamadı"))
+                return@launch
+            }
+
+            val idsToDelete = if (category.parentId == null) {
+                val subIds = categoryDao.getSubcategoryIds(category.id)
+                listOf(category.id) + subIds
+            } else {
+                listOf(category.id)
+            }
+
+            val moved = transactionDao.reassignCategories(idsToDelete, other.id)
+
+            val childIds = idsToDelete.filter { it != category.id }
+            if (childIds.isNotEmpty()) categoryDao.deleteByIds(childIds)
+            categoryDao.deleteById(category.id)
+
+            val msg = if (category.parentId == null) {
+                "${category.name} ve alt kategorileri silindi, $moved işlem Diğer'e taşındı."
+            } else {
+                "${category.name} silindi, $moved işlem Diğer'e taşındı."
+            }
+            _uiEvent.emit(ProfileUiEvent.ShowMessage(msg))
+        }
     }
 
     /** İşlemler, hatırlatıcılar, hedefler, bütçe kayıtları ve katkı geçmişi — kategoriler kalır */

@@ -89,4 +89,9 @@
         android:name="com.example.hesapyonetimi.presentation.pro.ProFragment"
         android:label="PRO" />
 
+    <fragment
+        android:id="@+id/categoryPickerFragment"
+        android:name="com.example.hesapyonetimi.presentation.categories.CategoryPickerFragment"
+        android:label="Kategoriler" />
+
 </navigation>

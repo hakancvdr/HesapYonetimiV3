@@ -31,7 +31,9 @@ class ProfileCategoryAdapter(
     }
 
     private fun applyFilter() {
-        displayList = fullList.filter { it.isIncome == showIncome }
+        displayList = fullList
+            .filter { it.isIncome == showIncome }
+            .filter { it.parentId == null }
         notifyDataSetChanged()
     }
 
@@ -62,6 +64,9 @@ class ProfileCategoryAdapter(
             try {
                 vColorDot.background.mutate().setTint(Color.parseColor(category.color))
             } catch (_: Exception) {}
+            val locked = category.isLocked || category.name.equals("Diğer", ignoreCase = true)
+            btnEdit.visibility = if (locked) View.GONE else View.VISIBLE
+            btnDel.visibility = if (locked) View.GONE else View.VISIBLE
             btnEdit.setOnClickListener { onEdit(category) }
             btnDel.setOnClickListener  { onDelete(category) }
         }

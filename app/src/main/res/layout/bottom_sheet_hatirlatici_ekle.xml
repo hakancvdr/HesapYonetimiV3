@@ -35,6 +35,20 @@
             android:nestedScrollingEnabled="false"
             android:layout_marginBottom="12dp"/>
 
+        <TextView
+            android:id="@+id/tvReminderCategoriesLink"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="20dp"
+            android:layout_marginBottom="12dp"
+            android:text="Kategoriler →"
+            android:textSize="12sp"
+            android:textStyle="bold"
+            android:textColor="@color/green_primary"
+            android:clickable="true"
+            android:focusable="true"
+            android:background="?attr/selectableItemBackgroundBorderless" />
+
         <!-- Açıklama -->
         <com.google.android.material.textfield.TextInputLayout
             android:id="@+id/til_aciklama"

@@ -31,14 +31,12 @@ class TransactionAdapter(
         val useCategoryOnly = rawTitle.isEmpty() || rawTitle.equals(cat, ignoreCase = true)
         holder.binding.tvIslemAciklama.text = if (useCategoryOnly) cat else rawTitle
 
-        val recurringTag = if (islem.transaction?.isRecurring == true) " 🔁" else ""
         val subtitle = buildString {
             if (!useCategoryOnly) {
                 append(cat)
                 if (islem.time.isNotEmpty()) append(" · ")
             }
             if (islem.time.isNotEmpty()) append(islem.time)
-            append(recurringTag)
         }.trim()
         if (subtitle.isEmpty()) {
             holder.binding.tvIslemKategori.visibility = View.GONE

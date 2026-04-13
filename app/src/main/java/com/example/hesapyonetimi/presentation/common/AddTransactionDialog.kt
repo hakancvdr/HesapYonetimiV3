@@ -22,17 +22,19 @@ import javax.inject.Inject
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment
 import com.google.android.material.button.MaterialButton
 import com.google.android.material.chip.Chip
-import com.google.android.material.chip.ChipGroup
 import com.google.android.material.textfield.TextInputEditText
 import androidx.fragment.app.viewModels
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import dagger.hilt.android.AndroidEntryPoint
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import android.widget.LinearLayout
 import android.widget.TextView
+import androidx.navigation.fragment.findNavController
+import com.example.hesapyonetimi.auth.AuthPrefs
+import com.example.hesapyonetimi.presentation.categories.CategoryPickerFragment
+import com.example.hesapyonetimi.presentation.categories.CategorySlotBuilder
 
 @AndroidEntryPoint
 class AddTransactionDialog : BottomSheetDialogFragment() {
@@ -48,9 +50,7 @@ class AddTransactionDialog : BottomSheetDialogFragment() {
     private var isIncome: Boolean = false
     private var preSelectedType: Boolean? = null
     private lateinit var categoryAdapter: CategoryChipAdapter
-    private lateinit var reloadCategoryChips: () -> Unit
     private var selectedWalletId: Long? = null
-    private var isRecurring: Boolean = false
 
     companion object {
         private const val ARG_IS_INCOME = "arg_is_income"
@@ -95,19 +95,32 @@ class AddTransactionDialog : BottomSheetDialogFragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
+        val isPro = AuthPrefs.isProMember(requireContext())
+        val walletSection = view.findViewById<View>(R.id.walletSection)
         val rvWallets = view.findViewById<RecyclerView>(R.id.rvWallets)
         rvWallets.layoutManager = LinearLayoutManager(requireContext(), LinearLayoutManager.HORIZONTAL, false)
-        viewLifecycleOwner.lifecycleScope.launch {
-            viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
-                walletDao.getAllWallets().collect { wallets ->
-                    val walletAdapter = WalletChipAdapter(wallets, selectedWalletId) { wallet ->
-                        selectedWalletId = wallet.id
-                        rvWallets.adapter?.notifyDataSetChanged()
+
+        if (isPro) {
+            walletSection?.visibility = View.VISIBLE
+            viewLifecycleOwner.lifecycleScope.launch {
+                viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
+                    walletDao.getAllWallets().collect { wallets ->
+                        val walletAdapter = WalletChipAdapter(wallets, selectedWalletId) { wallet ->
+                            selectedWalletId = wallet.id
+                            rvWallets.adapter?.notifyDataSetChanged()
+                        }
+                        rvWallets.adapter = walletAdapter
+                        if (selectedWalletId == null) {
+                            selectedWalletId = wallets.firstOrNull { it.isDefault }?.id ?: wallets.firstOrNull()?.id
+                        }
                     }
-                    rvWallets.adapter = walletAdapter
-                    if (selectedWalletId == null) {
-                        selectedWalletId = wallets.firstOrNull { it.isDefault }?.id ?: wallets.firstOrNull()?.id
-                    }
+                }
+            }
+        } else {
+            walletSection?.visibility = View.GONE
+            viewLifecycleOwner.lifecycleScope.launch {
+                if (selectedWalletId == null) {
+                    selectedWalletId = walletDao.getDefaultWallet()?.id
                 }
             }
         }
@@ -115,6 +128,12 @@ class AddTransactionDialog : BottomSheetDialogFragment() {
         val etAmount      = view.findViewById<TextInputEditText>(R.id.etAmount)
         val etDescription = view.findViewById<TextInputEditText>(R.id.etDescription)
         val rvCategories  = view.findViewById<RecyclerView>(R.id.rvDialogCategories)
+        view.findViewById<View>(R.id.tvDialogCategoriesLink)?.setOnClickListener {
+            findNavController().navigate(
+                R.id.categoryPickerFragment,
+                CategoryPickerFragment.args(isIncome = isIncome)
+            )
+        }
         // toggle LinearLayout — btnExpense ve btnIncome direkt kullanılıyor
         val btnExpense    = view.findViewById<MaterialButton>(R.id.btnExpense)
         val btnIncome     = view.findViewById<MaterialButton>(R.id.btnIncome)
@@ -126,7 +145,13 @@ class AddTransactionDialog : BottomSheetDialogFragment() {
         val colorTextPrimary = androidx.core.content.ContextCompat.getColor(requireContext(), R.color.text_primary)
 
         // Kategori chip adapter
-        categoryAdapter = CategoryChipAdapter(emptyList()) { cat -> selectedCategory = cat }
+        categoryAdapter = CategoryChipAdapter(
+            emptyList(),
+            onSelected = { cat -> selectedCategory = cat },
+            parentNameResolver = { parentId ->
+                viewModel.uiState.value.categories.firstOrNull { it.id == parentId }?.name
+            }
+        )
         rvCategories.layoutManager = GridLayoutManager(requireContext(), 2)
         rvCategories.adapter = categoryAdapter
 
@@ -155,10 +180,46 @@ class AddTransactionDialog : BottomSheetDialogFragment() {
 
         fun loadCategories() {
             val defaultName = if (isIncome) "Maaş" else "Market"
-            val cats = if (isIncome) viewModel.getIncomeCategories() else viewModel.getExpenseCategories()
+            val includeSubcats = AuthPrefs.isProMember(requireContext())
+            val top = viewModel.getTopCategories(
+                isIncome = isIncome,
+                includeSubcategories = includeSubcats,
+                limit = 6
+            )
+            val cats = CategorySlotBuilder.buildFixedSlots(
+                top = top,
+                selected = selectedCategory?.takeIf { it.isIncome == isIncome },
+                limit = 6
+            )
             categoryAdapter.setCategories(cats, defaultName)
+            selectedCategory?.takeIf { it.isIncome == isIncome }?.let { categoryAdapter.setSelected(it.id) }
         }
-        reloadCategoryChips = { loadCategories() }
+        parentFragmentManager.setFragmentResultListener(
+            CategoryPickerFragment.RESULT_KEY,
+            viewLifecycleOwner
+        ) { _, bundle ->
+            val categoryId = bundle.getLong(CategoryPickerFragment.BUNDLE_CATEGORY_ID, -1L)
+            if (categoryId <= 0L) return@setFragmentResultListener
+            val picked = viewModel.uiState.value.categories.firstOrNull { it.id == categoryId }
+                ?: return@setFragmentResultListener
+            isIncome = picked.isIncome
+            selectedCategory = picked
+            updateToggleVisuals(!isIncome)
+
+            val includeSubcats = AuthPrefs.isProMember(requireContext())
+            val top = viewModel.getTopCategories(
+                isIncome = isIncome,
+                includeSubcategories = includeSubcats,
+                limit = 6
+            )
+            val list = CategorySlotBuilder.buildFixedSlots(
+                top = top,
+                selected = picked,
+                limit = 6
+            )
+            categoryAdapter.setCategories(list, "")
+            categoryAdapter.setSelected(picked.id)
+        }
 
         // Başlangıç
         preSelectedType?.let {
@@ -181,35 +242,14 @@ class AddTransactionDialog : BottomSheetDialogFragment() {
         viewLifecycleOwner.lifecycleScope.launch {
             viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
                 viewModel.uiState.collect { state ->
-                    if (state.categories.isNotEmpty()) {
-                        loadCategories()
-                    }
+                    if (state.categories.isNotEmpty() && categoryAdapter.itemCount == 0) loadCategories()
                 }
             }
         }
 
-        view.findViewById<TextView>(R.id.tvNewCategoryLink).setOnClickListener {
-            showInlineAddCategoryDialog()
-        }
+        // Inline category creation removed (layout no longer contains tvNewCategoryLink)
 
-        // Etiket chip'leri (DB'den)
-        val tvTagsTitle = view.findViewById<View>(R.id.tvTagsTitle)
-        val chipGroupTags = view.findViewById<ChipGroup>(R.id.chipGroupTags)
-        val tagIdByChipId = mutableMapOf<Int, Long>()
-
-        // Tekrarlayan toggle
-        val switchRecurring = view.findViewById<androidx.appcompat.widget.SwitchCompat>(R.id.switchRecurring)
-        val tilRecurringDays = view.findViewById<com.google.android.material.textfield.TextInputLayout>(R.id.tilRecurringDays)
-        val etRecurringDays = view.findViewById<com.google.android.material.textfield.TextInputEditText>(R.id.etRecurringDays)
-        switchRecurring.setOnCheckedChangeListener { _, checked ->
-            isRecurring = checked
-            tilRecurringDays.visibility = if (checked) View.VISIBLE else View.GONE
-            tilRecurringDays.post {
-                tilRecurringDays.requestLayout()
-                view.requestLayout()
-                (view.parent as? View)?.requestLayout()
-            }
-        }
+        // Etiketler popup'tan kaldırıldı
 
         etAmount.setOnEditorActionListener { _, _, _ -> hideKeyboard(); true }
         etDescription.setOnEditorActionListener { _, _, _ -> hideKeyboard(); true }
@@ -225,14 +265,6 @@ class AddTransactionDialog : BottomSheetDialogFragment() {
                 toast("Diğer kategorisinde açıklama zorunlu"); return@setOnClickListener
             }
             val amount = amountStr.toDoubleOrNull() ?: 0.0
-            val recurringDays = etRecurringDays.text?.toString()?.toIntOrNull() ?: 30
-            val selectedTagIds = tagIdByChipId
-                .filter { (chipId, _) -> (view.findViewById<Chip>(chipId)?.isChecked == true) }
-                .values
-                .toList()
-            val selectedTagsCsv = selectedTagIds.mapNotNull { id ->
-                viewModel.tags.value.firstOrNull { it.id == id }?.name
-            }.joinToString(",")
             viewModel.addTransaction(
                 amount = amount,
                 categoryId = cat.id,
@@ -240,97 +272,19 @@ class AddTransactionDialog : BottomSheetDialogFragment() {
                 date = System.currentTimeMillis(),
                 isIncome = isIncome,
                 walletId = selectedWalletId,
-                isRecurring = isRecurring,
-                recurringDays = recurringDays,
-                tags = selectedTagsCsv,
-                tagIds = selectedTagIds
+                tags = "",
+                tagIds = emptyList()
             )
             toast("✅ İşlem eklendi!")
             dismiss()
         }
 
-        // Tags observe
-        viewLifecycleOwner.lifecycleScope.launch {
-            viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
-                viewModel.tags.collect { tags ->
-                    tagIdByChipId.clear()
-                    chipGroupTags.removeAllViews()
-                    if (tags.isEmpty()) {
-                        tvTagsTitle?.visibility = View.GONE
-                        chipGroupTags.visibility = View.GONE
-                        return@collect
-                    }
-                    tvTagsTitle?.visibility = View.VISIBLE
-                    chipGroupTags.visibility = View.VISIBLE
-                    tags.forEach { t ->
-                        val chip = Chip(requireContext()).apply {
-                            text = t.name
-                            isCheckable = true
-                            isChecked = false
-                        }
-                        chipGroupTags.addView(chip)
-                        tagIdByChipId[chip.id] = t.id
-                    }
-                }
-            }
-        }
+        // Tags observe removed
     }
 
     private fun toast(msg: String) = Toast.makeText(requireContext(), msg, Toast.LENGTH_SHORT).show()
 
-    private fun showInlineAddCategoryDialog() {
-        val ctx = requireContext()
-        val dialog = android.app.Dialog(ctx)
-        val v = LayoutInflater.from(ctx).inflate(R.layout.dialog_profile_add_category, null)
-        v.findViewById<View>(R.id.layoutAddCategoryType).visibility = View.GONE
-        val emojiContainer = v.findViewById<LinearLayout>(R.id.emojiContainer)
-        val tvSel = v.findViewById<TextView>(R.id.tvSelectedEmoji)
-        val etName = v.findViewById<TextInputEditText>(R.id.etCategoryName)
-        val til = v.findViewById<com.google.android.material.textfield.TextInputLayout>(R.id.tilCategoryName)
-        var icon = "💳"
-        tvSel.text = icon
-        val pad = (6 * resources.displayMetrics.density).toInt()
-        val emojis = listOf("💳", "🛒", "🏠", "🚗", "🍔", "💊", "🎁", "📚", "⚡", "🎮", "💼", "☕")
-        emojis.forEach { em ->
-            val tv = TextView(ctx).apply {
-                text = em
-                textSize = 22f
-                setPadding(pad, pad, pad, pad)
-                background = androidx.core.content.ContextCompat.getDrawable(ctx, R.drawable.kategori_item_bg)
-                setOnClickListener {
-                    icon = em
-                    tvSel.text = em
-                }
-            }
-            emojiContainer.addView(tv)
-        }
+    // Slot logic is centralized in CategorySlotBuilder.
 
-        dialog.setContentView(v)
-        dialog.window?.setLayout((resources.displayMetrics.widthPixels * 0.92).toInt(), ViewGroup.LayoutParams.WRAP_CONTENT)
-        dialog.window?.setBackgroundDrawableResource(android.R.color.transparent)
-
-        v.findViewById<View>(R.id.btnCancel).setOnClickListener { dialog.dismiss() }
-        v.findViewById<View>(R.id.btnAdd).setOnClickListener {
-            val name = etName.text?.toString()?.trim().orEmpty()
-            if (name.isBlank()) {
-                til.error = getString(R.string.categories_name_required)
-                return@setOnClickListener
-            }
-            val income = isIncome
-            viewLifecycleOwner.lifecycleScope.launch {
-                try {
-                    categoryRepository.insertCategory(
-                        Category(0, name, icon, "#2E7D32", income, isDefault = false)
-                    )
-                    delay(80)
-                    reloadCategoryChips()
-                    toast(getString(R.string.category_added))
-                    dialog.dismiss()
-                } catch (_: Exception) {
-                    toast(getString(R.string.category_add_error))
-                }
-            }
-        }
-        dialog.show()
-    }
+    // Inline category creation removed; categories are managed from the dedicated Categories page.
 }

@@ -18,9 +18,7 @@ fun TransactionEntity.toDomain(category: CategoryEntity? = null): Transaction {
         isIncome = isIncome,
         createdAt = createdAt,
         walletId = walletId,
-        tags = tags,
-        isRecurring = isRecurring,
-        recurringDays = recurringDays
+        tags = tags
     )
 }
 
@@ -36,8 +34,8 @@ fun Transaction.toEntity(): TransactionEntity {
         updatedAt = System.currentTimeMillis(),
         walletId = walletId,
         tags = tags,
-        isRecurring = isRecurring,
-        recurringDays = recurringDays
+        isRecurring = false,
+        recurringDays = 30
     )
 }
 
@@ -49,7 +47,9 @@ fun CategoryEntity.toDomain(): Category {
         icon = icon,
         color = color,
         isIncome = isIncome,
-        isDefault = isDefault
+        isDefault = isDefault,
+        parentId = parentId,
+        isLocked = isLocked
     )
 }
 
@@ -60,7 +60,9 @@ fun Category.toEntity(): CategoryEntity {
         icon = icon,
         color = color,
         isIncome = isIncome,
-        isDefault = isDefault
+        isDefault = isDefault,
+        parentId = parentId,
+        isLocked = isLocked
     )
 }
 

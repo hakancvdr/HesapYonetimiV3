@@ -33,6 +33,7 @@ class PinActivity : AppCompatActivity() {
     private var girilenSifre = ""
     private lateinit var dots: Array<View>
     private var kayitliPin: String? = null
+    private var unlockedThisSession: Boolean = false
 
     private val sorular = listOf(
         "İlk evcil hayvanınızın adı nedir?",
@@ -134,10 +135,9 @@ class PinActivity : AppCompatActivity() {
 
     override fun onPause() {
         super.onPause()
-        val prefs = getSharedPreferences("HesapPrefs", Context.MODE_PRIVATE)
-        if (AuthPrefs.shouldEnforceAppPinLock(this) && prefs.getString("kullanici_pin", null) != null) {
-            prefs.edit().putLong("son_giris_zamani", System.currentTimeMillis()).apply()
-        }
+        // NOTE: Do NOT update last-login time here.
+        // If user hits back / leaves without authenticating, we must not treat it as a successful unlock.
+        // `son_giris_zamani` is set only on successful PIN/biometric unlock (see `oturumuBaslat()`).
     }
 
     fun onNumberClick(view: View) {
@@ -179,6 +179,7 @@ class PinActivity : AppCompatActivity() {
     }
 
     private fun oturumuBaslat() {
+        unlockedThisSession = true
         getSharedPreferences("HesapPrefs", Context.MODE_PRIVATE)
             .edit().putLong("son_giris_zamani", System.currentTimeMillis()).apply()
         startActivity(Intent(this, MainActivity::class.java))

@@ -27,6 +27,35 @@ interface CategoryDao {
     
     @Query("SELECT * FROM categories WHERE isIncome = :isIncome ORDER BY id ASC")
     fun getCategoriesByType(isIncome: Boolean): Flow<List<CategoryEntity>>
+
+    @Query("SELECT * FROM categories WHERE isIncome = :isIncome AND parentId IS NULL ORDER BY id ASC")
+    fun getTopLevelCategoriesByType(isIncome: Boolean): Flow<List<CategoryEntity>>
+
+    @Query("SELECT * FROM categories WHERE isIncome = :isIncome AND parentId = :parentId ORDER BY id ASC")
+    fun getSubcategories(parentId: Long, isIncome: Boolean): Flow<List<CategoryEntity>>
+
+    @Query("SELECT * FROM categories WHERE isIncome = :isIncome AND isLocked = 1 AND name = 'Diğer' LIMIT 1")
+    suspend fun getOtherLockedCategory(isIncome: Boolean): CategoryEntity?
+
+    @Query(
+        """
+        SELECT COUNT(*) FROM categories
+        WHERE isIncome = :isIncome
+          AND parentId IS NULL
+          AND isDefault = 0
+          AND isLocked = 0
+        """
+    )
+    suspend fun countUserAddedTopLevel(isIncome: Boolean): Int
+
+    @Query("SELECT id FROM categories WHERE parentId = :parentId")
+    suspend fun getSubcategoryIds(parentId: Long): List<Long>
+
+    @Query("DELETE FROM categories WHERE id IN (:ids)")
+    suspend fun deleteByIds(ids: List<Long>)
+
+    @Query("DELETE FROM categories WHERE id = :id")
+    suspend fun deleteById(id: Long)
     
     @Query("SELECT * FROM categories WHERE isDefault = 1")
     fun getDefaultCategories(): Flow<List<CategoryEntity>>

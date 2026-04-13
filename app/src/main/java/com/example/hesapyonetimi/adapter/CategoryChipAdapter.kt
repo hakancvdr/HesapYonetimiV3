@@ -1,6 +1,7 @@
 package com.example.hesapyonetimi.adapter
 
 import android.view.LayoutInflater
+import android.view.View
 import android.view.ViewGroup
 import android.widget.TextView
 import androidx.core.content.ContextCompat
@@ -10,7 +11,8 @@ import com.example.hesapyonetimi.domain.model.Category
 
 class CategoryChipAdapter(
     private var categories: List<Category>,
-    private val onSelected: (Category) -> Unit
+    private val onSelected: (Category) -> Unit,
+    private val parentNameResolver: ((Long) -> String?)? = null
 ) : RecyclerView.Adapter<CategoryChipAdapter.VH>() {
 
     private var selectedId: Long = -1
@@ -30,6 +32,7 @@ class CategoryChipAdapter(
     ) {
         val icon: TextView = itemView.findViewById(R.id.tv_chip_icon)
         val name: TextView = itemView.findViewById(R.id.tv_chip_name)
+        val parent: TextView = itemView.findViewById(R.id.tv_chip_parent)
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int) = VH(parent)
@@ -38,6 +41,13 @@ class CategoryChipAdapter(
         val cat = categories[position]
         holder.icon.text = cat.icon
         holder.name.text = cat.name
+        val parentName = cat.parentId?.let { parentNameResolver?.invoke(it) }
+        if (!parentName.isNullOrBlank()) {
+            holder.parent.text = "· $parentName"
+            holder.parent.visibility = View.VISIBLE
+        } else {
+            holder.parent.visibility = View.GONE
+        }
 
         val selected = cat.id == selectedId
         holder.itemView.setBackgroundResource(

@@ -7,7 +7,6 @@ import androidx.work.*
 import com.example.hesapyonetimi.presentation.common.CurrencyFormatter
 import com.example.hesapyonetimi.util.LocaleHelper
 import com.example.hesapyonetimi.worker.BudgetAlertWorker
-import com.example.hesapyonetimi.worker.RecurringTransactionWorker
 import com.example.hesapyonetimi.worker.WeeklySummaryWorker
 import dagger.hilt.android.HiltAndroidApp
 import java.util.Calendar
@@ -55,14 +54,8 @@ class HesapYonetimiApp : Application(), Configuration.Provider {
             "weekly_summary", ExistingPeriodicWorkPolicy.UPDATE, weeklyRequest
         )
 
-        // Tekrarlayan işlem kontrolü — her gün
-        val recurringRequest = PeriodicWorkRequestBuilder<RecurringTransactionWorker>(1, TimeUnit.DAYS)
-            .setConstraints(Constraints.Builder()
-                .setRequiredNetworkType(NetworkType.NOT_REQUIRED).build())
-            .build()
-        wm.enqueueUniquePeriodicWork(
-            "recurring_transactions", ExistingPeriodicWorkPolicy.KEEP, recurringRequest
-        )
+        // Tekrarlayan işlem özelliği kaldırıldı — eski kurulumlardan kalan işi de iptal et
+        wm.cancelUniqueWork("recurring_transactions")
     }
 
     private fun calcDelayToHour(hour: Int): Long {

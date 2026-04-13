@@ -88,7 +88,6 @@
     <string name="tags_dialog_title">Etiketler</string>
     <string name="drawer_sign_in">Oturum aç</string>
     <string name="profile_quick_snapshot_title">Hızlı özet</string>
-    <string name="profile_account_drawer_hint">Oturum açma, kayıt ve çıkış için sol menüyü kullanın.</string>
     <string name="membership_free">Ücretsiz</string>
     <string name="membership_premium">Premium</string>
     <string name="profile_membership_line">%1$s · İlk işlem: %2$s</string>
