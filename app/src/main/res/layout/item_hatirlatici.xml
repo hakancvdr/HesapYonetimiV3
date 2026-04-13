@@ -23,6 +23,18 @@
             android:background="@color/green_primary"
             android:layout_marginEnd="12dp"/>
 
+        <TextView
+            android:id="@+id/tv_hatirlatici_icon"
+            android:layout_width="28dp"
+            android:layout_height="28dp"
+            android:layout_marginEnd="10dp"
+            android:fontFamily="@font/material_symbols_outlined"
+            android:gravity="center"
+            android:includeFontPadding="false"
+            android:text="event"
+            android:textColor="@color/text_primary"
+            android:textSize="16sp" />
+
         <LinearLayout
             android:layout_width="0dp"
             android:layout_height="wrap_content"

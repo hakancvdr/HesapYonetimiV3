@@ -1,13 +1,19 @@
 package com.example.hesapyonetimi.adapter
 
+import android.graphics.Color
+import android.graphics.drawable.GradientDrawable
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.TextView
+import androidx.core.content.ContextCompat
+import androidx.core.graphics.ColorUtils
 import androidx.recyclerview.widget.RecyclerView
 import com.example.hesapyonetimi.R
 import com.example.hesapyonetimi.presentation.aylik.KategoriOzet
 import com.example.hesapyonetimi.presentation.common.CurrencyFormatter
+import com.example.hesapyonetimi.ui.CategoryColorPalette
+import com.example.hesapyonetimi.ui.MaterialCategoryIcon
 
 class KategoriAnalizAdapter(
     private val kategoriler: List<KategoriOzet>,
@@ -30,7 +36,18 @@ class KategoriAnalizAdapter(
 
     override fun onBindViewHolder(holder: VH, position: Int) {
         val kat = kategoriler[position]
-        holder.icon.text = kat.icon
+        val ctx = holder.itemView.context
+        val hex = CategoryColorPalette.closestOrDefault(kat.color)
+        val fill = runCatching { Color.parseColor(hex) }.getOrElse {
+            ContextCompat.getColor(ctx, R.color.green_primary)
+        }
+        holder.icon.background = GradientDrawable().apply {
+            shape = GradientDrawable.OVAL
+            setColor(fill)
+        }
+        val lum = ColorUtils.calculateLuminance(fill)
+        val glyph = if (lum > 0.62) Color.BLACK else Color.WHITE
+        MaterialCategoryIcon.bind(holder.icon, kat.icon, 20f, glyph)
         holder.name.text = kat.ad
         val amountStr = CurrencyFormatter.format(kat.toplam)
         holder.amount.text = if (kat.isIncome) "+$amountStr" else amountStr

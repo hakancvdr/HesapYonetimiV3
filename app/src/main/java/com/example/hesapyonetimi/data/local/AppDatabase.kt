@@ -227,24 +227,24 @@ abstract class AppDatabase : RoomDatabase() {
 
         private suspend fun populateDefaultCategories(categoryDao: CategoryDao) {
             val defaultExpenseCategories = listOf(
-                CategoryEntity(name = "Market", icon = "🛒", color = "#4CAF50", isIncome = false, isDefault = true),
-                CategoryEntity(name = "Ulaşım", icon = "🚗", color = "#2196F3", isIncome = false, isDefault = true),
-                CategoryEntity(name = "Fatura", icon = "📄", color = "#FF9800", isIncome = false, isDefault = true),
-                CategoryEntity(name = "Eğlence", icon = "🎮", color = "#9C27B0", isIncome = false, isDefault = true),
-                CategoryEntity(name = "Sağlık", icon = "⚕️", color = "#F44336", isIncome = false, isDefault = true),
-                CategoryEntity(name = "Eğitim", icon = "📚", color = "#3F51B5", isIncome = false, isDefault = true),
-                CategoryEntity(name = "Giyim", icon = "👕", color = "#E91E63", isIncome = false, isDefault = true),
-                CategoryEntity(name = "Yemek dışarı", icon = "🍽️", color = "#FF7043", isIncome = false, isDefault = true),
-                CategoryEntity(name = "Kira", icon = "🏠", color = "#8D6E63", isIncome = false, isDefault = true),
-                CategoryEntity(name = "Diğer", icon = "📦", color = "#607D8B", isIncome = false, isDefault = true, isLocked = true)
+                CategoryEntity(name = "Market", icon = "shopping_cart", color = "#4CAF50", isIncome = false, isDefault = true),
+                CategoryEntity(name = "Ulaşım", icon = "directions_car", color = "#2196F3", isIncome = false, isDefault = true),
+                CategoryEntity(name = "Fatura", icon = "receipt_long", color = "#FF9800", isIncome = false, isDefault = true),
+                CategoryEntity(name = "Eğlence", icon = "sports_esports", color = "#9C27B0", isIncome = false, isDefault = true),
+                CategoryEntity(name = "Sağlık", icon = "medical_services", color = "#F44336", isIncome = false, isDefault = true),
+                CategoryEntity(name = "Eğitim", icon = "school", color = "#3F51B5", isIncome = false, isDefault = true),
+                CategoryEntity(name = "Giyim", icon = "checkroom", color = "#E91E63", isIncome = false, isDefault = true),
+                CategoryEntity(name = "Yemek dışarı", icon = "restaurant", color = "#FF7043", isIncome = false, isDefault = true),
+                CategoryEntity(name = "Kira", icon = "home", color = "#8D6E63", isIncome = false, isDefault = true),
+                CategoryEntity(name = "Diğer", icon = "inventory_2", color = "#607D8B", isIncome = false, isDefault = true, isLocked = true)
             )
 
             val defaultIncomeCategories = listOf(
-                CategoryEntity(name = "Maaş", icon = "💰", color = "#4CAF50", isIncome = true, isDefault = true),
-                CategoryEntity(name = "Freelance", icon = "💻", color = "#00BCD4", isIncome = true, isDefault = true),
-                CategoryEntity(name = "Yatırım", icon = "📈", color = "#FF5722", isIncome = true, isDefault = true),
-                CategoryEntity(name = "Hediye", icon = "🎁", color = "#E91E63", isIncome = true, isDefault = true),
-                CategoryEntity(name = "Diğer", icon = "💵", color = "#607D8B", isIncome = true, isDefault = true, isLocked = true)
+                CategoryEntity(name = "Maaş", icon = "payments", color = "#4CAF50", isIncome = true, isDefault = true),
+                CategoryEntity(name = "Freelance", icon = "laptop_mac", color = "#00BCD4", isIncome = true, isDefault = true),
+                CategoryEntity(name = "Yatırım", icon = "trending_up", color = "#FF5722", isIncome = true, isDefault = true),
+                CategoryEntity(name = "Hediye", icon = "redeem", color = "#E91E63", isIncome = true, isDefault = true),
+                CategoryEntity(name = "Diğer", icon = "paid", color = "#607D8B", isIncome = true, isDefault = true, isLocked = true)
             )
 
             categoryDao.insertAll(defaultExpenseCategories + defaultIncomeCategories)

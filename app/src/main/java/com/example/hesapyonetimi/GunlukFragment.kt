@@ -200,7 +200,7 @@ class GunlukFragment : Fragment() {
             )
         }
 
-        parentFragmentManager.setFragmentResultListener(
+        requireActivity().supportFragmentManager.setFragmentResultListener(
             CategoryPickerFragment.RESULT_KEY,
             viewLifecycleOwner
         ) { _, bundle ->

@@ -224,27 +224,7 @@ class MainActivity : AppCompatActivity() {
             bottomNav.visibility = if (destination.id in topLevelIds)
                 android.view.View.VISIBLE else android.view.View.GONE
 
-            if (destination.id == R.id.nav_ozet && !AuthPrefs.isDashboardSummaryCoachmarkShown(this)) {
-                bottomNav.post {
-                    Snackbar.make(
-                        bottomNav,
-                        getString(R.string.coachmark_dashboard_summary),
-                        Snackbar.LENGTH_LONG
-                    )
-                        .setAnchorView(bottomNav)
-                        .setAction(R.string.close) {
-                            AuthPrefs.setDashboardSummaryCoachmarkShown(this, true)
-                        }
-                        .addCallback(object : Snackbar.Callback() {
-                            override fun onDismissed(transientBottomBar: Snackbar?, event: Int) {
-                                if (event != DISMISS_EVENT_ACTION) {
-                                    AuthPrefs.setDashboardSummaryCoachmarkShown(this@MainActivity, true)
-                                }
-                            }
-                        })
-                        .show()
-                }
-            }
+            // Removed: onboarding coachmark/snackbar on app start (too confusing for first-time users).
         }
     }
 

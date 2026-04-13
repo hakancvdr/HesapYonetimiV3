@@ -1,14 +1,15 @@
 package com.example.hesapyonetimi.presentation.profile
 
 import android.app.Dialog
-import android.graphics.Color
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.LinearLayout
+import android.view.WindowManager
+import android.widget.ImageButton
 import android.widget.TextView
 import androidx.core.content.ContextCompat
+import androidx.core.content.res.ResourcesCompat
 import androidx.fragment.app.DialogFragment
 import androidx.fragment.app.viewModels
 import androidx.lifecycle.Lifecycle
@@ -20,7 +21,11 @@ import com.example.hesapyonetimi.R
 import com.example.hesapyonetimi.domain.model.Category
 import com.example.hesapyonetimi.presentation.tags.TagRowAdapter
 import com.example.hesapyonetimi.presentation.tags.TagViewModel
-import com.google.android.material.button.MaterialButtonToggleGroup
+import com.example.hesapyonetimi.ui.CategoryColorPalette
+import com.example.hesapyonetimi.ui.ColorSwatchAdapter
+import com.example.hesapyonetimi.ui.MaterialCategoryIcon
+import com.example.hesapyonetimi.ui.MaterialIconPickerSheet
+import com.google.android.material.button.MaterialButton
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.google.android.material.floatingactionbutton.FloatingActionButton
 import com.google.android.material.textfield.TextInputEditText
@@ -35,6 +40,7 @@ class ProfileCategoriesDialogFragment : DialogFragment() {
 
     private lateinit var adapter: ProfileCategoryAdapter
     private var selectedTab: Int = 0 // 0 gider 1 gelir 2 etiket
+    private var pendingMaterialIconPick: ((String) -> Unit)? = null
 
     companion object {
         fun newInstance() = ProfileCategoriesDialogFragment()
@@ -51,6 +57,16 @@ class ProfileCategoriesDialogFragment : DialogFragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
+
+        childFragmentManager.setFragmentResultListener(
+            MaterialIconPickerSheet.RESULT_KEY,
+            viewLifecycleOwner
+        ) { _, bundle ->
+            val iconName = bundle.getString(MaterialIconPickerSheet.BUNDLE_ICON_NAME)
+                ?: return@setFragmentResultListener
+            pendingMaterialIconPick?.invoke(iconName)
+        }
+
         val rv = view.findViewById<RecyclerView>(R.id.rvCategories)
         val panelTags = view.findViewById<View>(R.id.panelTags)
         val btnExpenseTab = view.findViewById<TextView>(R.id.btnExpenseTab)
@@ -133,21 +149,65 @@ class ProfileCategoriesDialogFragment : DialogFragment() {
 
     private fun showAddCategoryDialog() {
         val v = LayoutInflater.from(requireContext()).inflate(R.layout.dialog_profile_add_category, null)
-        val emojiContainer = v.findViewById<LinearLayout>(R.id.emojiContainer)
         val tvSel = v.findViewById<TextView>(R.id.tvSelectedEmoji)
         val etName = v.findViewById<TextInputEditText>(R.id.etCategoryName)
         val til = v.findViewById<com.google.android.material.textfield.TextInputLayout>(R.id.tilCategoryName)
-        val toggle = v.findViewById<MaterialButtonToggleGroup>(R.id.toggleType)
-        var icon = "💳"
-        tvSel.text = icon
-        fillEmojiRow(emojiContainer, tvSel) { picked -> icon = picked; tvSel.text = picked }
-        toggle.check(if (adapter.showIncome) R.id.btnIncome else R.id.btnExpense)
+        val btnExpense = v.findViewById<MaterialButton>(R.id.btnAddCatExpense)
+        val btnIncome = v.findViewById<MaterialButton>(R.id.btnAddCatIncome)
+        var icon = "credit_card"
+        var isIncomeCategory = adapter.showIncome
+        var selectedColor = CategoryColorPalette.closestOrDefault("#2E7D32")
+        val colorWhite = ContextCompat.getColor(requireContext(), R.color.text_white)
+        val colorTextPrimary = ContextCompat.getColor(requireContext(), R.color.text_primary)
+
+        fun updateTypeVisuals(expenseSelected: Boolean) {
+            if (expenseSelected) {
+                btnExpense.backgroundTintList = ResourcesCompat.getColorStateList(resources, R.color.green_primary, null)
+                btnExpense.setTextColor(colorWhite)
+                btnIncome.backgroundTintList = ResourcesCompat.getColorStateList(resources, android.R.color.transparent, null)
+                btnIncome.setTextColor(colorTextPrimary)
+            } else {
+                btnIncome.backgroundTintList = ResourcesCompat.getColorStateList(resources, R.color.green_primary, null)
+                btnIncome.setTextColor(colorWhite)
+                btnExpense.backgroundTintList = ResourcesCompat.getColorStateList(resources, android.R.color.transparent, null)
+                btnExpense.setTextColor(colorTextPrimary)
+            }
+        }
+
+        MaterialCategoryIcon.bind(tvSel, icon, 26f)
+        v.findViewById<MaterialButton>(R.id.btnBrowseMaterialIcons).setOnClickListener {
+            pendingMaterialIconPick = { name ->
+                icon = name
+                MaterialCategoryIcon.bind(tvSel, name, 26f)
+            }
+            MaterialIconPickerSheet.newInstance().show(childFragmentManager, "MaterialIconPicker")
+        }
+
+        v.findViewById<RecyclerView>(R.id.rvCategoryColors).apply {
+            layoutManager = LinearLayoutManager(requireContext(), LinearLayoutManager.HORIZONTAL, false)
+            adapter = ColorSwatchAdapter(
+                colors = CategoryColorPalette.hex,
+                initialSelected = selectedColor
+            ) { c -> selectedColor = c }
+        }
+
+        updateTypeVisuals(expenseSelected = !isIncomeCategory)
+        btnExpense.setOnClickListener {
+            isIncomeCategory = false
+            updateTypeVisuals(true)
+        }
+        btnIncome.setOnClickListener {
+            isIncomeCategory = true
+            updateTypeVisuals(false)
+        }
 
         val dialog = Dialog(requireContext())
         dialog.setContentView(v)
         dialog.window?.setLayout((resources.displayMetrics.widthPixels * 0.92).toInt(), ViewGroup.LayoutParams.WRAP_CONTENT)
         dialog.window?.setBackgroundDrawableResource(android.R.color.transparent)
+        dialog.window?.setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE)
 
+        v.findViewById<ImageButton>(R.id.btnCloseProfileCategorySheet).setOnClickListener { dialog.dismiss() }
         v.findViewById<View>(R.id.btnCancel).setOnClickListener { dialog.dismiss() }
         v.findViewById<View>(R.id.btnAdd).setOnClickListener {
             val name = etName.text?.toString()?.trim().orEmpty()
@@ -155,9 +215,8 @@ class ProfileCategoriesDialogFragment : DialogFragment() {
                 til.error = getString(R.string.categories_name_required)
                 return@setOnClickListener
             }
-            val isIncome = toggle.checkedButtonId == R.id.btnIncome
             profileViewModel.addCategory(
-                Category(0, name, icon, "#2E7D32", isIncome, isDefault = false)
+                Category(0, name, icon, selectedColor, isIncomeCategory, isDefault = false)
             )
             dialog.dismiss()
         }
@@ -166,20 +225,66 @@ class ProfileCategoriesDialogFragment : DialogFragment() {
 
     private fun showEditCategoryDialog(cat: Category) {
         val v = LayoutInflater.from(requireContext()).inflate(R.layout.dialog_profile_edit_category, null)
-        val emojiContainer = v.findViewById<LinearLayout>(R.id.emojiContainer)
         val tvSel = v.findViewById<TextView>(R.id.tvSelectedEmoji)
         val etName = v.findViewById<TextInputEditText>(R.id.etCategoryName)
         val til = v.findViewById<com.google.android.material.textfield.TextInputLayout>(R.id.tilCategoryName)
-        var icon = cat.icon.ifBlank { "💳" }
-        tvSel.text = icon
+        val btnExpense = v.findViewById<MaterialButton>(R.id.btnAddCatExpense)
+        val btnIncome = v.findViewById<MaterialButton>(R.id.btnAddCatIncome)
+        var icon = cat.icon.ifBlank { "credit_card" }
+        var isIncomeCategory = cat.isIncome
+        var selectedColor = CategoryColorPalette.closestOrDefault(cat.color)
+        val colorWhite = ContextCompat.getColor(requireContext(), R.color.text_white)
+        val colorTextPrimary = ContextCompat.getColor(requireContext(), R.color.text_primary)
+
+        fun updateTypeVisuals(expenseSelected: Boolean) {
+            if (expenseSelected) {
+                btnExpense.backgroundTintList = ResourcesCompat.getColorStateList(resources, R.color.green_primary, null)
+                btnExpense.setTextColor(colorWhite)
+                btnIncome.backgroundTintList = ResourcesCompat.getColorStateList(resources, android.R.color.transparent, null)
+                btnIncome.setTextColor(colorTextPrimary)
+            } else {
+                btnIncome.backgroundTintList = ResourcesCompat.getColorStateList(resources, R.color.green_primary, null)
+                btnIncome.setTextColor(colorWhite)
+                btnExpense.backgroundTintList = ResourcesCompat.getColorStateList(resources, android.R.color.transparent, null)
+                btnExpense.setTextColor(colorTextPrimary)
+            }
+        }
+
+        MaterialCategoryIcon.bind(tvSel, icon, 26f)
         etName.setText(cat.name)
-        fillEmojiRow(emojiContainer, tvSel) { picked -> icon = picked; tvSel.text = picked }
+        v.findViewById<MaterialButton>(R.id.btnBrowseMaterialIcons).setOnClickListener {
+            pendingMaterialIconPick = { name ->
+                icon = name
+                MaterialCategoryIcon.bind(tvSel, name, 26f)
+            }
+            MaterialIconPickerSheet.newInstance().show(childFragmentManager, "MaterialIconPicker")
+        }
+
+        v.findViewById<RecyclerView>(R.id.rvCategoryColors).apply {
+            layoutManager = LinearLayoutManager(requireContext(), LinearLayoutManager.HORIZONTAL, false)
+            adapter = ColorSwatchAdapter(
+                colors = CategoryColorPalette.hex,
+                initialSelected = selectedColor
+            ) { c -> selectedColor = c }
+        }
+
+        updateTypeVisuals(expenseSelected = !isIncomeCategory)
+        btnExpense.setOnClickListener {
+            isIncomeCategory = false
+            updateTypeVisuals(true)
+        }
+        btnIncome.setOnClickListener {
+            isIncomeCategory = true
+            updateTypeVisuals(false)
+        }
 
         val dialog = Dialog(requireContext())
         dialog.setContentView(v)
         dialog.window?.setLayout((resources.displayMetrics.widthPixels * 0.92).toInt(), ViewGroup.LayoutParams.WRAP_CONTENT)
         dialog.window?.setBackgroundDrawableResource(android.R.color.transparent)
+        dialog.window?.setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE)
 
+        v.findViewById<ImageButton>(R.id.btnCloseProfileCategorySheet).setOnClickListener { dialog.dismiss() }
         v.findViewById<View>(R.id.btnCancel).setOnClickListener { dialog.dismiss() }
         v.findViewById<View>(R.id.btnSave).setOnClickListener {
             val name = etName.text?.toString()?.trim().orEmpty()
@@ -187,28 +292,9 @@ class ProfileCategoriesDialogFragment : DialogFragment() {
                 til.error = getString(R.string.categories_name_required)
                 return@setOnClickListener
             }
-            profileViewModel.updateCategory(cat.copy(name = name, icon = icon))
+            profileViewModel.updateCategory(cat.copy(name = name, icon = icon, color = selectedColor, isIncome = isIncomeCategory))
             dialog.dismiss()
         }
         dialog.show()
-    }
-
-    private fun fillEmojiRow(container: LinearLayout, tvSelected: TextView, onPick: (String) -> Unit) {
-        container.removeAllViews()
-        val emojis = listOf("💳", "🛒", "🏠", "🚗", "🍔", "💊", "🎁", "📚", "⚡", "🎮", "💼", "☕", "✈️", "🐕")
-        val pad = (6 * resources.displayMetrics.density).toInt()
-        emojis.forEach { em ->
-            val tv = TextView(requireContext()).apply {
-                text = em
-                textSize = 22f
-                setPadding(pad, pad, pad, pad)
-                background = ContextCompat.getDrawable(requireContext(), R.drawable.kategori_item_bg)
-                setOnClickListener {
-                    tvSelected.text = em
-                    onPick(em)
-                }
-            }
-            container.addView(tv)
-        }
     }
 }

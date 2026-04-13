@@ -4,6 +4,48 @@ import com.example.hesapyonetimi.data.local.entity.*
 import com.example.hesapyonetimi.domain.model.*
 import com.example.hesapyonetimi.domain.model.ReminderNotificationPolicy
 
+private fun normalizeCategoryIcon(raw: String): String {
+    val s = raw.trim()
+    return when (s) {
+        "🛒" -> "shopping_cart"
+        "🚗" -> "directions_car"
+        "📄" -> "receipt_long"
+        "🎮" -> "sports_esports"
+        "⚕️", "🏥" -> "medical_services"
+        "📚" -> "school"
+        "👕" -> "checkroom"
+        "🍽️", "🍔" -> "restaurant"
+        "🏠" -> "home"
+        "📦" -> "inventory_2"
+        "💰" -> "payments"
+        "💻" -> "laptop_mac"
+        "📈" -> "trending_up"
+        "🎁" -> "redeem"
+        "💵" -> "payments"
+        "💳" -> "credit_card"
+        "☕" -> "local_cafe"
+        "🎬" -> "movie"
+        "✈️", "🛫" -> "flight"
+        "🐾" -> "pets"
+        "⚡" -> "bolt"
+        "🛍️" -> "shopping_bag"
+        "🎵" -> "music_note"
+        "📱" -> "smartphone"
+        "🧾" -> "receipt_long"
+        "⛽" -> "local_gas_station"
+        "🚌" -> "directions_bus"
+        "🚕" -> "local_taxi"
+        "🏋️", "💪" -> "fitness_center"
+        "🧹" -> "cleaning_services"
+        "👶" -> "child_care"
+        "🐕", "🐱" -> "pets"
+        else -> s
+    }
+}
+
+/** Public so UI can map legacy emoji / odd stored values before ligature render. */
+fun normalizeStoredCategoryIcon(raw: String): String = normalizeCategoryIcon(raw)
+
 // Transaction Mappers
 fun TransactionEntity.toDomain(category: CategoryEntity? = null): Transaction {
     return Transaction(
@@ -11,7 +53,7 @@ fun TransactionEntity.toDomain(category: CategoryEntity? = null): Transaction {
         amount = amount,
         categoryId = categoryId,
         categoryName = category?.name ?: "",
-        categoryIcon = category?.icon ?: "",
+        categoryIcon = normalizeCategoryIcon(category?.icon ?: ""),
         categoryColor = category?.color ?: "",
         description = description,
         date = date,
@@ -44,7 +86,7 @@ fun CategoryEntity.toDomain(): Category {
     return Category(
         id = id,
         name = name,
-        icon = icon,
+        icon = normalizeCategoryIcon(icon),
         color = color,
         isIncome = isIncome,
         isDefault = isDefault,
@@ -72,7 +114,7 @@ fun BudgetEntity.toDomain(category: CategoryEntity? = null, spentAmount: Double 
         id = id,
         categoryId = categoryId,
         categoryName = category?.name ?: "",
-        categoryIcon = category?.icon ?: "",
+        categoryIcon = normalizeCategoryIcon(category?.icon ?: ""),
         categoryColor = category?.color ?: "",
         limitAmount = limitAmount,
         spentAmount = spentAmount,
@@ -101,7 +143,7 @@ fun ReminderEntity.toDomain(category: CategoryEntity? = null): Reminder {
         dueDate = dueDate,
         categoryId = categoryId,
         categoryName = category?.name ?: "",
-        categoryIcon = category?.icon ?: "",
+        categoryIcon = normalizeCategoryIcon(category?.icon ?: ""),
         isPaid = isPaid,
         paidAt = paidAt,
         isRecurring = isRecurring,

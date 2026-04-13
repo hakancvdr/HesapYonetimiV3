@@ -145,7 +145,7 @@ class HatirlaticiEkleSheet : BottomSheetDialogFragment() {
             )
         }
 
-        parentFragmentManager.setFragmentResultListener(
+        requireActivity().supportFragmentManager.setFragmentResultListener(
             CategoryPickerFragment.RESULT_KEY,
             viewLifecycleOwner
         ) { _, bundle ->

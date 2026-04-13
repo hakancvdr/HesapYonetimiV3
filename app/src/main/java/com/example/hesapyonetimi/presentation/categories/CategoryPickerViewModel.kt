@@ -139,7 +139,13 @@ class CategoryPickerViewModel @Inject constructor(
         }
     }
 
-    fun updateCategory(category: Category, newName: String, newIcon: String, newColor: String) {
+    fun updateCategory(
+        category: Category,
+        newName: String,
+        newIcon: String,
+        newColor: String,
+        newIsIncome: Boolean
+    ) {
         if (category.isLocked || category.name.equals("Diğer", ignoreCase = true)) {
             message.value = "Diğer kategorisi düzenlenemez"
             return
@@ -154,7 +160,8 @@ class CategoryPickerViewModel @Inject constructor(
                 category.copy(
                     name = trimmed,
                     icon = newIcon.ifBlank { category.icon },
-                    color = newColor
+                    color = newColor,
+                    isIncome = newIsIncome
                 )
             )
             message.value = "Kategori güncellendi"

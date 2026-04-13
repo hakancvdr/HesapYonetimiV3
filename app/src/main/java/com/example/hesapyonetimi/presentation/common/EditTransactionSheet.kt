@@ -14,8 +14,6 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.example.hesapyonetimi.R
 import com.example.hesapyonetimi.adapter.CategoryChipAdapter
-import com.example.hesapyonetimi.adapter.WalletChipAdapter
-import com.example.hesapyonetimi.data.local.dao.WalletDao
 import com.example.hesapyonetimi.domain.model.Category
 import com.example.hesapyonetimi.domain.model.Transaction
 import javax.inject.Inject
@@ -39,16 +37,12 @@ import com.example.hesapyonetimi.presentation.categories.CategorySlotBuilder
 @AndroidEntryPoint
 class EditTransactionSheet : BottomSheetDialogFragment() {
 
-    @Inject
-    lateinit var walletDao: WalletDao
-
     /** Activity scope: sheet dismiss sonrası Snackbar "Geri Al" güvenli kalır */
     private val viewModel: TransactionViewModel by activityViewModels()
     private lateinit var categoryAdapter: CategoryChipAdapter
     private var selectedCategory: Category? = null
     private var isIncome: Boolean = false
     private lateinit var transaction: Transaction
-    private var selectedWalletId: Long? = null
 
     companion object {
         private const val ARG_TX = "arg_transaction"
@@ -129,23 +123,6 @@ class EditTransactionSheet : BottomSheetDialogFragment() {
 
         // Mevcut değerleri doldur
         isIncome = transaction.isIncome
-        selectedWalletId = transaction.walletId
-
-        val rvEditWallets = view.findViewById<RecyclerView>(R.id.rvEditWallets)
-        rvEditWallets.layoutManager = LinearLayoutManager(requireContext(), LinearLayoutManager.HORIZONTAL, false)
-        viewLifecycleOwner.lifecycleScope.launch {
-            viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
-                walletDao.getAllWallets().collect { wallets ->
-                    rvEditWallets.adapter = WalletChipAdapter(wallets, selectedWalletId) { wallet ->
-                        selectedWalletId = wallet.id
-                        rvEditWallets.adapter?.notifyDataSetChanged()
-                    }
-                    if (selectedWalletId == null) {
-                        selectedWalletId = wallets.firstOrNull { it.isDefault }?.id ?: wallets.firstOrNull()?.id
-                    }
-                }
-            }
-        }
         etAmount.setText(transaction.amount.toBigDecimal().stripTrailingZeros().toPlainString())
         etDescription.setText(transaction.description)
 
@@ -244,7 +221,7 @@ class EditTransactionSheet : BottomSheetDialogFragment() {
             }
         }
 
-        parentFragmentManager.setFragmentResultListener(
+        requireActivity().supportFragmentManager.setFragmentResultListener(
             CategoryPickerFragment.RESULT_KEY,
             viewLifecycleOwner
         ) { _, bundle ->
@@ -301,8 +278,7 @@ class EditTransactionSheet : BottomSheetDialogFragment() {
                     categoryId = cat.id,
                     description = if (description.isEmpty()) cat.name else description,
                     isIncome = isIncome,
-                    date = selectedDateMillis,
-                    walletId = selectedWalletId
+                    date = selectedDateMillis
                 )
             )
             toast("✅ İşlem güncellendi!")

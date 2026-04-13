@@ -2,27 +2,36 @@ package com.example.hesapyonetimi.presentation.categories
 
 import android.os.Bundle
 import android.app.AlertDialog
+import android.app.Dialog
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.view.WindowManager
 import android.widget.CheckBox
 import android.widget.EditText
 import android.widget.LinearLayout
 import android.widget.TextView
 import android.widget.Toast
 import androidx.core.content.ContextCompat
+import androidx.core.content.res.ResourcesCompat
 import androidx.core.os.bundleOf
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
-import androidx.navigation.fragment.findNavController
 import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.navigation.fragment.findNavController
 import androidx.recyclerview.widget.RecyclerView
 import com.example.hesapyonetimi.R
 import com.example.hesapyonetimi.auth.AuthPrefs
 import com.example.hesapyonetimi.domain.model.Category
+import com.example.hesapyonetimi.ui.CategoryColorPalette
+import com.example.hesapyonetimi.ui.ColorSwatchAdapter
+import com.example.hesapyonetimi.ui.MaterialCategoryIcon
+import com.example.hesapyonetimi.ui.MaterialIconPickerSheet
+import com.google.android.material.button.MaterialButton
+import com.google.android.material.textfield.TextInputEditText
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.launch
 
@@ -43,6 +52,9 @@ class CategoryPickerFragment : Fragment() {
     private var isIncome: Boolean = false
     private var proEnabled: Boolean = false
     private lateinit var adapter: CategoryPickerAdapter
+    private var pendingMaterialIconPick: ((String) -> Unit)? = null
+
+    private fun dp(v: Int) = (v * resources.displayMetrics.density).toInt()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -55,6 +67,15 @@ class CategoryPickerFragment : Fragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
+
+        childFragmentManager.setFragmentResultListener(
+            MaterialIconPickerSheet.RESULT_KEY,
+            viewLifecycleOwner
+        ) { _, bundle ->
+            val iconName = bundle.getString(MaterialIconPickerSheet.BUNDLE_ICON_NAME)
+                ?: return@setFragmentResultListener
+            pendingMaterialIconPick?.invoke(iconName)
+        }
 
         proEnabled = AuthPrefs.isProMember(requireContext())
 
@@ -113,7 +134,7 @@ class CategoryPickerFragment : Fragment() {
     }
 
     private fun returnSelection(cat: Category) {
-        parentFragmentManager.setFragmentResult(
+        requireActivity().supportFragmentManager.setFragmentResult(
             RESULT_KEY,
             bundleOf(BUNDLE_CATEGORY_ID to cat.id)
         )
@@ -141,40 +162,73 @@ class CategoryPickerFragment : Fragment() {
     }
 
     private fun showAddDialog() {
-        val pad = (16 * resources.displayMetrics.density).toInt()
+        val v = LayoutInflater.from(requireContext()).inflate(R.layout.dialog_profile_add_category, null)
+        val tvSel = v.findViewById<TextView>(R.id.tvSelectedEmoji)
+        val etName = v.findViewById<TextInputEditText>(R.id.etCategoryName)
+        val til = v.findViewById<com.google.android.material.textfield.TextInputLayout>(R.id.tilCategoryName)
+        val btnExpense = v.findViewById<MaterialButton>(R.id.btnAddCatExpense)
+        val btnIncome = v.findViewById<MaterialButton>(R.id.btnAddCatIncome)
 
-        val nameEt = EditText(requireContext()).apply {
-            hint = "Kategori adı"
-            setSingleLine(true)
-        }
-        val iconEt = EditText(requireContext()).apply {
-            hint = "Emoji (örn: 🛒)"
-            setSingleLine(true)
+        var icon = "shopping_cart"
+        var isIncomeCategory = isIncome
+        var selectedColor = CategoryColorPalette.closestOrDefault("#2E7D32")
+
+        val colorWhite = ContextCompat.getColor(requireContext(), R.color.text_white)
+        val colorTextPrimary = ContextCompat.getColor(requireContext(), R.color.text_primary)
+
+        fun updateTypeVisuals(expenseSelected: Boolean) {
+            if (expenseSelected) {
+                btnExpense.backgroundTintList = ResourcesCompat.getColorStateList(resources, R.color.green_primary, null)
+                btnExpense.setTextColor(colorWhite)
+                btnIncome.backgroundTintList = ResourcesCompat.getColorStateList(resources, android.R.color.transparent, null)
+                btnIncome.setTextColor(colorTextPrimary)
+            } else {
+                btnIncome.backgroundTintList = ResourcesCompat.getColorStateList(resources, R.color.green_primary, null)
+                btnIncome.setTextColor(colorWhite)
+                btnExpense.backgroundTintList = ResourcesCompat.getColorStateList(resources, android.R.color.transparent, null)
+                btnExpense.setTextColor(colorTextPrimary)
+            }
         }
 
-        val container = LinearLayout(requireContext()).apply {
-            orientation = LinearLayout.VERTICAL
-            setPadding(pad, pad, pad, pad)
-            addView(nameEt)
-            addView(iconEt)
+        MaterialCategoryIcon.bind(tvSel, icon, 26f)
+        v.findViewById<MaterialButton>(R.id.btnBrowseMaterialIcons).setOnClickListener {
+            pendingMaterialIconPick = { name ->
+                icon = name
+                MaterialCategoryIcon.bind(tvSel, name, 26f)
+            }
+            MaterialIconPickerSheet.newInstance().show(childFragmentManager, "MaterialIconPicker")
         }
+
+        v.findViewById<RecyclerView>(R.id.rvCategoryColors).apply {
+            layoutManager = LinearLayoutManager(requireContext(), LinearLayoutManager.HORIZONTAL, false)
+            adapter = ColorSwatchAdapter(
+                colors = CategoryColorPalette.hex,
+                initialSelected = selectedColor
+            ) { c -> selectedColor = c }
+        }
+
+        updateTypeVisuals(expenseSelected = !isIncomeCategory)
+        btnExpense.setOnClickListener { isIncomeCategory = false; updateTypeVisuals(true) }
+        btnIncome.setOnClickListener { isIncomeCategory = true; updateTypeVisuals(false) }
 
         // Pro: allow subcategory creation via parentId (picked from top-level list)
         var selectedParentId: Long? = null
+        val extra = v.findViewById<LinearLayout>(R.id.layoutCategoryExtra)
+        val pad = (12 * resources.displayMetrics.density).toInt()
         val tvParent = TextView(requireContext()).apply {
             text = "Üst kategori: (seçilmedi)"
             setTextColor(ContextCompat.getColor(requireContext(), R.color.text_secondary))
             textSize = 12f
             visibility = View.GONE
-            setPadding(0, pad / 2, 0, 0)
+            setPadding(0, pad, 0, 0)
         }
         val cbSub = if (proEnabled) CheckBox(requireContext()).apply {
             text = "Alt kategori ekle (PRO)"
         } else null
-
         if (cbSub != null) {
-            container.addView(cbSub)
-            container.addView(tvParent)
+            extra.visibility = View.VISIBLE
+            extra.addView(cbSub)
+            extra.addView(tvParent)
             cbSub.setOnCheckedChangeListener { _, checked ->
                 tvParent.visibility = if (checked) View.VISIBLE else View.GONE
                 if (!checked) {
@@ -190,7 +244,7 @@ class CategoryPickerFragment : Fragment() {
                     toast("Üst kategori bulunamadı")
                     return@setOnClickListener
                 }
-                val labels = parents.map { "${it.icon} ${it.name}" }.toTypedArray()
+                val labels = parents.map { it.name }.toTypedArray()
                 AlertDialog.Builder(requireContext())
                     .setTitle("Üst kategori seç")
                     .setItems(labels) { _, which ->
@@ -202,30 +256,37 @@ class CategoryPickerFragment : Fragment() {
             }
         }
 
-        AlertDialog.Builder(requireContext())
-            .setTitle("Kategori ekle")
-            .setView(container)
-            .setNegativeButton("İptal", null)
-            .setPositiveButton("Ekle") { _, _ ->
-                val name = nameEt.text?.toString().orEmpty()
-                val icon = iconEt.text?.toString().orEmpty()
-                val color = if (isIncome) "#4CAF50" else "#4CAF50"
-                val wantsSub = proEnabled && cbSub?.isChecked == true
-                val parentId = if (wantsSub) selectedParentId else null
-                if (wantsSub && parentId == null) {
-                    toast("Üst kategori seçmelisin")
-                    return@setPositiveButton
-                }
-                viewModel.addCategory(
-                    name = name,
-                    icon = icon,
-                    color = color,
-                    isIncome = isIncome,
-                    parentId = parentId,
-                    isPro = proEnabled
-                )
+        val dialog = Dialog(requireContext())
+        dialog.setContentView(v)
+        dialog.window?.setLayout((resources.displayMetrics.widthPixels * 0.92).toInt(), ViewGroup.LayoutParams.WRAP_CONTENT)
+        dialog.window?.setBackgroundDrawableResource(android.R.color.transparent)
+        dialog.window?.setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE)
+
+        v.findViewById<View>(R.id.btnCancel).setOnClickListener { dialog.dismiss() }
+        v.findViewById<View>(R.id.btnCloseProfileCategorySheet).setOnClickListener { dialog.dismiss() }
+        v.findViewById<View>(R.id.btnAdd).setOnClickListener {
+            val name = etName.text?.toString()?.trim().orEmpty()
+            if (name.isBlank()) {
+                til.error = getString(R.string.categories_name_required)
+                return@setOnClickListener
             }
-            .show()
+            val wantsSub = proEnabled && cbSub?.isChecked == true
+            val parentId = if (wantsSub) selectedParentId else null
+            if (wantsSub && parentId == null) {
+                toast("Üst kategori seçmelisin")
+                return@setOnClickListener
+            }
+            viewModel.addCategory(
+                name = name,
+                icon = icon,
+                color = selectedColor,
+                isIncome = isIncomeCategory,
+                parentId = parentId,
+                isPro = proEnabled
+            )
+            dialog.dismiss()
+        }
+        dialog.show()
     }
 
     private fun showEditDialog(category: Category) {
@@ -233,36 +294,80 @@ class CategoryPickerFragment : Fragment() {
             toast("Diğer kategorisi düzenlenemez")
             return
         }
-        val pad = (16 * resources.displayMetrics.density).toInt()
-        val nameEt = EditText(requireContext()).apply {
-            hint = "Kategori adı"
-            setSingleLine(true)
-            setText(category.name)
-        }
-        val iconEt = EditText(requireContext()).apply {
-            hint = "Emoji"
-            setSingleLine(true)
-            setText(category.icon)
-        }
-        val container = LinearLayout(requireContext()).apply {
-            orientation = LinearLayout.VERTICAL
-            setPadding(pad, pad, pad, pad)
-            addView(nameEt)
-            addView(iconEt)
-        }
-        AlertDialog.Builder(requireContext())
-            .setTitle("Kategori düzenle")
-            .setView(container)
-            .setNegativeButton("İptal", null)
-            .setPositiveButton("Kaydet") { _, _ ->
-                viewModel.updateCategory(
-                    category = category,
-                    newName = nameEt.text?.toString().orEmpty(),
-                    newIcon = iconEt.text?.toString().orEmpty(),
-                    newColor = category.color
-                )
+        val v = LayoutInflater.from(requireContext()).inflate(R.layout.dialog_profile_edit_category, null)
+        val tvSel = v.findViewById<TextView>(R.id.tvSelectedEmoji)
+        val etName = v.findViewById<TextInputEditText>(R.id.etCategoryName)
+        val til = v.findViewById<com.google.android.material.textfield.TextInputLayout>(R.id.tilCategoryName)
+        val btnExpense = v.findViewById<MaterialButton>(R.id.btnAddCatExpense)
+        val btnIncome = v.findViewById<MaterialButton>(R.id.btnAddCatIncome)
+
+        var icon = category.icon.ifBlank { "shopping_cart" }
+        var isIncomeCategory = category.isIncome
+        var selectedColor = CategoryColorPalette.closestOrDefault(category.color)
+
+        val colorWhite = ContextCompat.getColor(requireContext(), R.color.text_white)
+        val colorTextPrimary = ContextCompat.getColor(requireContext(), R.color.text_primary)
+
+        fun updateTypeVisuals(expenseSelected: Boolean) {
+            if (expenseSelected) {
+                btnExpense.backgroundTintList = ResourcesCompat.getColorStateList(resources, R.color.green_primary, null)
+                btnExpense.setTextColor(colorWhite)
+                btnIncome.backgroundTintList = ResourcesCompat.getColorStateList(resources, android.R.color.transparent, null)
+                btnIncome.setTextColor(colorTextPrimary)
+            } else {
+                btnIncome.backgroundTintList = ResourcesCompat.getColorStateList(resources, R.color.green_primary, null)
+                btnIncome.setTextColor(colorWhite)
+                btnExpense.backgroundTintList = ResourcesCompat.getColorStateList(resources, android.R.color.transparent, null)
+                btnExpense.setTextColor(colorTextPrimary)
             }
-            .show()
+        }
+
+        MaterialCategoryIcon.bind(tvSel, icon, 26f)
+        etName.setText(category.name)
+        v.findViewById<MaterialButton>(R.id.btnBrowseMaterialIcons).setOnClickListener {
+            pendingMaterialIconPick = { name ->
+                icon = name
+                MaterialCategoryIcon.bind(tvSel, name, 26f)
+            }
+            MaterialIconPickerSheet.newInstance().show(childFragmentManager, "MaterialIconPicker")
+        }
+
+        v.findViewById<RecyclerView>(R.id.rvCategoryColors).apply {
+            layoutManager = LinearLayoutManager(requireContext(), LinearLayoutManager.HORIZONTAL, false)
+            adapter = ColorSwatchAdapter(
+                colors = CategoryColorPalette.hex,
+                initialSelected = selectedColor
+            ) { c -> selectedColor = c }
+        }
+
+        updateTypeVisuals(expenseSelected = !isIncomeCategory)
+        btnExpense.setOnClickListener { isIncomeCategory = false; updateTypeVisuals(true) }
+        btnIncome.setOnClickListener { isIncomeCategory = true; updateTypeVisuals(false) }
+
+        val dialog = Dialog(requireContext())
+        dialog.setContentView(v)
+        dialog.window?.setLayout((resources.displayMetrics.widthPixels * 0.92).toInt(), ViewGroup.LayoutParams.WRAP_CONTENT)
+        dialog.window?.setBackgroundDrawableResource(android.R.color.transparent)
+        dialog.window?.setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE)
+
+        v.findViewById<View>(R.id.btnCancel).setOnClickListener { dialog.dismiss() }
+        v.findViewById<View>(R.id.btnCloseProfileCategorySheet).setOnClickListener { dialog.dismiss() }
+        v.findViewById<View>(R.id.btnSave).setOnClickListener {
+            val name = etName.text?.toString()?.trim().orEmpty()
+            if (name.isBlank()) {
+                til.error = getString(R.string.categories_name_required)
+                return@setOnClickListener
+            }
+            viewModel.updateCategory(
+                category = category,
+                newName = name,
+                newIcon = icon,
+                newColor = selectedColor,
+                newIsIncome = isIncomeCategory
+            )
+            dialog.dismiss()
+        }
+        dialog.show()
     }
 
     private fun toast(msg: String) = Toast.makeText(requireContext(), msg, Toast.LENGTH_SHORT).show()

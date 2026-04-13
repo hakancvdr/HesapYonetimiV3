@@ -158,6 +158,8 @@ class TransactionViewModel @Inject constructor(
      * - If [includeSubcategories] is false, subcategory usages are attributed to their top-level parent.
      * - Tie-break: most recently used first, then alphabetical.
      * - If there is no usage data, returns first-use defaults (expense=6, income=5).
+     * - If there is usage data, returns usage-ranked categories first, then fills remaining
+     *   slots up to [limit] from the same defaults (no duplicate ids).
      */
     fun getTopCategories(
         isIncome: Boolean,
@@ -210,18 +212,26 @@ class TransactionViewModel @Inject constructor(
             }
         }
 
-        val sorted = resolvedCategories
+        val sortedFromUsage = resolvedCategories
             .sortedWith(
                 compareByDescending<Usage> { it.count }
                     .thenByDescending { it.lastUsed }
                     .thenBy { it.name.lowercase(Locale("tr")) }
             )
-            .take(limit)
             .mapNotNull { byId[it.id] }
 
-        return sorted.ifEmpty {
-            defaultEntryCategories(isIncome = isIncome, categories = categories)
+        val defaults = defaultEntryCategories(isIncome = isIncome, categories = categories)
+        val seen = LinkedHashSet<Long>()
+        val merged = mutableListOf<Category>()
+        for (c in sortedFromUsage) {
+            if (merged.size >= limit) break
+            if (seen.add(c.id)) merged.add(c)
         }
+        for (c in defaults) {
+            if (merged.size >= limit) break
+            if (seen.add(c.id)) merged.add(c)
+        }
+        return merged
     }
 
     private fun defaultEntryCategories(isIncome: Boolean, categories: List<Category>): List<Category> {

@@ -22,6 +22,10 @@
     <color name="beyaz">#1A1C28</color>
     <color name="gri_isik">#252738</color>
     <color name="divider">#252738</color>
+
+    <!-- Kategori chip: referans — seçili koyu dolgu + beyaz yazı -->
+    <color name="dashboard_chip_surface">#2C303C</color>
+    <color name="dashboard_chip_selected">#12141C</color>
     <color name="icon_chip_selected_fill">#336B8FFF</color>
     <color name="border">#303350</color>
 

@@ -16,6 +16,7 @@ import com.example.hesapyonetimi.adapter.TransactionAdapter
 import com.example.hesapyonetimi.model.TransactionModel
 import com.example.hesapyonetimi.presentation.common.CurrencyFormatter
 import com.example.hesapyonetimi.presentation.common.EditTransactionSheet
+import com.example.hesapyonetimi.ui.MaterialCategoryIcon
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment
 import com.google.android.material.button.MaterialButton
 import java.text.SimpleDateFormat
@@ -45,7 +46,12 @@ class KategoriIslemleriSheet : BottomSheetDialogFragment() {
         val ayOffset = requireArguments().getInt(ARG_AY_OFFSET, 0)
         val timeFmt = SimpleDateFormat("HH:mm", Locale.getDefault())
 
-        view.findViewById<TextView>(R.id.tvKategoriSheetTitle).text = "${kat.icon} ${kat.ad}"
+        MaterialCategoryIcon.bind(
+            view.findViewById(R.id.tvKategoriSheetIcon),
+            kat.icon.ifBlank { "list_alt" },
+            18f
+        )
+        view.findViewById<TextView>(R.id.tvKategoriSheetName).text = kat.ad
         view.findViewById<TextView>(R.id.tvKategoriSheetSubtitle).text =
             "${kat.islemSayisi} işlem · ${CurrencyFormatter.format(kat.toplam)}"
 
@@ -53,7 +59,7 @@ class KategoriIslemleriSheet : BottomSheetDialogFragment() {
             TransactionModel(
                 id = t.id,
                 title = t.description.ifBlank { t.categoryName },
-                category = "${t.categoryIcon} ${t.categoryName}",
+                category = t.categoryName,
                 amount = CurrencyFormatter.formatWithSign(t.amount, t.isIncome),
                 isIncome = t.isIncome,
                 time = timeFmt.format(Date(t.date)),

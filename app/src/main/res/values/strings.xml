@@ -20,7 +20,14 @@
     <string name="recent_transactions">Son işlemler</string>
     <string name="upcoming_payments">Yaklaşan ödemeler</string>
     <string name="no_transactions_today">Bugün henüz işlem yok.</string>
+    <string name="action_save">Kaydet</string>
+    <string name="profile_edit_category_title">Kategori düzenle</string>
+    <string name="add_category_color_label">Renk</string>
+    <string name="accessibility_edit_category">Kategoriyi düzenle</string>
+    <string name="accessibility_delete_category">Kategoriyi sil</string>
     <string name="add_transaction">İşlem Ekle</string>
+    <string name="dashboard_amount_label">Tutar</string>
+    <string name="dashboard_description_optional_hint">Açıklama (isteğe bağlı)</string>
     
     <string-array name="kategoriler">
         <item>Market</item>
@@ -223,8 +230,8 @@
     <string name="reg_pin_yes">Evet, PIN ve kurtarma sorusu ekleyeyim</string>
     <string name="reg_pin_no">Hayır, şimdilik atlayayım</string>
     <string name="reg_pin_security_short_hint">PIN\'i unutursanız bu soru ile sıfırlayabilirsiniz. Cevabınızı güvenli tutun.</string>
-    <string name="reg_first_expense">İlk harcamayı ekle</string>
-    <string name="reg_explore">Keşfet</string>
+    <string name="reg_first_expense">Kurulumu tamamla</string>
+    <string name="reg_explore">İlk harcamayı ekle</string>
     <string name="reg_next">İleri</string>
     <string name="reg_step_profile">Profiliniz</string>
     <string name="reg_step_security">PIN tercihi</string>
@@ -255,7 +262,7 @@
     <string name="dashboard_period_title">Bu dönem — %1$s</string>
     <string name="this_budget_period">Bu dönem</string>
     <string name="dashboard_cumulative_balance_label">Toplam bakiye: </string>
-    <string name="dashboard_smart_tip_line">• %1$s %2$s — yaklaşık %3$s (ör. tekrar)</string>
+    <string name="dashboard_smart_tip_line">• %1$s — yaklaşık %2$s (ör. tekrar)</string>
     <string name="dashboard_budget_tip_line">• %1$s</string>
     <string name="cd_warning">Uyarı</string>
     <string name="coachmark_dashboard_summary">Özetinizi burada görürsünüz; işlem eklemek için alttaki Günlük sekmesine dokunun.</string>
@@ -287,6 +294,10 @@
     <string name="add_category_income">Gelir</string>
     <string name="add_category_add">Ekle</string>
     <string name="add_category_cancel">İptal</string>
+    <string name="material_icon_picker_title">Simge seç</string>
+    <string name="material_icon_search_hint">Ara (ör. shopping, home)</string>
+    <string name="category_browse_all_icons">Tüm simgeler</string>
+    <string name="category_pick_icon">Simge seç</string>
     <string name="category_add_error">Kategori eklenemedi</string>
     <string name="profile_dashboard_layout_title">Özet ekranı düzeni</string>
     <string name="profile_dashboard_layout_message">Özet sekmesindeki kart sırasını seçin (ör. döviz üstte, hatırlatıcılar önde).</string>

@@ -49,6 +49,10 @@
     <string name="add_category_income">Income</string>
     <string name="add_category_add">Add</string>
     <string name="add_category_cancel">Cancel</string>
+    <string name="material_icon_picker_title">Choose icon</string>
+    <string name="material_icon_search_hint">Search (e.g. shopping, home)</string>
+    <string name="category_browse_all_icons">All icons</string>
+    <string name="category_pick_icon">Choose icon</string>
     <string name="sign_out_message">You will return to the welcome screen. Your finance data is not deleted.</string>
     <string name="nav_plan">Plan</string>
     <string name="tab_upcoming">Reminders</string>
@@ -204,8 +208,8 @@
     <string name="reg_pin_yes">Yes, add a PIN and recovery question</string>
     <string name="reg_pin_no">No, skip for now</string>
     <string name="reg_pin_security_short_hint">If you forget your PIN, you can reset it with this answer. Keep it private.</string>
-    <string name="reg_first_expense">Add first expense</string>
-    <string name="reg_explore">Explore</string>
+    <string name="reg_first_expense">Finish setup</string>
+    <string name="reg_explore">Add first expense</string>
     <string name="reg_next">Next</string>
     <string name="reg_step_profile">Your profile</string>
     <string name="reg_step_security">PIN choice</string>
@@ -236,7 +240,7 @@
     <string name="dashboard_period_title">This period — %1$s</string>
     <string name="this_budget_period">This period</string>
     <string name="dashboard_cumulative_balance_label">Total balance: </string>
-    <string name="dashboard_smart_tip_line">• %1$s %2$s — about %3$s (e.g. recurring)</string>
+    <string name="dashboard_smart_tip_line">• %1$s — about %2$s (e.g. recurring)</string>
     <string name="dashboard_budget_tip_line">• %1$s</string>
     <string name="cd_warning">Warning</string>
     <string name="coachmark_dashboard_summary">You will see your summary here; add spending from the Daily tab below.</string>
@@ -272,4 +276,12 @@
     <string name="export_csv_monthly_limit">You have already used your export for this month.</string>
     <string name="export_csv_chooser_title">Share CSV</string>
     <string name="export_csv_empty">Nothing to export</string>
+
+    <string name="action_save">Save</string>
+    <string name="profile_edit_category_title">Edit category</string>
+    <string name="add_category_color_label">Color</string>
+    <string name="accessibility_edit_category">Edit category</string>
+    <string name="accessibility_delete_category">Delete category</string>
+    <string name="dashboard_amount_label">Amount</string>
+    <string name="dashboard_description_optional_hint">Description (optional)</string>
 </resources>

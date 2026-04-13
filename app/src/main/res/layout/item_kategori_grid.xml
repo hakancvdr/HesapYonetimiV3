@@ -13,10 +13,14 @@
 
     <TextView
         android:id="@+id/tv_cat_icon"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="🛒"
-        android:textSize="22sp" />
+        android:layout_width="24dp"
+        android:layout_height="24dp"
+        android:fontFamily="@font/material_symbols_outlined"
+        android:gravity="center"
+        android:includeFontPadding="false"
+        android:text="shopping_cart"
+        android:textColor="@color/text_primary"
+        android:textSize="18sp" />
 
     <TextView
         android:id="@+id/tv_cat_name"

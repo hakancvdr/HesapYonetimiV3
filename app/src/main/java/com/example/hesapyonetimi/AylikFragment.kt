@@ -349,7 +349,7 @@ class AylikFragment : Fragment() {
                 com.example.hesapyonetimi.model.TransactionModel(
                     id = t.id,
                     title = t.description.ifBlank { t.categoryName },
-                    category = "${t.categoryIcon} ${t.categoryName}",
+                    category = t.categoryName,
                     amount = com.example.hesapyonetimi.presentation.common.CurrencyFormatter.formatWithSign(t.amount, t.isIncome),
                     isIncome = t.isIncome,
                     time = timeFmt.format(java.util.Date(t.date)),

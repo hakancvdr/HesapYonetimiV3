@@ -341,14 +341,16 @@ class RegistrationActivity : AppCompatActivity() {
         }
         findViewById<MaterialButton>(R.id.btn_reg_first_expense).setOnClickListener {
             when {
-                isPinYesPath() -> finishRegistration(FinishKind.PIN_DAILY)
-                else -> finishRegistration(FinishKind.NO_PIN_DAILY)
+                // Primary action: finish onboarding and open Dashboard (Özet)
+                isPinYesPath() -> finishRegistration(FinishKind.PIN_EXPLORE)
+                else -> finishRegistration(FinishKind.NO_PIN_EXPLORE)
             }
         }
         findViewById<MaterialButton>(R.id.btn_reg_explore).setOnClickListener {
             when {
-                isPinYesPath() -> finishRegistration(FinishKind.PIN_EXPLORE)
-                else -> finishRegistration(FinishKind.NO_PIN_EXPLORE)
+                // Secondary action: add first expense and open Daily (Günlük)
+                isPinYesPath() -> finishRegistration(FinishKind.PIN_DAILY)
+                else -> finishRegistration(FinishKind.NO_PIN_DAILY)
             }
         }
     }

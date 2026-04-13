@@ -30,7 +30,11 @@
             <TextView
                 android:id="@+id/tv_detay_icon"
                 android:layout_width="44dp" android:layout_height="44dp"
-                android:gravity="center" android:textSize="24sp"
+                android:fontFamily="@font/material_symbols_outlined"
+                android:gravity="center"
+                android:includeFontPadding="false"
+                android:textSize="22sp"
+                android:textColor="@color/text_primary"
                 android:background="@drawable/kategori_item_selected_bg"
                 android:layout_marginEnd="14dp"/>
 

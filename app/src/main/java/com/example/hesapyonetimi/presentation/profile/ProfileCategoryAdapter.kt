@@ -9,6 +9,7 @@ import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
 import com.example.hesapyonetimi.R
 import com.example.hesapyonetimi.domain.model.Category
+import com.example.hesapyonetimi.ui.MaterialCategoryIcon
 
 class ProfileCategoryAdapter(
     private val onEdit: (Category) -> Unit,
@@ -58,7 +59,7 @@ class ProfileCategoryAdapter(
         private val btnDel: ImageButton  = view.findViewById(R.id.btnDeleteCategory)
 
         fun bind(category: Category) {
-            tvEmoji.text = category.icon
+            MaterialCategoryIcon.bind(tvEmoji, category.icon, 18f)
             tvName.text  = category.name
             tvType.text  = if (category.isIncome) "Gelir" else "Gider"
             try {

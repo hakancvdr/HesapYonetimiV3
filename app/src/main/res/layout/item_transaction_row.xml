@@ -6,11 +6,16 @@
     android:paddingStart="12dp"
     android:paddingEnd="12dp">
 
-    <ImageView
-        android:id="@+id/iv_transaction_category"
+    <TextView
+        android:id="@+id/tv_transaction_icon"
         android:layout_width="28dp"
         android:layout_height="28dp"
-        android:src="@android:drawable/ic_menu_agenda"
+        android:gravity="center"
+        android:includeFontPadding="false"
+        android:fontFamily="@font/material_symbols_outlined"
+        android:text="list_alt"
+        android:textSize="18sp"
+        android:textColor="@color/yazi_ana"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
@@ -25,8 +30,8 @@
         android:textSize="13sp"
         android:textStyle="bold"
         app:layout_constraintEnd_toStartOf="@+id/tv_transaction_amount"
-        app:layout_constraintStart_toEndOf="@id/iv_transaction_category"
-        app:layout_constraintTop_toTopOf="@id/iv_transaction_category" />
+        app:layout_constraintStart_toEndOf="@id/tv_transaction_icon"
+        app:layout_constraintTop_toTopOf="@id/tv_transaction_icon" />
 
     <TextView
         android:id="@+id/tv_transaction_category_name"

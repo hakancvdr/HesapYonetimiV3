@@ -31,7 +31,9 @@
                 android:layout_width="40dp"
                 android:layout_height="40dp"
                 android:gravity="center"
-                android:text="📦"
+                android:includeFontPadding="false"
+                android:text="inventory_2"
+                android:fontFamily="@font/material_symbols_outlined"
                 android:textSize="18sp" />
         </FrameLayout>
 

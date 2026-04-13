@@ -6,6 +6,7 @@ import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
 import com.example.hesapyonetimi.R
 import com.example.hesapyonetimi.domain.model.Category
+import com.example.hesapyonetimi.ui.MaterialCategoryIcon
 
 class CategoryGridAdapter(
     private var categories: List<Category>,
@@ -35,7 +36,7 @@ class CategoryGridAdapter(
 
     override fun onBindViewHolder(holder: VH, position: Int) {
         val cat = categories[position]
-        holder.icon.text = cat.icon
+        MaterialCategoryIcon.bind(holder.icon, cat.icon, 18f)
         holder.name.text = cat.name
 
         val isSelected = cat.id == selectedId

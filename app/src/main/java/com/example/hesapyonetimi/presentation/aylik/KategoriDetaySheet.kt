@@ -12,6 +12,7 @@ import com.example.hesapyonetimi.R
 import com.example.hesapyonetimi.adapter.TransactionAdapter
 import com.example.hesapyonetimi.model.TransactionModel
 import com.example.hesapyonetimi.presentation.common.CurrencyFormatter
+import com.example.hesapyonetimi.ui.MaterialCategoryIcon
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment
 import java.text.SimpleDateFormat
 import java.util.*
@@ -41,7 +42,7 @@ class KategoriDetaySheet : BottomSheetDialogFragment() {
         super.onViewCreated(view, savedInstanceState)
 
         // Header
-        view.findViewById<TextView>(R.id.tv_detay_icon).text = kat.icon
+        MaterialCategoryIcon.bind(view.findViewById(R.id.tv_detay_icon), kat.icon, 22f)
         view.findViewById<TextView>(R.id.tv_detay_baslik).text = kat.ad
         view.findViewById<TextView>(R.id.tv_detay_ozet).text = "${kat.islemSayisi} işlem · Toplam giderin %${kat.yuzde.toInt()}'i"
         view.findViewById<TextView>(R.id.tv_detay_toplam).text = CurrencyFormatter.format(kat.toplam)

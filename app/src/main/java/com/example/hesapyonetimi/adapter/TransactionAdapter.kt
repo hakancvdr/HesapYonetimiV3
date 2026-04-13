@@ -1,14 +1,19 @@
 package com.example.hesapyonetimi.adapter
 
+import android.graphics.Color
+import android.graphics.drawable.GradientDrawable
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import androidx.core.content.ContextCompat
+import androidx.core.graphics.ColorUtils
 import androidx.recyclerview.widget.RecyclerView
 import com.example.hesapyonetimi.R
 import com.example.hesapyonetimi.databinding.ItemIslemBinding
 import com.example.hesapyonetimi.domain.model.Transaction
 import com.example.hesapyonetimi.model.TransactionModel
+import com.example.hesapyonetimi.ui.CategoryColorPalette
+import com.example.hesapyonetimi.ui.MaterialCategoryIcon
 
 class TransactionAdapter(
     private val transactionList: List<TransactionModel>,
@@ -51,10 +56,19 @@ class TransactionAdapter(
         holder.binding.tvIslemTutar.text = islem.amount
         holder.binding.tvIslemTutar.setTextColor(if (islem.isIncome) incomeC else expenseC)
 
-        val emoji = islem.transaction?.categoryIcon?.trim()?.takeIf { it.isNotEmpty() }
-            ?: categoryFallbackEmoji(islem.category)
-        holder.binding.tvIslemIkon.text = emoji
-        holder.binding.tvIslemIkon.setTextColor(if (islem.isIncome) incomeC else expenseC)
+        val iconName = islem.transaction?.categoryIcon?.trim()?.takeIf { it.isNotEmpty() }
+            ?: categoryFallbackIconName(islem.category)
+        val hex = CategoryColorPalette.closestOrDefault(islem.transaction?.categoryColor)
+        val fill = runCatching { Color.parseColor(hex) }.getOrElse {
+            ContextCompat.getColor(ctx, R.color.green_primary)
+        }
+        holder.binding.tvIslemIkon.background = GradientDrawable().apply {
+            shape = GradientDrawable.OVAL
+            setColor(fill)
+        }
+        val lum = ColorUtils.calculateLuminance(fill)
+        val glyph = if (lum > 0.62) Color.BLACK else Color.WHITE
+        MaterialCategoryIcon.bind(holder.binding.tvIslemIkon, iconName, 20f, glyph)
 
         // Tıklama — edit sheet aç
         if (onItemClick != null && islem.transaction != null) {
@@ -66,15 +80,15 @@ class TransactionAdapter(
 
     fun getItem(position: Int): TransactionModel = transactionList[position]
 
-    private fun categoryFallbackEmoji(categoryLabel: String): String {
+    private fun categoryFallbackIconName(categoryLabel: String): String {
         val c = categoryLabel.trim().lowercase()
         return when {
-            "market" in c -> "🛒"
-            "kira" in c || "fatura" in c -> "🏠"
-            "maaş" in c || "maas" in c -> "💼"
-            "eğlence" in c || "eglence" in c || "hobi" in c -> "🎮"
-            "ulaşım" in c || "ulasim" in c -> "🚗"
-            else -> "📋"
+            "market" in c -> "shopping_cart"
+            "kira" in c || "fatura" in c -> "home"
+            "maaş" in c || "maas" in c -> "payments"
+            "eğlence" in c || "eglence" in c || "hobi" in c -> "sports_esports"
+            "ulaşım" in c || "ulasim" in c -> "directions_car"
+            else -> "list_alt"
         }
     }
 }

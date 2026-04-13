@@ -2,4 +2,12 @@
 <resources>
     <dimen name="nav_drawer_icon_size">28dp</dimen>
     <dimen name="nav_drawer_item_padding_vertical">14dp</dimen>
+    <dimen name="dashboard_fab_margin_bottom">20dp</dimen>
+    <dimen name="dashboard_scroll_bottom_padding">80dp</dimen>
+    <!-- Referans: chip’ler arası ~2–3px hissi; komşu margin toplamı ≈ 4dp -->
+    <dimen name="dashboard_category_flow_item_margin">2dp</dimen>
+    <!-- Chip ile + aynı yükseklik (referans) -->
+    <dimen name="dashboard_category_chip_min_height">40dp</dimen>
+    <dimen name="dashboard_category_chip_corner">10dp</dimen>
+    <dimen name="category_picker_row_gap">6dp</dimen>
 </resources>

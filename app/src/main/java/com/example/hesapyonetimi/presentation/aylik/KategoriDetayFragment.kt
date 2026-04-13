@@ -16,6 +16,7 @@ import com.example.hesapyonetimi.adapter.TransactionAdapter
 import com.example.hesapyonetimi.model.TransactionModel
 import com.example.hesapyonetimi.presentation.common.CurrencyFormatter
 import com.example.hesapyonetimi.presentation.common.EditTransactionSheet
+import com.example.hesapyonetimi.ui.MaterialCategoryIcon
 import java.text.SimpleDateFormat
 import java.util.*
 import kotlin.math.abs
@@ -45,7 +46,8 @@ class KategoriDetayFragment : Fragment() {
             findNavController().popBackStack()
         }
 
-        view.findViewById<TextView>(R.id.tv_detay_baslik).text = "${kat.icon} ${kat.ad}"
+        MaterialCategoryIcon.bind(view.findViewById(R.id.tv_detay_icon), kat.icon, 20f)
+        view.findViewById<TextView>(R.id.tv_detay_baslik).text = kat.ad
 
         view.findViewById<TextView>(R.id.tv_stat_toplam).text = CurrencyFormatter.format(kat.toplam)
         view.findViewById<TextView>(R.id.tv_stat_pay).text = "%${kat.yuzde.toInt()}"

@@ -1,12 +1,19 @@
 package com.example.hesapyonetimi.presentation.categories
 
+import android.graphics.Color
+import android.graphics.drawable.GradientDrawable
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.ImageButton
 import android.widget.TextView
+import androidx.core.content.ContextCompat
+import androidx.core.graphics.ColorUtils
 import androidx.recyclerview.widget.RecyclerView
 import com.example.hesapyonetimi.R
 import com.example.hesapyonetimi.domain.model.Category
+import com.example.hesapyonetimi.ui.CategoryColorPalette
+import com.example.hesapyonetimi.ui.MaterialCategoryIcon
 
 class CategoryPickerAdapter(
     private val onSelect: (Category) -> Unit,
@@ -66,8 +73,8 @@ class CategoryPickerAdapter(
         val title: TextView = itemView.findViewById(R.id.tvRowTitle)
         val subtitle: TextView = itemView.findViewById(R.id.tvRowSubtitle)
         val chevron: TextView = itemView.findViewById(R.id.tvRowChevron)
-        val btnEdit: TextView = itemView.findViewById(R.id.btnRowEdit)
-        val btnDelete: TextView = itemView.findViewById(R.id.btnRowDelete)
+        val btnEdit: ImageButton = itemView.findViewById(R.id.btnRowEdit)
+        val btnDelete: ImageButton = itemView.findViewById(R.id.btnRowDelete)
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int) = VH(parent)
@@ -79,9 +86,25 @@ class CategoryPickerAdapter(
         }
     }
 
+    private fun bindCategoryIcon(iconView: TextView, cat: Category) {
+        val ctx = iconView.context
+        val hex = CategoryColorPalette.closestOrDefault(cat.color)
+        val fill = runCatching { Color.parseColor(hex) }.getOrElse {
+            ContextCompat.getColor(ctx, R.color.green_primary)
+        }
+        val bg = GradientDrawable().apply {
+            shape = GradientDrawable.OVAL
+            setColor(fill)
+        }
+        iconView.background = bg
+        val lum = ColorUtils.calculateLuminance(fill)
+        val glyph = if (lum > 0.62) Color.BLACK else Color.WHITE
+        MaterialCategoryIcon.bind(iconView, cat.icon, 20f, glyph)
+    }
+
     private fun bindTop(holder: VH, row: Row.Top) {
         val cat = row.cat
-        holder.icon.text = cat.icon
+        bindCategoryIcon(holder.icon, cat)
         holder.title.text = cat.name
         holder.subtitle.visibility = View.GONE
 
@@ -105,7 +128,7 @@ class CategoryPickerAdapter(
 
     private fun bindSub(holder: VH, row: Row.Sub) {
         val cat = row.cat
-        holder.icon.text = cat.icon
+        bindCategoryIcon(holder.icon, cat)
         holder.title.text = cat.name
         holder.subtitle.text = row.parent.name
         holder.subtitle.visibility = View.VISIBLE

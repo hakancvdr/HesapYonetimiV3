@@ -15,6 +15,7 @@ import androidx.recyclerview.widget.RecyclerView
 import com.example.hesapyonetimi.R
 import com.example.hesapyonetimi.domain.model.Reminder
 import com.example.hesapyonetimi.presentation.common.CurrencyFormatter
+import com.example.hesapyonetimi.ui.MaterialCategoryIcon
 import java.text.SimpleDateFormat
 import java.util.*
 
@@ -34,6 +35,7 @@ class HatirlaticiAdapter(
         val tekrar: TextView = view.findViewById(R.id.tv_tekrar_tipi)
         val tutar: TextView = view.findViewById(R.id.tv_hatirlatici_tutar)
         val odendi: TextView = view.findViewById(R.id.btn_odendi)
+        val icon: TextView = view.findViewById(R.id.tv_hatirlatici_icon)
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int) =
@@ -44,7 +46,8 @@ class HatirlaticiAdapter(
         val ctx = holder.itemView.context
         val dateFormat = SimpleDateFormat("d MMMM yyyy", Locale("tr"))
 
-        holder.baslik.text = if (r.categoryIcon.isNotEmpty()) "${r.categoryIcon} ${r.title}" else r.title
+        MaterialCategoryIcon.bind(holder.icon, r.categoryIcon.ifBlank { "event" }, 16f)
+        holder.baslik.text = r.title
         holder.tarih.text = dateFormat.format(Date(r.dueDate))
         holder.tutar.text = CurrencyFormatter.format(r.amount)
 

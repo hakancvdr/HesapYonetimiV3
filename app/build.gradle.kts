@@ -79,6 +79,7 @@ dependencies {
     // SwipeRefreshLayout
     implementation("androidx.swiperefreshlayout:swiperefreshlayout:1.1.0")
     implementation("androidx.gridlayout:gridlayout:1.0.0")
+    implementation("com.google.android.flexbox:flexbox:3.0.0")
 
     // WorkManager (bildirimler için)
     implementation("androidx.work:work-runtime-ktx:2.9.0")

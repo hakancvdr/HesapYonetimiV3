@@ -24,7 +24,7 @@ import com.example.hesapyonetimi.databinding.LayoutDashboardBinding
 import com.example.hesapyonetimi.model.CalendarModel
 import com.example.hesapyonetimi.model.ReminderModel
 import com.example.hesapyonetimi.model.TransactionModel
-import com.example.hesapyonetimi.presentation.common.AddTransactionDialog
+import com.example.hesapyonetimi.presentation.common.AddTransactionDashboardDialog
 import com.example.hesapyonetimi.presentation.common.CurrencyFormatter
 import com.example.hesapyonetimi.R
 import com.example.hesapyonetimi.auth.AuthPrefs
@@ -85,7 +85,7 @@ class DashboardFragment : Fragment() {
     }
 
     private fun setupClickListeners() {
-        binding.fabAddTransaction.setOnClickListener { showAddTransactionDialog(null) }
+        binding.fabDashboardAddTransaction.setOnClickListener { showAddTransactionDialog(null) }
         binding.cardIncome.setOnClickListener { showAddTransactionDialog(isIncome = true) }
         binding.cardExpense.setOnClickListener { showAddTransactionDialog(isIncome = false) }
 
@@ -156,7 +156,7 @@ class DashboardFragment : Fragment() {
     }
 
     private fun showAddTransactionDialog(isIncome: Boolean?) {
-        AddTransactionDialog.newInstance(isIncome).show(childFragmentManager, "AddTransactionDialog")
+        AddTransactionDashboardDialog.newInstance(isIncome).show(childFragmentManager, "AddTransactionDashboardDialog")
     }
 
     private fun initUI() {
@@ -525,7 +525,6 @@ class DashboardFragment : Fragment() {
                         lines.add(
                             getString(
                                 R.string.dashboard_smart_tip_line,
-                                o.categoryIcon,
                                 o.categoryName,
                                 CurrencyFormatter.format(o.amount)
                             )

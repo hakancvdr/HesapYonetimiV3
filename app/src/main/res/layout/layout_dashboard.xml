@@ -5,7 +5,7 @@
   │  greeting + initials avatar │    yeşil, status bar aware
   ├─────────────────────────────┤
   │  NestedScrollView           │  ← scroll eden kısım
-  │   ├ bakiye + Gider/FAB/Gelir│    yeşil devamı
+  │   ├ bakiye + Gider/Gelir    │    yeşil devamı; FAB sağ altta
   │   ├ gecikmiş ödeme banner   │    (varsa)
   │   ├ takvim + seçili gün     │
   │   ├ son işlemler            │
@@ -13,14 +13,18 @@
   │   └ yaklaşan ödemeler       │
   └─────────────────────────────┘
 -->
-<LinearLayout
+<FrameLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:orientation="vertical"
     android:background="@color/background">
+
+<LinearLayout
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical">
 
     <androidx.swiperefreshlayout.widget.SwipeRefreshLayout
         android:id="@+id/swipe_refresh"
@@ -33,7 +37,7 @@
         android:layout_height="match_parent"
         android:clipToPadding="false"
         android:fillViewport="false"
-        android:paddingBottom="88dp">
+        android:paddingBottom="@dimen/dashboard_scroll_bottom_padding">
 
         <LinearLayout
             android:layout_width="match_parent"
@@ -121,7 +125,7 @@
                         android:orientation="vertical"
                         android:gravity="center"
                         android:background="@drawable/btn_header_card"
-                        android:layout_marginEnd="10dp"
+                        android:layout_marginEnd="6dp"
                         android:clickable="true"
                         android:focusable="true">
 
@@ -145,19 +149,6 @@
                             android:ellipsize="end" />
                     </LinearLayout>
 
-                    <com.google.android.material.floatingactionbutton.FloatingActionButton
-                        android:id="@+id/fabAddTransaction"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:src="@drawable/ic_add_modern"
-                        app:tint="@color/green_primary"
-                        app:backgroundTint="#FFFFFF"
-                        app:fabSize="mini"
-                        app:elevation="4dp"
-                        app:borderWidth="1dp"
-                        app:strokeColor="@color/green_primary"
-                        android:contentDescription="@string/add_transaction" />
-
                     <LinearLayout
                         android:id="@+id/card_income"
                         android:layout_width="0dp"
@@ -166,7 +157,7 @@
                         android:orientation="vertical"
                         android:gravity="center"
                         android:background="@drawable/btn_header_card"
-                        android:layout_marginStart="10dp"
+                        android:layout_marginStart="6dp"
                         android:clickable="true"
                         android:focusable="true">
 
@@ -811,3 +802,19 @@
     </androidx.swiperefreshlayout.widget.SwipeRefreshLayout>
 
 </LinearLayout>
+
+    <com.google.android.material.floatingactionbutton.FloatingActionButton
+        android:id="@+id/fabDashboardAddTransaction"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="bottom|end"
+        android:layout_marginEnd="20dp"
+        android:layout_marginBottom="@dimen/dashboard_fab_margin_bottom"
+        android:src="@drawable/ic_add_modern"
+        app:tint="@color/text_white"
+        app:backgroundTint="@color/green_primary"
+        app:elevation="6dp"
+        app:fabSize="normal"
+        android:contentDescription="@string/add_transaction" />
+
+</FrameLayout>

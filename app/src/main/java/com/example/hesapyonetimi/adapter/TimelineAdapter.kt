@@ -1,14 +1,19 @@
 package com.example.hesapyonetimi.adapter
 
+import android.graphics.Color
+import android.graphics.drawable.GradientDrawable
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.TextView
 import androidx.core.content.ContextCompat
+import androidx.core.graphics.ColorUtils
 import androidx.recyclerview.widget.RecyclerView
 import com.example.hesapyonetimi.R
 import com.example.hesapyonetimi.domain.model.Transaction
 import com.example.hesapyonetimi.presentation.common.CurrencyFormatter
+import com.example.hesapyonetimi.ui.CategoryColorPalette
+import com.example.hesapyonetimi.ui.MaterialCategoryIcon
 import java.text.SimpleDateFormat
 import java.util.*
 
@@ -121,18 +126,32 @@ class TimelineAdapter(
     }
 
     inner class ItemVH(view: View) : RecyclerView.ViewHolder(view) {
+        private val tvIcon: TextView     = view.findViewById(R.id.tv_transaction_icon)
         private val tvTitle: TextView    = view.findViewById(R.id.tv_transaction_title)
         private val tvCategory: TextView = view.findViewById(R.id.tv_transaction_category_name)
         private val tvAmount: TextView   = view.findViewById(R.id.tv_transaction_amount)
 
         fun bind(tx: Transaction) {
-            tvTitle.text    = tx.description.ifBlank { tx.categoryName }
-            tvCategory.text = "${tx.categoryIcon} ${tx.categoryName} · ${timeFmt.format(Date(tx.date))}"
-            tvAmount.text   = CurrencyFormatter.formatWithSign(tx.amount, tx.isIncome)
-            tvAmount.setTextColor(
-                ContextCompat.getColor(itemView.context,
-                    if (tx.isIncome) R.color.income_green else R.color.expense_red)
+            val tint = ContextCompat.getColor(
+                itemView.context,
+                if (tx.isIncome) R.color.income_green else R.color.expense_red
             )
+            val ctx = itemView.context
+            val hex = CategoryColorPalette.closestOrDefault(tx.categoryColor)
+            val fill = runCatching { Color.parseColor(hex) }.getOrElse {
+                ContextCompat.getColor(ctx, R.color.green_primary)
+            }
+            tvIcon.background = GradientDrawable().apply {
+                shape = GradientDrawable.OVAL
+                setColor(fill)
+            }
+            val lum = ColorUtils.calculateLuminance(fill)
+            val glyph = if (lum > 0.62) Color.BLACK else Color.WHITE
+            MaterialCategoryIcon.bind(tvIcon, tx.categoryIcon.ifBlank { "list_alt" }, 18f, glyph)
+            tvTitle.text    = tx.description.ifBlank { tx.categoryName }
+            tvCategory.text = "${tx.categoryName} · ${timeFmt.format(Date(tx.date))}"
+            tvAmount.text   = CurrencyFormatter.formatWithSign(tx.amount, tx.isIncome)
+            tvAmount.setTextColor(tint)
             itemView.setOnClickListener { onItemClick(tx) }
             itemView.setOnLongClickListener { onItemLongClick(tx); true }
         }

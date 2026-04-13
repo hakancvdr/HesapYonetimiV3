@@ -41,6 +41,17 @@
                 android:focusable="true"/>
 
             <TextView
+                android:id="@+id/tv_detay_icon"
+                android:layout_width="36dp"
+                android:layout_height="36dp"
+                android:layout_marginEnd="10dp"
+                android:fontFamily="@font/material_symbols_outlined"
+                android:gravity="center"
+                android:includeFontPadding="false"
+                android:textSize="20sp"
+                android:textColor="@color/text_primary" />
+
+            <TextView
                 android:id="@+id/tv_detay_baslik"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"

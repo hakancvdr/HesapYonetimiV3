@@ -8,6 +8,7 @@ import androidx.core.content.ContextCompat
 import androidx.recyclerview.widget.RecyclerView
 import com.example.hesapyonetimi.R
 import com.example.hesapyonetimi.domain.model.Category
+import com.example.hesapyonetimi.ui.MaterialCategoryIcon
 
 class CategoryChipAdapter(
     private var categories: List<Category>,
@@ -39,7 +40,7 @@ class CategoryChipAdapter(
 
     override fun onBindViewHolder(holder: VH, position: Int) {
         val cat = categories[position]
-        holder.icon.text = cat.icon
+        MaterialCategoryIcon.bind(holder.icon, cat.icon, 18f)
         holder.name.text = cat.name
         val parentName = cat.parentId?.let { parentNameResolver?.invoke(it) }
         if (!parentName.isNullOrBlank()) {

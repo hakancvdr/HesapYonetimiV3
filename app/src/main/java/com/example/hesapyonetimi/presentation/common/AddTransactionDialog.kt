@@ -194,7 +194,7 @@ class AddTransactionDialog : BottomSheetDialogFragment() {
             categoryAdapter.setCategories(cats, defaultName)
             selectedCategory?.takeIf { it.isIncome == isIncome }?.let { categoryAdapter.setSelected(it.id) }
         }
-        parentFragmentManager.setFragmentResultListener(
+        requireActivity().supportFragmentManager.setFragmentResultListener(
             CategoryPickerFragment.RESULT_KEY,
             viewLifecycleOwner
         ) { _, bundle ->

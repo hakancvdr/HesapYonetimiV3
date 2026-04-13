@@ -33,6 +33,7 @@ import com.example.hesapyonetimi.presentation.common.HizliOneri
 import com.example.hesapyonetimi.presentation.reminders.HatirlaticiEkleSheet
 import com.example.hesapyonetimi.presentation.reminders.ReminderViewModel
 import com.example.hesapyonetimi.presentation.reminders.ReminderUiColors
+import com.example.hesapyonetimi.ui.MaterialCategoryIcon
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
@@ -133,7 +134,11 @@ class YaklasanFragment : Fragment() {
 
         oneriler.forEach { oneri ->
             val oneriView = inflater.inflate(R.layout.item_hizli_oneri, container, false)
-            oneriView.findViewById<TextView>(R.id.tv_oneri_icon).text = oneri.categoryIcon
+            MaterialCategoryIcon.bind(
+                oneriView.findViewById(R.id.tv_oneri_icon),
+                oneri.categoryIcon.ifBlank { "lightbulb" },
+                18f
+            )
             oneriView.findViewById<TextView>(R.id.tv_oneri_baslik).text =
                 "${oneri.description} · ${CurrencyFormatter.format(oneri.amount)}"
             oneriView.findViewById<TextView>(R.id.tv_oneri_aciklama).text =

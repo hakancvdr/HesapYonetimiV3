@@ -1,19 +1,24 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
+    android:layout_marginBottom="@dimen/category_picker_row_gap"
     android:orientation="horizontal"
     android:padding="12dp"
     android:background="@drawable/kategori_item_bg">
 
     <TextView
         android:id="@+id/tvRowIcon"
-        android:layout_width="32dp"
-        android:layout_height="32dp"
+        android:layout_width="36dp"
+        android:layout_height="36dp"
+        android:layout_marginEnd="10dp"
+        android:fontFamily="@font/material_symbols_outlined"
         android:gravity="center"
-        android:text="🛒"
-        android:textSize="18sp"
-        android:layout_marginEnd="10dp" />
+        android:includeFontPadding="false"
+        android:text="shopping_cart"
+        android:textColor="@color/text_primary"
+        android:textSize="20sp" />
 
     <LinearLayout
         android:layout_width="0dp"
@@ -59,25 +64,31 @@
             android:layout_marginTop="2dp" />
     </LinearLayout>
 
-    <TextView
+    <ImageButton
         android:id="@+id/btnRowEdit"
-        android:layout_width="32dp"
-        android:layout_height="32dp"
-        android:gravity="center"
-        android:text="✏️"
-        android:contentDescription="Düzenle"
+        android:layout_width="40dp"
+        android:layout_height="40dp"
+        android:layout_marginStart="4dp"
+        android:background="?attr/selectableItemBackgroundBorderless"
+        android:contentDescription="@string/accessibility_edit_category"
+        android:padding="8dp"
+        android:scaleType="centerInside"
+        android:src="@drawable/ic_edit"
         android:visibility="gone"
-        android:layout_marginStart="8dp" />
+        app:tint="@color/text_secondary" />
 
-    <TextView
+    <ImageButton
         android:id="@+id/btnRowDelete"
-        android:layout_width="32dp"
-        android:layout_height="32dp"
-        android:gravity="center"
-        android:text="🗑️"
-        android:contentDescription="Sil"
+        android:layout_width="40dp"
+        android:layout_height="40dp"
+        android:layout_marginStart="0dp"
+        android:background="?attr/selectableItemBackgroundBorderless"
+        android:contentDescription="@string/accessibility_delete_category"
+        android:padding="8dp"
+        android:scaleType="centerInside"
+        android:src="@drawable/ic_delete_24"
         android:visibility="gone"
-        android:layout_marginStart="4dp" />
+        app:tint="@color/text_secondary" />
 
 </LinearLayout>
 

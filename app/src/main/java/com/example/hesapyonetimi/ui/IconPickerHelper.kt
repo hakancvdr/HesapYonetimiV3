@@ -7,6 +7,7 @@ import android.view.ViewGroup
 import android.widget.LinearLayout
 import android.widget.TextView
 import androidx.core.content.ContextCompat
+import androidx.core.content.res.ResourcesCompat
 import com.example.hesapyonetimi.R
 
 /**
@@ -42,11 +43,13 @@ object IconPickerHelper {
         }
 
         icons.forEach { icon ->
+            val symbolsTypeface = runCatching { ResourcesCompat.getFont(ctx, R.font.material_symbols_outlined) }.getOrNull()
             val tv = TextView(ctx).apply {
                 text = icon
                 setTextSize(TypedValue.COMPLEX_UNIT_SP, 22f)
                 gravity = Gravity.CENTER
                 includeFontPadding = false
+                symbolsTypeface?.let { typeface = it }
                 layoutParams = LinearLayout.LayoutParams(dp(ctx, 46), dp(ctx, 46)).apply {
                     marginEnd = dp(ctx, 8)
                 }
