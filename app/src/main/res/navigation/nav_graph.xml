@@ -46,6 +46,10 @@
         android:id="@+id/nav_profil"
         android:name="com.example.hesapyonetimi.ProfileFragment"
         android:label="Profil">
+        <argument
+            android:name="openBudgetDialog"
+            app:argType="boolean"
+            android:defaultValue="false" />
         <action
             android:id="@+id/action_profil_to_wallet"
             app:destination="@id/walletFragment"
@@ -93,5 +97,20 @@
         android:id="@+id/categoryPickerFragment"
         android:name="com.example.hesapyonetimi.presentation.categories.CategoryPickerFragment"
         android:label="Kategoriler" />
+
+    <fragment
+        android:id="@+id/themeLanguageFragment"
+        android:name="com.example.hesapyonetimi.presentation.settings.ThemeLanguageFragment"
+        android:label="@string/drawer_menu_theme_language" />
+
+    <fragment
+        android:id="@+id/helpPlaceholderFragment"
+        android:name="com.example.hesapyonetimi.presentation.settings.HelpPlaceholderFragment"
+        android:label="@string/drawer_menu_help" />
+
+    <fragment
+        android:id="@+id/contactPlaceholderFragment"
+        android:name="com.example.hesapyonetimi.presentation.settings.ContactPlaceholderFragment"
+        android:label="@string/drawer_menu_contact" />
 
 </navigation>

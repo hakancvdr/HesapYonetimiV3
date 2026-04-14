@@ -433,7 +433,7 @@ class GunlukFragment : Fragment() {
         val netColor = when {
             net > 0  -> ContextCompat.getColor(requireContext(), R.color.income_green)
             net < 0  -> ContextCompat.getColor(requireContext(), R.color.expense_red)
-            else     -> 0xFFFFFFFF.toInt()
+            else     -> ContextCompat.getColor(requireContext(), R.color.text_primary)
         }
         tvNet.setTextColor(netColor)
     }

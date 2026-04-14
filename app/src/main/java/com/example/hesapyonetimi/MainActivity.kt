@@ -4,14 +4,20 @@ import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.graphics.Color
+import android.net.Uri
 import android.os.Bundle
+import android.text.SpannableString
+import android.text.Spanned
+import android.text.style.ForegroundColorSpan
 import android.view.LayoutInflater
 import android.view.View
+import android.widget.ImageButton
 import android.widget.TextView
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.app.AppCompatDelegate
 import androidx.appcompat.content.res.AppCompatResources
+import androidx.appcompat.graphics.drawable.DrawerArrowDrawable
 import androidx.core.content.ContextCompat
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
@@ -26,6 +32,7 @@ import androidx.navigation.fragment.NavHostFragment
 import androidx.navigation.ui.AppBarConfiguration
 import androidx.navigation.ui.NavigationUI
 import androidx.navigation.ui.navigateUp
+import androidx.navigation.ui.setupWithNavController
 import androidx.navigation.ui.setupActionBarWithNavController
 import com.example.hesapyonetimi.BuildConfig
 import com.example.hesapyonetimi.auth.AuthPrefs
@@ -33,7 +40,6 @@ import com.example.hesapyonetimi.auth.AuthSignOut
 import com.example.hesapyonetimi.data.local.dao.UserProfileDao
 import com.example.hesapyonetimi.domain.repository.ReminderRepository
 import com.example.hesapyonetimi.util.LocaleHelper
-import com.example.hesapyonetimi.presentation.profile.ProfileCategoriesDialogFragment
 import com.example.hesapyonetimi.worker.ReminderScheduler
 import com.google.android.material.bottomnavigation.BottomNavigationView
 import com.google.android.material.snackbar.Snackbar
@@ -90,14 +96,9 @@ class MainActivity : AppCompatActivity() {
 
         val toolbar = findViewById<MaterialToolbar>(R.id.toolbar)
         setSupportActionBar(toolbar)
-        // Light temada toolbar arkaplanı açık, ikonlar koyu; dark temada mevcut gradient + beyaz ikonlar.
-        if (isLightTheme) {
-            toolbar.setBackgroundColor(ContextCompat.getColor(this, R.color.card_background))
-            toolbar.setTitleTextColor(ContextCompat.getColor(this, R.color.text_primary))
-        } else {
-            toolbar.setBackgroundResource(R.drawable.gradient_header)
-            toolbar.setTitleTextColor(ContextCompat.getColor(this, android.R.color.white))
-        }
+        // Toolbar: her temada gradient (kontrast/okunabilirlik için).
+        toolbar.setBackgroundResource(R.drawable.gradient_header)
+        toolbar.setTitleTextColor(ContextCompat.getColor(this, android.R.color.white))
         ViewCompat.setOnApplyWindowInsetsListener(toolbar) { v, insets ->
             val top = insets.getInsets(WindowInsetsCompat.Type.statusBars()).top
             v.setPadding(0, top, 0, 0)
@@ -111,18 +112,34 @@ class MainActivity : AppCompatActivity() {
         drawerLayout = findViewById(R.id.drawer_layout)
         val navDrawer = findViewById<NavigationView>(R.id.nav_drawer)
         val drawerHeader = navDrawer.getHeaderView(0)
+        drawerHeader.findViewById<ImageButton>(R.id.drawer_close).setOnClickListener {
+            drawerLayout.closeDrawers()
+        }
         drawerHeader.findViewById<TextView>(R.id.drawer_header_version).text =
             "v${BuildConfig.VERSION_NAME}"
         lifecycleScope.launch {
             repeatOnLifecycle(Lifecycle.State.STARTED) {
                 userProfileDao.getProfile().collect { profile ->
                     val tvProfile = drawerHeader.findViewById<TextView>(R.id.drawer_header_profile)
+                    val tvAvatarLetter =
+                        drawerHeader.findViewById<TextView>(R.id.drawer_header_avatar_letter)
+                    val tvMembership =
+                        drawerHeader.findViewById<TextView>(R.id.drawer_header_subtitle)
                     val prefs = getSharedPreferences("HesapPrefs", Context.MODE_PRIVATE)
                     val name = profile?.displayName
                         ?.takeIf { it.isNotBlank() && it != "Kullanıcı" }
                         ?: prefs.getString("user_display_name", null)?.takeIf { it.isNotBlank() }
                         ?: "Kullanıcı"
                     tvProfile.text = name
+
+                    tvAvatarLetter.text =
+                        (name.firstOrNull()?.uppercaseChar()?.toString() ?: "K")
+
+                    tvMembership.text = if (AuthPrefs.isProMember(this@MainActivity)) {
+                        getString(R.string.drawer_membership_premium)
+                    } else {
+                        getString(R.string.drawer_membership_normal)
+                    }
                 }
             }
         }
@@ -142,25 +159,33 @@ class MainActivity : AppCompatActivity() {
             drawerLayout
         )
         setupActionBarWithNavController(navController, appBarConfiguration)
-        // Hamburger/back ikonları theme'e göre her zaman okunur olsun.
-        toolbar.navigationIcon?.mutate()?.setTint(
-            ContextCompat.getColor(this, if (isLightTheme) R.color.text_primary else android.R.color.white)
-        )
+        // Hamburger/back ikonları her temada beyaz (gradient üstünde okunur).
+        val navIconWhite = ContextCompat.getColor(this, android.R.color.white)
+        toolbar.setNavigationIconTint(navIconWhite)
+        (toolbar.navigationIcon as? DrawerArrowDrawable)?.color = navIconWhite
+        toolbar.navigationIcon?.mutate()?.setTint(navIconWhite)
 
         navDrawer.setNavigationItemSelectedListener { item ->
             when (item.itemId) {
-                R.id.drawer_profile -> {
+                R.id.drawer_account -> {
                     val opts = NavOptions.Builder().setLaunchSingleTop(true).build()
                     navController.navigate(R.id.nav_profil, null, opts)
                     drawerLayout.closeDrawers()
                 }
                 R.id.drawer_categories -> {
-                    ProfileCategoriesDialogFragment.newInstance()
-                        .show(supportFragmentManager, "ProfileCategoriesDialogFragment")
+                    val opts = NavOptions.Builder().setLaunchSingleTop(true).build()
+                    navController.navigate(R.id.categoryPickerFragment, null, opts)
                     drawerLayout.closeDrawers()
                 }
-                R.id.drawer_pro -> {
-                    navController.navigate(R.id.proFragment)
+                R.id.drawer_summary_monthly -> {
+                    val opts = NavOptions.Builder().setLaunchSingleTop(true).build()
+                    navController.navigate(R.id.nav_aylik, null, opts)
+                    drawerLayout.closeDrawers()
+                }
+                R.id.drawer_budget -> {
+                    val args = Bundle().apply { putBoolean("openBudgetDialog", true) }
+                    val opts = NavOptions.Builder().setLaunchSingleTop(true).build()
+                    navController.navigate(R.id.nav_profil, args, opts)
                     drawerLayout.closeDrawers()
                 }
                 R.id.drawer_sign_in -> {
@@ -171,27 +196,37 @@ class MainActivity : AppCompatActivity() {
                     drawerLayout.closeDrawers()
                     confirmAndSignOut()
                 }
-                R.id.drawer_dashboard_modules -> {
-                    drawerLayout.closeDrawers()
-                    showDashboardModulesDialog()
-                }
-                R.id.drawer_theme -> {
-                    showThemePicker()
+                R.id.drawer_theme_language -> {
+                    val opts = NavOptions.Builder().setLaunchSingleTop(true).build()
+                    navController.navigate(R.id.themeLanguageFragment, null, opts)
                     drawerLayout.closeDrawers()
                 }
-                R.id.drawer_language -> {
-                    showLanguagePicker()
+                R.id.drawer_help -> {
+                    val opts = NavOptions.Builder().setLaunchSingleTop(true).build()
+                    navController.navigate(R.id.helpPlaceholderFragment, null, opts)
+                    drawerLayout.closeDrawers()
+                }
+                R.id.drawer_contact -> {
+                    val opts = NavOptions.Builder().setLaunchSingleTop(true).build()
+                    navController.navigate(R.id.contactPlaceholderFragment, null, opts)
                     drawerLayout.closeDrawers()
                 }
             }
             true
         }
 
-        val bottomNav = findViewById<BottomNavigationView>(R.id.bottom_navigation)
-        bottomNav.setOnItemSelectedListener { item ->
-            navController.popBackStack(R.id.nav_profil, true)
-            NavigationUI.onNavDestinationSelected(item, navController)
+        // Drawer footer actions (görseldeki alt iki buton)
+        findViewById<View>(R.id.btn_drawer_go_pro).setOnClickListener {
+            navController.navigate(R.id.proFragment)
+            drawerLayout.closeDrawers()
         }
+        findViewById<View>(R.id.btn_drawer_rate_app).setOnClickListener {
+            openAppRating()
+            drawerLayout.closeDrawers()
+        }
+
+        val bottomNav = findViewById<BottomNavigationView>(R.id.bottom_navigation)
+        bottomNav.setupWithNavController(navController)
 
         if (savedInstanceState == null) {
             pendingDailyCoachmark = intent.getBooleanExtra(EXTRA_SHOW_DAILY_COACHMARK, false)
@@ -206,17 +241,23 @@ class MainActivity : AppCompatActivity() {
 
         // Bottom nav dışındaki destinasyonlarda (KategoriDetay, Wallet) BottomNav gizle
         navController.addOnDestinationChangedListener { _, destination, _ ->
+            // Drawer gibi farklı entry-point'lerden gelince bottom seçimi bazen stale kalabiliyor.
+            // Destinasyon bottom menüde varsa checked state'i zorla senkronla.
+            val bottomIds = setOf(R.id.nav_ozet, R.id.nav_gunluk, R.id.nav_aylik, R.id.nav_plan)
+            if (destination.id in bottomIds) {
+                bottomNav.menu.findItem(destination.id)?.isChecked = true
+            }
+
             if (destination.id !in appBarConfiguration.topLevelDestinations) {
                 val back = AppCompatResources.getDrawable(this, R.drawable.ic_chevron_left)?.mutate()
-                back?.setTint(
-                    ContextCompat.getColor(
-                        this,
-                        if (isLightTheme) R.color.text_primary else android.R.color.white
-                    )
-                )
+                back?.setTint(navIconWhite)
                 toolbar.navigationIcon = back
                 toolbar.navigationContentDescription = getString(R.string.toolbar_cd_back)
             }
+            // NavComponent hamburger/back ikonunu burada tekrar set edebiliyor; tint'i her seferinde garantile.
+            toolbar.setNavigationIconTint(navIconWhite)
+            (toolbar.navigationIcon as? DrawerArrowDrawable)?.color = navIconWhite
+            toolbar.navigationIcon?.mutate()?.setTint(navIconWhite)
             val topLevelIds = setOf(
                 R.id.nav_ozet, R.id.nav_gunluk, R.id.nav_aylik,
                 R.id.nav_plan, R.id.nav_profil, R.id.nav_security
@@ -239,7 +280,7 @@ class MainActivity : AppCompatActivity() {
         return navController.navigateUp(appBarConfiguration) || super.onSupportNavigateUp()
     }
 
-    private fun showThemePicker() {
+    fun showThemePicker() {
         val prefs = getSharedPreferences("HesapPrefs", Context.MODE_PRIVATE)
         val modes = listOf(
             "LIGHT" to getString(R.string.theme_light),
@@ -266,7 +307,7 @@ class MainActivity : AppCompatActivity() {
             .show()
     }
 
-    private fun showLanguagePicker() {
+    fun showLanguagePicker() {
         val options = arrayOf(
             getString(R.string.lang_turkish),
             getString(R.string.lang_english)
@@ -309,6 +350,23 @@ class MainActivity : AppCompatActivity() {
         val signedIn = method == AuthPrefs.AUTH_METHOD_GMAIL || method == AuthPrefs.AUTH_METHOD_LOCAL
         menu.findItem(R.id.drawer_sign_in)?.isVisible = method.isEmpty()
         menu.findItem(R.id.drawer_sign_out)?.isVisible = signedIn
+
+        // Sign out satırı (ikon + yazı) kırmızı görünsün.
+        menu.findItem(R.id.drawer_sign_out)?.let { item ->
+            val red = ContextCompat.getColor(this, R.color.error)
+            item.icon?.mutate()?.setTint(red)
+            val title = item.title?.toString() ?: getString(R.string.drawer_sign_out)
+            val s = SpannableString(title)
+            s.setSpan(ForegroundColorSpan(red), 0, s.length, Spanned.SPAN_INCLUSIVE_INCLUSIVE)
+            item.title = s
+        }
+    }
+
+    private fun openAppRating() {
+        val pkg = packageName
+        val market = Intent(Intent.ACTION_VIEW, Uri.parse("market://details?id=$pkg"))
+        val web = Intent(Intent.ACTION_VIEW, Uri.parse("https://play.google.com/store/apps/details?id=$pkg"))
+        if (market.resolveActivity(packageManager) != null) startActivity(market) else startActivity(web)
     }
 
     private fun confirmAndSignOut() {

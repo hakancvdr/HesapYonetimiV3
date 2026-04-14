@@ -48,8 +48,24 @@
     <string name="drawer_language">Dil</string>
     <string name="drawer_pro">PRO</string>
     <string name="drawer_section_account">Hesap</string>
-    <string name="drawer_section_settings">Görünüm</string>
+    <!-- Drawer sections -->
     <string name="drawer_sign_out">Oturumu kapat</string>
+    <string name="drawer_section_general">Genel</string>
+    <string name="drawer_section_settings">Ayarlar</string>
+    <string name="drawer_footer_go_pro">Pro’ya Geç</string>
+    <string name="drawer_footer_rate_app">Değerlendir</string>
+
+    <string name="drawer_membership_normal">Normal</string>
+    <string name="drawer_membership_premium">Premium</string>
+
+    <string name="drawer_menu_summary">Özet</string>
+    <string name="drawer_menu_budget">Bütçe</string>
+    <string name="drawer_menu_account">Hesabım</string>
+    <string name="drawer_menu_theme_language">Tema &amp; Dil</string>
+    <string name="drawer_menu_help">Yardım</string>
+    <string name="drawer_menu_contact">İletişime geç</string>
+
+    <string name="drawer_placeholder_soon">Yakında</string>
     <string name="drawer_section_pages">SAYFALAR</string>
     <string name="drawer_section_security_menu">GÜVENLİK &amp; GİZLİLİK</string>
     <string name="drawer_categories">Kategoriler</string>

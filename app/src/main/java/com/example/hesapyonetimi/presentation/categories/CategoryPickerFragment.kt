@@ -94,17 +94,17 @@ class CategoryPickerFragment : Fragment() {
 
         fun updateToggle() {
             val green = ContextCompat.getColor(requireContext(), R.color.green_primary)
-            val dimWhite = 0x80FFFFFF.toInt()
+            val muted = ContextCompat.getColor(requireContext(), R.color.text_secondary)
             if (!isIncome) {
                 btnExpense.setBackgroundResource(R.drawable.toggle_pill_selected)
                 btnExpense.setTextColor(green)
                 btnIncome.background = null
-                btnIncome.setTextColor(dimWhite)
+                btnIncome.setTextColor(muted)
             } else {
                 btnIncome.setBackgroundResource(R.drawable.toggle_pill_selected)
                 btnIncome.setTextColor(green)
                 btnExpense.background = null
-                btnExpense.setTextColor(dimWhite)
+                btnExpense.setTextColor(muted)
             }
             viewModel.setType(isIncome)
         }

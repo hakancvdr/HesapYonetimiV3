@@ -73,6 +73,14 @@ class ProfileFragment : Fragment() {
         setupClicks(view)
         observe()
         refreshPayPeriodSubtitle()
+
+        // Drawer > Bütçe: Profil'e geldikten sonra bütçe dialogunu otomatik aç.
+        val openBudget = arguments?.getBoolean("openBudgetDialog", false) == true
+        if (openBudget) {
+            // Tek seferlik tüket (rotation/geri dönüşte tekrar açılmasın)
+            arguments?.putBoolean("openBudgetDialog", false)
+            view.post { showEditBudgetDialog() }
+        }
     }
 
     override fun onResume() {

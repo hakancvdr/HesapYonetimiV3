@@ -65,4 +65,8 @@
     <!-- Goals -->
     <color name="goal_icon_bg">#E8F5E9</color>
     <color name="goal_completed_card_bg">#E8F5E9</color>
+
+    <!-- Drawer -->
+    <color name="drawer_header_bg">#8B5E4A</color>
+    <color name="drawer_item_pressed">#0F2C3E8C</color>
 </resources>
